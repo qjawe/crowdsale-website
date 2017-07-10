@@ -1,0 +1,21 @@
+{
+  "name": "crowdsale-backend",
+  "version": "0.1.0",
+  "description": "Crowdsale Backend",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "keccak": "^1.3.0",
+    "koa": "^2.3.0",
+    "ws": "^3.0.0"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^3.0.1",
+    "utf-8-validate": "^3.0.2"
+  }
+}
