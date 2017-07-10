@@ -19,6 +19,12 @@ class Method {
   get id () {
     return this._id;
   }
+
+  data (params) {
+    // TODO: convert params to hex string and append to id
+
+    return this._id;
+  }
 }
 
 class Contract {
@@ -44,7 +50,7 @@ class Contract {
       ._transport
       .request('eth_call', {
         to: this._address,
-        data: method.id
+        data: method.data(params)
       });
   }
 }

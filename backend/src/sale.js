@@ -40,7 +40,7 @@ class Sale {
 
   async update (block) {
     this._block = block;
-    this._price = hex2int(await (this._contract.currentPrice()));
+    this._price = hex2int(await this._contract.currentPrice());
 
     console.log(`Block ${block}, price is ${this._price}`);
   }
