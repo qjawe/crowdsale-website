@@ -1,7 +1,10 @@
+// Copyright Parity Technologies (UK) Ltd., 2017.
+// Released under the Apache 2/MIT licenses.
+
 'use strict';
 
 const WebSocket = require('ws');
-const { Stream, hex2int, pause } = require('./utils');
+const { hex2int, pause } = require('./utils');
 
 class Subscription {
   /**
@@ -125,7 +128,7 @@ class RpcTransport {
    * @return {Promise<WebSocket>}
    */
   connect () {
-    return this._ws = new Promise((resolve, reject) => {
+    this._ws = new Promise((resolve, reject) => {
       console.log('Connecting to the Parity node...');
 
       const ws = new WebSocket(this._url, {
@@ -137,7 +140,7 @@ class RpcTransport {
       });
 
       ws.on('open', () => {
-        console.log('Connected to the Parity node!')
+        console.log('Connected to the Parity node!');
 
         this._connected = true;
 
@@ -158,6 +161,8 @@ class RpcTransport {
 
       ws.on('message', (json) => this._handleMessage(json));
     });
+
+    return this._ws;
   }
 
   /**
@@ -222,7 +227,7 @@ class RpcTransport {
       id,
       method,
       params,
-      jsonrpc: '2.0',
+      jsonrpc: '2.0'
     };
 
     ws.send(JSON.stringify(message));

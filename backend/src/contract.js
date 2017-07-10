@@ -1,10 +1,13 @@
+// Copyright Parity Technologies (UK) Ltd., 2017.
+// Released under the Apache 2/MIT licenses.
+
 'use strict';
 
 const keccak = require('keccak');
 const { buf2hex } = require('./utils');
 
 class Method {
-  constructor(name, types) {
+  constructor (name, types) {
     const sig = keccak('keccak256')
                 .update(Buffer.from(`${name}(${types.join(',')})`))
                 .digest();
@@ -13,7 +16,7 @@ class Method {
     this._id = buf2hex(sig.slice(0, 4));
   }
 
-  get id() {
+  get id () {
     return this._id;
   }
 }
