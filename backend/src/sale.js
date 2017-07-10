@@ -11,8 +11,10 @@ class Sale {
   constructor (wsUrl, contractAddress) {
     this._block = 0;
     this._current = 0;
-    this._beginTime = 0;
-    this._endTime = 0;
+    this._begin = 0;
+    this._end = 0;
+    this._available = 0;
+    this._cap = 0;
 
     this._connector = new ParityConnector(wsUrl);
     this._contract = new Contract(this._connector.transport, contractAddress);
@@ -21,26 +23,38 @@ class Sale {
       ._contract
       .register('currentPrice')
       .register('beginTime')
-      .register('endTime');
+      .register('endTime')
+      .register('tokensAvailable')
+      .register('tokenCap');
 
     this
       ._connector
       .on('block', (block) => this.update(block));
 
-    Promise
-      .all([
-        this._contract.beginTime(),
-        this._contract.endTime()
-      ])
-      .then(([begin, end]) => {
-        this._beginTime = hex2int(begin);
-        this._endTime = hex2int(end);
+    this
+      ._contract
+      .beginTime()
+      .then(hex2int)
+      .then((begin) => {
+        this._begin = begin;
       });
   }
 
   async update (block) {
     this._block = block;
-    this._price = hex2int(await this._contract.currentPrice());
+
+    const contract = this._contract;
+    const [end, price, cap, available] = await Promise.all([
+      contract.endTime().then(hex2int),
+      contract.currentPrice().then(hex2int),
+      contract.tokenCap().then(hex2int),
+      contract.tokensAvailable().then(hex2int)
+    ]);
+
+    this._end = end;
+    this._price = price;
+    this._cap = cap;
+    this._available = available;
 
     console.log(`Block ${block}, price is ${this._price}`);
   }
@@ -58,11 +72,19 @@ class Sale {
   }
 
   get begin () {
-    return this._beginTime;
+    return this._begin;
   }
 
   get end () {
-    return this._endTime;
+    return this._end;
+  }
+
+  get available () {
+    return this._available;
+  }
+
+  get cap () {
+    return this._cap;
   }
 }
 

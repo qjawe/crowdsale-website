@@ -4,3 +4,7 @@ export async function get(url) {
 
   return response.json();
 }
+
+export function formatUnit (int, unit) {
+  return `${int} ${unit}${int !== 1 ? 's' : ''}`;
+}
