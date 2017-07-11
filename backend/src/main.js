@@ -21,12 +21,12 @@ router.get('/', (ctx) => {
   console.log('Incoming request!');
 
   const { block, price, begin, end, status, available, cap } = sale;
-  const current = Date.now() / 1000 | 0;
+  const time = Date.now() / 1000 | 0;
 
   ctx.body = {
     block,
     price,
-    current,
+    time,
     begin,
     end,
     status,
