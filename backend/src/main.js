@@ -9,7 +9,7 @@ const Sale = require('./sale');
 
 const app = new Koa();
 const router = new Router();
-const sale = new Sale('ws://127.0.0.1:8546/', '0x5a96e89850ea6c495017dba467643712b0cace86');
+const sale = new Sale('ws://127.0.0.1:8546/', '0x0F9b1129b309B29216b43Ea8a766AaeFb5324224');
 
 app.use((ctx, next) => {
   ctx.set('Access-Control-Allow-Origin', '*');

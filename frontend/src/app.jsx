@@ -11,7 +11,7 @@ function mapStateToProps (state) {
 }
 
 function App (props) {
-  const { timeLeft } = props;
+  const { block, price, available, cap, timeLeft } = props;
 
   const days = timeLeft / 86400 | 0;
   const hours = (timeLeft % 86400) / 3600 | 0;
@@ -37,8 +37,8 @@ function App (props) {
 
   return (
     <div style={ { fontFamily: 'monospace' } }>
-      <h1>Price: Ξ{ props.price / WEI_IN_ETH }</h1>
-      <p>Block: { props.block } | Tokens available: { props.available } / { props.cap }</p>
+      <h1>Price: Ξ{ price / WEI_IN_ETH }</h1>
+      <p>Block: { block } | Tokens available: { available } / { cap }</p>
       <p>At current price the sale will end in { timeLeftParts.join(' ') }</p>
     </div>
   );
