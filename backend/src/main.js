@@ -20,7 +20,7 @@ app.use((ctx, next) => {
 router.get('/', (ctx) => {
   console.log('Incoming request!');
 
-  const { block, price, begin, end, status, available, cap } = sale;
+  const { block, price, begin, end, status, available, cap, bonusDuration, bonusSize } = sale;
   const time = Date.now() / 1000 | 0;
 
   ctx.body = {
@@ -31,7 +31,9 @@ router.get('/', (ctx) => {
     end,
     status,
     available,
-    cap
+    cap,
+    bonusDuration,
+    bonusSize
   };
 });
 

@@ -15,6 +15,8 @@ class Sale {
     this._end = 0;
     this._available = 0;
     this._cap = 0;
+    this._bonusDuration = 0;
+    this._bonusSize = 0;
 
     this._connector = new ParityConnector(wsUrl);
     this._contract = new Contract(this._connector.transport, contractAddress);
@@ -23,6 +25,8 @@ class Sale {
       ._contract
       .register('currentPrice')
       .register('beginTime')
+      .register('BONUS_DURATION')
+      .register('BONUS_SIZE')
       .register('endTime')
       .register('tokensAvailable')
       .register('tokenCap');
@@ -37,6 +41,22 @@ class Sale {
       .then(hex2int)
       .then((begin) => {
         this._begin = begin;
+      });
+
+    this
+      ._contract
+      .BONUS_DURATION()
+      .then(hex2int)
+      .then((bonusDuration) => {
+        this._bonusDuration = bonusDuration;
+      });
+
+    this
+      ._contract
+      .BONUS_SIZE()
+      .then(hex2int)
+      .then((bonusSize) => {
+        this._bonusSize = bonusSize;
       });
   }
 
@@ -85,6 +105,14 @@ class Sale {
 
   get cap () {
     return this._cap;
+  }
+
+  get bonusDuration () {
+    return this._bonusDuration;
+  }
+
+  get bonusSize () {
+    return this._bonusSize;
   }
 }
 

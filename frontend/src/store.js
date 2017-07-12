@@ -14,6 +14,8 @@ const actions = {
       connected,
       begin,
       end,
+      bonusDuration,
+      bonusSize,
     } = status;
 
     const timeLeft = Math.max(0, end - time);
@@ -27,6 +29,8 @@ const actions = {
       connected,
       begin,
       end,
+      bonusDuration,
+      bonusSize,
       timeLeft
     });
   },
@@ -59,6 +63,8 @@ const initialState = {
   price: 0,
   available: 0,
   cap: 0,
+  bonusDuration: 0,
+  bonusSize: 0,
   connected: 'disconnected'
 };
 
