@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import keythereum from 'keythereum';
-import { InlineAccount, BButton } from 'parity-reactive-ui';
+import { AccountIcon } from 'parity-reactive-ui';
+import { Input, Button } from 'semantic-ui-react';
 
 const IDLE = Symbol('IDLE');
-const ERROR = Symbol('ERROR');
 const LOADING = Symbol('LOADING');
 const LOCKED = Symbol('LOCKED');
 const UNLOCKING = Symbol('UNLOCKING');
@@ -14,11 +14,12 @@ export default class WalletFile extends Component {
     super(props);
 
     this.state = {
-      status: IDLE
+      status: IDLE,
+      password: ''
     };
   }
 
-  onChange (event) {
+  onFileSet (event) {
     console.log(this);
 
     const file = event.target.files[0];
@@ -43,24 +44,76 @@ export default class WalletFile extends Component {
     this.fileInput.click();
   }
 
+  onPasswordChange (event) {
+    this.setState({ password: event.target.value });
+  }
+
+  unlockAccount () {
+    this.setState({ status: UNLOCKING });
+
+    // Defer to allow the UI to render before blocking
+    setTimeout(() => {
+      const { password, keyObject } = this.state;
+
+      let privateKey;
+      try {
+        privateKey = keythereum.recover(password, keyObject);
+      } catch (e) {
+        this.setState({ status: LOCKED, error: "Invalid Password" });
+        return;
+      }
+
+      this.setState({ status: UNLOCKED, error: null, privateKey });
+    }, 0);
+  }
+
+  get error () {
+    const { error } = this.state;
+
+    return error ? <strong>{ error }</strong> : null;
+  }
+
+  get address () {
+    return this.state.keyObject ? `0x${this.state.keyObject.address}` : null;
+  }
+
   render () {
     const { status } = this.state;
 
-    if (status === LOCKED) {
-      const address = `0x${this.state.keyObject.address}`;
+    if (status === UNLOCKING) {
       return (
-        <span>
-          <AccountIcon address={ address }/>
-          <strong>{ address }</strong>
-        </span>
+        <div>Working...</div>
+      )
+    }
+
+    if (status === LOCKED) {
+      return (
+        <div>
+          { this.error }
+          <Input type="password" onChange={ this.onPasswordChange.bind(this) } />
+          <Button content='Unlock' onClick={ this.unlockAccount.bind(this) } />
+        </div>
+      )
+    }
+
+    if (status === UNLOCKED) {
+      return (
+        <div>
+          { this.error }
+          <div>
+            <AccountIcon address={ this.address }/>
+            <strong>{ this.address }</strong>
+          </div>
+        </div>
       )
     }
 
     return (
-      <span>
-        <BButton content='Load wallet file' onClick={ this.promptFileExplorer.bind(this) }/>
-        <input ref={(input) => this.fileInput = input} type="file" style={ { display: 'none' } } onChange={ this.onChange.bind(this) }/>
-      </span>
+      <div>
+        { this.error }
+        <Button content='Load wallet file' onClick={ this.promptFileExplorer.bind(this) }/>
+        <input ref={(input) => this.fileInput = input} type="file" style={ { display: 'none' } } onChange={ this.onFileSet.bind(this) }/>
+      </div>
     )
   }
 }
