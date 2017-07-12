@@ -84,15 +84,27 @@ class Request {
   }
 
   /**
-   * Finalize the request.
+   * Resolve the request promise.
    *
    * @param  {Object} response from the node
    */
-  handle (response) {
+  resolve (response) {
     clearTimeout(this._timeout);
 
     this._cleanUp();
     this._resolve(response);
+  }
+
+  /**
+   * Reject the request promise.
+   *
+   * @param  {Object} error
+   */
+  reject (error) {
+    clearTimeout(this._timeout);
+
+    this._cleanUp();
+    this._reject(error);
   }
 }
 
@@ -179,22 +191,34 @@ class RpcTransport {
       console.error('Invalid JSON');
     }
 
-    if (typeof message.id === 'number' && message.result) {
-      if (!requests.has(message.id)) {
-        console.error('Invalid id');
+    if (typeof message.id === 'number' && (message.result || message.error)) {
+      const { id, result, error } = message;
+
+      if (!requests.has(id)) {
+        console.error(`Invalid JSON-RPC response id: ${id}`);
 
         return;
       }
 
-      requests.get(message.id).handle(message.result);
+      if (error) {
+        requests.get(id).reject(error);
+      } else {
+        requests.get(id).resolve(result);
+      }
 
       return;
     }
 
     if (message.method === 'parity_subscription' && message.params) {
-      const { result } = message.params;
+      const { error, result } = message.params;
       const subId = hex2int(message.params.subscription);
       const subscription = this._subscriptions.get(subId);
+
+      if (error) {
+        console.error(`Subscription error on ${subscription.method}:`, error);
+
+        return;
+      }
 
       if (subscription) {
         subscription.push(result);
