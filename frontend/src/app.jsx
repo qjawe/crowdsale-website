@@ -4,6 +4,7 @@ import { formatUnit } from './utils';
 import { Bond } from 'oo7';
 import { Rspan } from 'oo7-react';
 import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
+import WalletFile from './components/WalletFile';
 import humanizeDuration from 'humanize-duration';
 
 function mapStateToProps (state) {
@@ -36,6 +37,8 @@ class App extends Component {
             <div>Enter how much you would like to spend: <BalanceBond bond={this.spend}/></div>
 
             <div>By spending <InlineBalance value={this.spend}/>, you will receive <Rspan>{this.spend.map(v => <b>at least {Math.floor(v / price * (100 + (inBonus ? bonusSize : 0)) / 100)} DOTs</b>)}</Rspan>.</div>
+
+            <div><WalletFile/></div>
 
             <BButton content='Purchase DOTs' onClick={() => this.spend.then(v => alert(`TODO: Spend ${v} Wei on DOTs`))}/>
           </div>
