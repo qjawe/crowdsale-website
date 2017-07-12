@@ -8,9 +8,9 @@ import WalletFile from './components/WalletFile';
 import humanizeDuration from 'humanize-duration';
 
 function mapStateToProps (state) {
-  const { block, price, available, cap, timeLeft, bonusSize, bonusDuration } = state;
+  const { block, price, available, cap, timeLeft, begin, bonusSize, bonusDuration, currentTime } = state;
 
-  return { block, price, available, cap, timeLeft, bonusSize, bonusDuration };
+  return { block, price, available, cap, timeLeft, begin, bonusSize, bonusDuration, currentTime };
 }
 
 class App extends Component {
@@ -20,17 +20,17 @@ class App extends Component {
       window.value = this.spend;
   }
   render () {
-      const { block, price, available, cap, timeLeft, begin, bonusDuration, bonusSize } = this.props;
+      const { block, price, available, cap, timeLeft, begin, bonusDuration, bonusSize, currentTime } = this.props;
 
       // TODO: should use the more recent block's time.
-      const inBonus = begin + bonusDuration < Date.now() / 1000 - 120;
+      const inBonus = block.timestamp - begin + 120 < bonusDuration;
 
-      console.log(`bonusSize: ${bonusSize}, duration: ${bonusDuration}`);
+      console.log(`currentTime: ${block.timestamp}, begin: ${begin}, running: ${block.timestamp - begin}, bonusSize: ${bonusSize}, duration: ${bonusDuration}`);
 
       return (
         <div style={ { fontFamily: 'monospace' } }>
-          <h1>Price: <InlineBalance value={price}/></h1>
-          <p>Block: { block } | Tokens available: { available } / { cap }</p>
+          <h1>Price: <InlineBalance value={price} units='finney' precise/></h1>
+          <p>Block: { block.number } | Tokens available: { available } / { cap }{inBonus ? (<span> | EARLY-BIRD BONUS {bonusSize}%</span>) : null}</p>
           <p>The sale will end before {humanizeDuration(timeLeft * 1000)}, depending on how many more people buy in.</p>
 
           <div style={{textAlign: 'center', margin: '1em 2em'}}>

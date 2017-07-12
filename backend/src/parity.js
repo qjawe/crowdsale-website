@@ -19,9 +19,11 @@ class ParityConnector extends EventEmitter {
     this._transport = new RpcTransport(url);
     this
       ._transport
-      .subscribe('eth_blockNumber')
+      .subscribe('eth_getBlockByNumber', 'latest', false)
       .forEach((result) => {
-        this.emit('block', hex2int(result));
+        result.timestamp = hex2int(result.timestamp);
+        result.number = hex2int(result.number);
+        this.emit('block', result);
       });
   }
 

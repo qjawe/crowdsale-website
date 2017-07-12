@@ -15,7 +15,7 @@
     "oo7": "^0.5.4",
     "oo7-parity": "^0.6.7",
     "oo7-react": "^0.4.5",
-    "parity-reactive-ui": "^0.4.10",
+    "parity-reactive-ui": "^0.4.11",
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "react-redux": "^5.0.5",
