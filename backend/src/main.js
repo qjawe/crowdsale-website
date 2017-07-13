@@ -11,22 +11,26 @@ const app = new Koa();
 const router = new Router();
 const sale = new Sale('ws://127.0.0.1:8546/', '0x0F9b1129b309B29216b43Ea8a766AaeFb5324224');
 
-app.use((ctx, next) => {
+app.use(async (ctx, next) => {
   ctx.set('Access-Control-Allow-Origin', '*');
 
-  next();
+  await next();
+});
+
+router.get('/:address/nonce', async (ctx, next) => {
+  const { address } = ctx.params;
+
+  const nonce = await sale.connector.nextNonce(address);
+
+  ctx.body = { nonce };
 });
 
 router.get('/', (ctx) => {
-  console.log('Incoming request!');
-
   const { block, price, begin, end, status, available, cap, bonusDuration, bonusSize } = sale;
-  const time = Date.now() / 1000 | 0;
 
   ctx.body = {
     block,
     price,
-    time,
     begin,
     end,
     status,

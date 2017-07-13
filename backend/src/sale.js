@@ -64,11 +64,10 @@ class Sale {
     this._block = block;
 
     const contract = this._contract;
-    const [end, price, cap, available, currentTime] = await Promise.all([
+    const [end, price, cap, available] = await Promise.all([
       contract.endTime().then(hex2int),
       contract.currentPrice().then(hex2int),
       contract.tokenCap().then(hex2int),
-      contract.tokensAvailable().then(hex2int),
       contract.tokensAvailable().then(hex2int)
     ]);
 
@@ -77,7 +76,11 @@ class Sale {
     this._cap = cap;
     this._available = available;
 
-    console.log(`Block ${block}, price is ${this._price}`);
+    console.log(`Block ${block.number}, price is ${this._price}`);
+  }
+
+  get connector () {
+    return this._connector;
   }
 
   get status () {

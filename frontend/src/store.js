@@ -7,7 +7,6 @@ const actions = {
   [STATUS_UPDATE] (state, status) {
     const {
       block,
-      time,
       price,
       available,
       cap,
@@ -19,11 +18,10 @@ const actions = {
       currentTime,
     } = status;
 
-    const timeLeft = Math.max(0, end - time);
+    const timeLeft = Math.max(0, end - block.timestamp);
 
     return Object.assign({}, state, {
       block,
-      time,
       price,
       available,
       cap,

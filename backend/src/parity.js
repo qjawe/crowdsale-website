@@ -28,9 +28,39 @@ class ParityConnector extends EventEmitter {
   }
 
   /**
+   * Get next nonce for address
+   *
+   * @param  {String} address
+   *
+   * @return {Promise<String>} `0x` prefixed hex nonce
+   */
+  nextNonce (address) {
+    return this
+      ._transport
+      .request('parity_nextNonce', address);
+  }
+
+  /**
+   * Get the balance for address
+   *
+   * @param  {String} address
+   *
+   * @return {Promise<Number>} balance in wei.
+   */
+  balance (address) {
+    return this
+      ._transport
+      .request('eth_getBalance', address)
+      .then(hex2int);
+  }
+  /**
    * Direct access to the underlying transport.
+   * Get next nonce for address
    *
    * @return {RpcTransport}
+   * @param  {String} address
+   *
+   * @return {Promise<Number>} nonce
    */
   get transport () {
     return this._transport;

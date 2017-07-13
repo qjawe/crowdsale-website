@@ -4,6 +4,8 @@ import { formatUnit } from './utils';
 import { Bond } from 'oo7';
 import { Rspan } from 'oo7-react';
 import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
+import backend from './backend';
+import EthereumTx from 'ethereumjs-tx';
 import WalletFile from './components/WalletFile';
 import humanizeDuration from 'humanize-duration';
 
@@ -16,35 +18,81 @@ function mapStateToProps (state) {
 class App extends Component {
   constructor () {
       super();
+      this.state = {};
       this.spend = new Bond;
       window.value = this.spend;
   }
+
+  onWallet ({ address, wallet }) {
+    this.setState({ address, wallet });
+  }
+
+  async purchase (amount) {
+    const { address, wallet } = this.state;
+
+    if (!address || !wallet) {
+      return;
+    }
+
+    const nonce = await backend.nonce(address);
+
+    console.log('address', address, 'nonce', nonce);
+
+    // const tx = new EthereumTx({
+
+    // })
+  }
+
+  get inBonus () {
+    const { block, begin, bonusDuration } = this.props;
+
+    return block.timestamp - begin + 120 < bonusDuration;
+  }
+
+  get tokenAmount () {
+    const { bonusSize, price } = this.props;
+
+    return this
+      .spend
+      .map((contribution) => Math.floor(contribution / price * (100 + (this.inBonus ? bonusSize : 0))) / 100);
+  }
+
   render () {
-      const { block, price, available, cap, timeLeft, begin, bonusDuration, bonusSize, currentTime } = this.props;
-
-      // TODO: should use the more recent block's time.
-      const inBonus = block.timestamp - begin + 120 < bonusDuration;
-
-      console.log(`currentTime: ${block.timestamp}, begin: ${begin}, running: ${block.timestamp - begin}, bonusSize: ${bonusSize}, duration: ${bonusDuration}`);
+      const { block, price, available, cap, timeLeft, bonusSize, currentTime } = this.props;
 
       return (
         <div style={ { fontFamily: 'monospace' } }>
           <h1>Price: <InlineBalance value={price} units='finney' precise/></h1>
-          <p>Block: { block.number } | Tokens available: { available } / { cap }{inBonus ? (<span> | EARLY-BIRD BONUS {bonusSize}%</span>) : null}</p>
+          <p>Block: { block.number } | Tokens available: { available } / { cap }{this.inBonus ? (<span> | EARLY-BIRD BONUS {bonusSize}%</span>) : null}</p>
           <p>The sale will end before {humanizeDuration(timeLeft * 1000)}, depending on how many more people buy in.</p>
 
           <div style={{textAlign: 'center', margin: '1em 2em'}}>
-            <div>Enter how much you would like to spend: <BalanceBond bond={this.spend}/></div>
-
-            <div>By spending <InlineBalance value={this.spend}/>, you will receive <Rspan>{this.spend.map(v => <b>at least {Math.floor(v / price * (100 + (inBonus ? bonusSize : 0)) / 100)} DOTs</b>)}</Rspan>.</div>
-
-            <div><WalletFile/></div>
-
-            <BButton content='Purchase DOTs' onClick={() => this.spend.then(v => alert(`TODO: Spend ${v} Wei on DOTs`))}/>
+            <WalletFile onWallet={ this.onWallet.bind(this) }/>
+            { this.renderForm() }
           </div>
 
         </div>
       );
+  }
+
+  renderForm () {
+    if (!this.state.wallet) {
+      return null;
+    }
+
+    const { price, bonusSize } = this.props;
+
+    return (
+      <div>
+        <div>
+          Enter how much you would like to spend: <BalanceBond bond={this.spend}/>
+        </div>
+        <div>
+          By spending <InlineBalance value={this.spend}/>, you will receive <b>at least <Rspan>{this.tokenAmount}</Rspan> DOTs</b>.
+        </div>
+        <BButton content='Purchase DOTs' onClick={() => this.spend.then(this.purchase.bind(this))}/>
+      </div>
+    )
   }
 }
 

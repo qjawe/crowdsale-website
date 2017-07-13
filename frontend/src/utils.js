@@ -1,10 +1,10 @@
 
 export async function get(url) {
-  let response = await fetch('http://localhost:4000/');
+  let response = await fetch(url);
 
   return response.json();
 }
 
-export function formatUnit (int, unit) {
-  return `${int} ${unit}${int !== 1 ? 's' : ''}`;
+export function int2hex (int) {
+  return `0x${int.toString(16)}`;
 }
