@@ -79,6 +79,10 @@ class Sale {
     console.log(`Block ${block.number}, price is ${this._price}`);
   }
 
+  get connector () {
+    return this._connector;
+  }
+
   get status () {
     return this._connector.status;
   }

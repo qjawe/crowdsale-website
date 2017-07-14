@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import keythereum from 'keythereum';
+import PropTypes from 'prop-types';
+import Wallet from 'ethereumjs-wallet';
 import { AccountIcon } from 'parity-reactive-ui';
 import { Input, Button } from 'semantic-ui-react';
 
@@ -9,7 +10,7 @@ const LOCKED = Symbol('LOCKED');
 const UNLOCKING = Symbol('UNLOCKING');
 const UNLOCKED = Symbol('UNLOCKED');
 
-export default class WalletFile extends Component {
+class WalletFile extends Component {
   constructor (props) {
     super(props);
 
@@ -20,8 +21,6 @@ export default class WalletFile extends Component {
   }
 
   onFileSet (event) {
-    console.log(this);
-
     const file = event.target.files[0];
 
     if (!file) {
@@ -55,15 +54,18 @@ export default class WalletFile extends Component {
     setTimeout(() => {
       const { password, keyObject } = this.state;
 
-      let privateKey;
+      let wallet;
+
       try {
-        privateKey = keythereum.recover(password, keyObject);
-      } catch (e) {
+        wallet = Wallet.fromV3(keyObject, password);
+      } catch (_) {
         this.setState({ status: LOCKED, error: "Invalid Password" });
+
         return;
       }
 
-      this.setState({ status: UNLOCKED, error: null, privateKey });
+      this.setState({ status: UNLOCKED, error: null, wallet });
+      this.props.onWallet({ address: this.address, wallet });
     }, 0);
   }
 
@@ -117,3 +119,9 @@ export default class WalletFile extends Component {
     )
   }
 }
+
+WalletFile.propTypes = {
+  onWallet: PropTypes.func.isRequired
+};
+
+export default WalletFile;

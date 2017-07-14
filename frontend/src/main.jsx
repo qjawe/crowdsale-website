@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from 'react-dom';
 import { Provider } from 'react-redux';
 import App from './app';
-import { get } from './utils';
+import backend from './backend';
 import store, { statusUpdate, timeTick } from './store';
 
 update();
@@ -16,7 +16,7 @@ setInterval(() => {
 }, 1000);
 
 async function update () {
-  const status = await get('http://localhost:4000/');
+  const status = await backend.status();
   const { time, end } = status;
 
   status.timeLeft = Math.max(0, end - time);
