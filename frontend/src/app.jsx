@@ -4,7 +4,7 @@ import { formatUnit } from './utils';
 import { Bond } from 'oo7';
 import { Rspan } from 'oo7-react';
 import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
-import { int2hex, hex2buf } from './utils';
+import { int2hex, hex2buf, buildABIData } from './utils';
 import backend from './backend';
 import EthereumTx from 'ethereumjs-tx';
 import { ecsign } from 'ethereumjs-util';
@@ -56,6 +56,8 @@ class App extends Component {
   }
 
   async purchase (amount) {
+    this.setState({ hash: '0x' });
+
     const { address, wallet } = this.state;
     const { contractAddress } = this.props;
 
@@ -65,16 +67,14 @@ class App extends Component {
 
     const nonce = await backend.nonce(address);
     const value = await this.spend;
-    const sig = ecsign(hex2buf(this.props.statementHash), wallet.privKey);
-    const v = Buffer.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,sig.v]);
-    const { r, s } = sig;
-    const data = `${this.props.buyinId}${v.toString('hex')}${r.toString('hex')}${s.toString('hex')}`;
+    const { v, r, s } = ecsign(hex2buf(this.props.statementHash), wallet.privKey);
+    const data = buildABIData(this.props.buyinId, v,r, s);
 
     const tx = new EthereumTx({
       to: contractAddress,
       nonce,
       data,
-      gasLimit: int2hex(500000),
+      gasLimit: int2hex(100000),
       gasPrice: int2hex(50000000000),
       value: int2hex(value)
     });
@@ -83,8 +83,9 @@ class App extends Component {
 
     const serializedTx = `0x${tx.serialize().toString('hex')}`;
 
-    console.log('tx', serializedTx);
-    backend.sendTx(serializedTx);
+    const hash = await backend.sendTx(serializedTx);
+
+    this.setState({ hash });
   }
 
   get theDeal () {
@@ -124,6 +125,23 @@ class App extends Component {
   renderForm (inBonus, maxSpend, refund, tokens) {
     if (!this.state.wallet) {
       return null;
+    }
+
+    const { hash } = this.state;
+
+    if (hash) {
+      if (hash === '0x') {
+        return (
+          <div>Sending transaction...</div>
+        );
+      }
+
+      return (
+        <div>
+          <div>Transaction sent!</div>
+          <div><a href={ `https://kovan.etherscan.io/tx/${hash}` }>{ hash }</a></div>
+        </div>
+      );
     }
 
     const { price, bonusSize } = this.props;
