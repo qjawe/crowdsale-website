@@ -81,11 +81,11 @@ class App extends Component {
   }
 
   get theDeal () {
-    const { block, price, available, cap, timeLeft, bonusSize, currentTime } = this.props;
+    const { block, price, available, cap, timeLeft, bonusSize, bonusDuration, begin, currentTime } = this.props;
     const inBonus = block.timestamp - begin + 120 < bonusDuration;
     const maxSpend = price * available;
     const refund = this.spend.map(v => v > maxSpend ? v.sub(maxSpend) : 0);
-    const minBuy = this
+    const tokens = this
       .spend
       .map((contribution) => Math.floor(contribution / price * (100 + (this.inBonus ? bonusSize : 0))) / 100);
     return {
@@ -95,8 +95,9 @@ class App extends Component {
 
   render () {
       const { block, price, available, cap, timeLeft, bonusSize, currentTime } = this.props;
-
       const { inBonus, maxSpend, refund, tokens } = this.theDeal;
+
+      console.log('timeLeft', timeLeft);
 
       return (
         <div style={ { fontFamily: 'monospace' } }>
