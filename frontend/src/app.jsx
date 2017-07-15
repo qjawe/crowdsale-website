@@ -80,39 +80,40 @@ class App extends Component {
     backend.sendTx(serializedTx);
   }
 
-  get inBonus () {
-    const { block, begin, bonusDuration } = this.props;
-
-    return block.timestamp - begin + 120 < bonusDuration;
-  }
-
-  get tokenAmount () {
-    const { bonusSize, price } = this.props;
-
-    return this
+  get theDeal () {
+    const { block, price, available, cap, timeLeft, bonusSize, currentTime } = this.props;
+    const inBonus = block.timestamp - begin + 120 < bonusDuration;
+    const maxSpend = price * available;
+    const refund = this.spend.map(v => v > maxSpend ? v.sub(maxSpend) : 0);
+    const minBuy = this
       .spend
       .map((contribution) => Math.floor(contribution / price * (100 + (this.inBonus ? bonusSize : 0))) / 100);
+    return {
+      inBonus, maxSpend, refund, tokens
+    };
   }
 
   render () {
       const { block, price, available, cap, timeLeft, bonusSize, currentTime } = this.props;
 
+      const { inBonus, maxSpend, refund, tokens } = this.theDeal;
+
       return (
         <div style={ { fontFamily: 'monospace' } }>
           <h1>Price: <InlineBalance value={price} units='finney' precise/></h1>
-          <p>Block: { block.number } | Tokens available: { available } / { cap }{this.inBonus ? (<span> | EARLY-BIRD BONUS {bonusSize}%</span>) : null}</p>
+          <p>Block: { block.number } | Tokens available: { available } / { cap } | Maximum spend: <InlineBalance value={maxSpend}/>{inBonus ? (<span> | EARLY-BIRD BONUS {bonusSize}%</span>) : null}</p>
           <p>The sale will end before {humanizeDuration(timeLeft * 1000)}, depending on how many more people buy in.</p>
 
           <div style={{textAlign: 'center', margin: '1em 2em'}}>
             <WalletFile onWallet={ this.onWallet.bind(this) }/>
-            { this.renderForm() }
+            { this.renderForm(inBonus, maxSpend, refund, tokens) }
           </div>
 
         </div>
       );
   }
 
-  renderForm () {
+  renderForm (inBonus, maxSpend, refund, tokens) {
     if (!this.state.wallet) {
       return null;
     }
@@ -121,13 +122,13 @@ class App extends Component {
 
     return (
       <div>
-        <div>
-          Enter how much you would like to spend: <BalanceBond bond={this.spend}/>
-        </div>
-        <div>
-          By spending <InlineBalance value={this.spend}/>, you will receive <b>at least <Rspan>{this.tokenAmount}</Rspan> DOTs</b>.
-        </div>
-        <BButton content='Purchase DOTs' onClick={() => this.spend.then(this.purchase.bind(this))}/>
+        <div>Enter how much you would like to spend: <BalanceBond bond={this.spend} valid/></div>
+        <Rspan>{this.spend.map(v => +v > 0 ?
+            <div>By spending <InlineBalance value={this.spend}/>, you will receive <Rspan>{this.spend.map(v => <b>at least {Math.floor(Math.min(v, maxSpend) / price * (100 + (inBonus ? bonusSize : 0)) / 100)} DOTs</b>)}</Rspan>
+            <Rspan>{refund.map(v => +v > 0 ? (<span> and be refunded <b>at least <InlineBalance value={v}/></b></span>) : null)}</Rspan>.<br/>
+            <BButton content='Purchase DOTs' onClick={() => this.spend.then(this.purchase.bind(this))}/>
+            </div>
+        : null)}</Rspan>
       </div>
     )
   }
