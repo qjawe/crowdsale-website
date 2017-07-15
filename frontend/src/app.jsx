@@ -4,15 +4,18 @@ import { formatUnit } from './utils';
 import { Bond } from 'oo7';
 import { Rspan } from 'oo7-react';
 import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
-import { int2hex } from './utils';
+import { int2hex, hex2buf } from './utils';
 import backend from './backend';
 import EthereumTx from 'ethereumjs-tx';
+import { ecsign } from 'ethereumjs-util';
 import WalletFile from './components/WalletFile';
 import humanizeDuration from 'humanize-duration';
 
 function mapStateToProps (state) {
   const {
     contractAddress,
+    statementHash,
+    buyinId,
     block,
     price,
     available,
@@ -26,6 +29,8 @@ function mapStateToProps (state) {
 
   return {
     contractAddress,
+    statementHash,
+    buyinId,
     block,
     price,
     available,
@@ -60,14 +65,16 @@ class App extends Component {
 
     const nonce = await backend.nonce(address);
     const value = await this.spend;
-
-    // console.log('address', address, 'nonce', nonce, 'value', int2hex(value));
+    const sig = ecsign(hex2buf(this.props.statementHash), wallet.privKey);
+    const v = Buffer.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,sig.v]);
+    const { r, s } = sig;
+    const data = `${this.props.buyinId}${v.toString('hex')}${r.toString('hex')}${s.toString('hex')}`;
 
     const tx = new EthereumTx({
-      nonce,
       to: contractAddress,
-      data: '0x',
-      gasLimit: int2hex(50000),
+      nonce,
+      data,
+      gasLimit: int2hex(500000),
       gasPrice: int2hex(50000000000),
       value: int2hex(value)
     });
@@ -94,24 +101,24 @@ class App extends Component {
   }
 
   render () {
-      const { block, price, available, cap, timeLeft, bonusSize, currentTime } = this.props;
-      const { inBonus, maxSpend, refund, tokens } = this.theDeal;
+    const { block, price, available, cap, timeLeft, bonusSize, currentTime } = this.props;
+    const { inBonus, maxSpend, refund, tokens } = this.theDeal;
 
-      console.log('timeLeft', timeLeft);
+    console.log('timeLeft', timeLeft);
 
-      return (
-        <div style={ { fontFamily: 'monospace' } }>
-          <h1>Price: <InlineBalance value={price} units='finney' precise/></h1>
-          <p>Block: { block.number } | Tokens available: { available } / { cap } | Maximum spend: <InlineBalance value={maxSpend}/>{inBonus ? (<span> | EARLY-BIRD BONUS {bonusSize}%</span>) : null}</p>
-          <p>The sale will end before {humanizeDuration(timeLeft * 1000)}, depending on how many more people buy in.</p>
+    return (
+      <div style={ { fontFamily: 'monospace' } }>
+        <h1>Price: <InlineBalance value={price} units='finney' precise/></h1>
+        <p>Block: { block.number } | Tokens available: { available } / { cap } | Maximum spend: <InlineBalance value={maxSpend}/>{inBonus ? (<span> | EARLY-BIRD BONUS {bonusSize}%</span>) : null}</p>
+        <p>The sale will end before {humanizeDuration(timeLeft * 1000)}, depending on how many more people buy in.</p>
 
-          <div style={{textAlign: 'center', margin: '1em 2em'}}>
-            <WalletFile onWallet={ this.onWallet.bind(this) }/>
-            { this.renderForm(inBonus, maxSpend, refund, tokens) }
-          </div>
-
+        <div style={{textAlign: 'center', margin: '1em 2em'}}>
+          <WalletFile onWallet={ this.onWallet.bind(this) }/>
+          { this.renderForm(inBonus, maxSpend, refund, tokens) }
         </div>
-      );
+
+      </div>
+    );
   }
 
   renderForm (inBonus, maxSpend, refund, tokens) {

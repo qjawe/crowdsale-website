@@ -16,6 +16,8 @@ function action(handler) {
 export const statusUpdate = action((state, status) => {
   const {
     contractAddress,
+    statementHash,
+    buyinId,
     block,
     price,
     available,
@@ -32,6 +34,8 @@ export const statusUpdate = action((state, status) => {
 
   return Object.assign({}, state, {
     contractAddress,
+    statementHash,
+    buyinId,
     block,
     price,
     available,
@@ -51,6 +55,9 @@ export const timeTick = action((state, timeLeft) => {
 });
 
 const initialState = {
+  contractAddress: '0x',
+  statementHash: '0x',
+  buyinId: '0x',
   block: 0,
   current: 0,
   begin: 0,

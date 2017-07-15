@@ -26,16 +26,29 @@ router.post('/tx', async (ctx, next) => {
 
   const hash = await sale.connector.sendTx(tx);
 
-  console.log('hash', hash);
-
   ctx.body = { hash };
 });
 
 router.get('/', (ctx) => {
-  const { contractAddress, block, price, begin, end, status, available, cap, bonusDuration, bonusSize } = sale;
+  const {
+    contractAddress,
+    statementHash,
+    buyinId,
+    block,
+    price,
+    begin,
+    end,
+    status,
+    available,
+    cap,
+    bonusDuration,
+    bonusSize
+  } = sale;
 
   ctx.body = {
     contractAddress,
+    statementHash,
+    buyinId,
     block,
     price,
     begin,
@@ -51,11 +64,6 @@ router.get('/', (ctx) => {
 app
   .use(bodyParser())
   .use(cors())
-  // .use(async (ctx, next) => {
-  //   ctx.set('Access-Control-Allow-Origin', '*');
-
-  //   await next();
-  // })
   .use(router.routes())
   .use(router.allowedMethods())
   .listen(4000);

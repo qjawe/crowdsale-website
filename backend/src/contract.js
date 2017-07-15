@@ -39,6 +39,7 @@ class Contract {
 
     this._methods.set(name, method);
     this[name] = (...params) => this._call(name, params);
+    this[name].id = method.id;
 
     return this;
   }
