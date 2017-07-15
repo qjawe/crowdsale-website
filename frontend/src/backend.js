@@ -1,4 +1,4 @@
-import { get } from './utils';
+import { get, post } from './utils';
 
 class Backend {
   constructor (url) {
@@ -17,6 +17,12 @@ class Backend {
     const { nonce } = await get(this.url(`/${address}/nonce`));
 
     return nonce;
+  }
+
+  async sendTx (tx) {
+    const { hash } = await post(this.url('/tx'), { tx });
+
+    return hash;
   }
 }
 

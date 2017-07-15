@@ -5,17 +5,13 @@
 
 const Koa = require('koa');
 const Router = require('koa-router');
+const bodyParser = require('koa-bodyparser');
+const cors = require('kcors');
 const Sale = require('./sale');
 
 const app = new Koa();
 const router = new Router();
 const sale = new Sale('ws://127.0.0.1:8546/', '0x0F9b1129b309B29216b43Ea8a766AaeFb5324224');
-
-app.use(async (ctx, next) => {
-  ctx.set('Access-Control-Allow-Origin', '*');
-
-  await next();
-});
 
 router.get('/:address/nonce', async (ctx, next) => {
   const { address } = ctx.params;
@@ -25,10 +21,21 @@ router.get('/:address/nonce', async (ctx, next) => {
   ctx.body = { nonce };
 });
 
+router.post('/tx', async (ctx, next) => {
+  const { tx } = ctx.request.body;
+
+  const hash = await sale.connector.sendTx(tx);
+
+  console.log('hash', hash);
+
+  ctx.body = { hash };
+});
+
 router.get('/', (ctx) => {
-  const { block, price, begin, end, status, available, cap, bonusDuration, bonusSize } = sale;
+  const { contractAddress, block, price, begin, end, status, available, cap, bonusDuration, bonusSize } = sale;
 
   ctx.body = {
+    contractAddress,
     block,
     price,
     begin,
@@ -42,6 +49,13 @@ router.get('/', (ctx) => {
 });
 
 app
+  .use(bodyParser())
+  .use(cors())
+  // .use(async (ctx, next) => {
+  //   ctx.set('Access-Control-Allow-Origin', '*');
+
+  //   await next();
+  // })
   .use(router.routes())
   .use(router.allowedMethods())
   .listen(4000);

@@ -75,6 +75,15 @@ class WalletFile extends Component {
     return error ? <strong>{ error }</strong> : null;
   }
 
+  get accountInfo () {
+    return (
+      <div>
+        <AccountIcon address={ this.address }/>
+        <strong>{ this.address }</strong>
+      </div>
+    );
+  }
+
   get address () {
     return this.state.keyObject ? `0x${this.state.keyObject.address}` : null;
   }
@@ -84,7 +93,10 @@ class WalletFile extends Component {
 
     if (status === UNLOCKING) {
       return (
-        <div>Working...</div>
+        <div>
+          { this.accountInfo }
+          Working...
+        </div>
       )
     }
 
@@ -102,10 +114,7 @@ class WalletFile extends Component {
       return (
         <div>
           { this.error }
-          <div>
-            <AccountIcon address={ this.address }/>
-            <strong>{ this.address }</strong>
-          </div>
+          { this.accountInfo }
         </div>
       )
     }

@@ -4,15 +4,38 @@ import { formatUnit } from './utils';
 import { Bond } from 'oo7';
 import { Rspan } from 'oo7-react';
 import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
+import { int2hex } from './utils';
 import backend from './backend';
 import EthereumTx from 'ethereumjs-tx';
 import WalletFile from './components/WalletFile';
 import humanizeDuration from 'humanize-duration';
 
 function mapStateToProps (state) {
-  const { block, price, available, cap, timeLeft, begin, bonusSize, bonusDuration, currentTime } = state;
+  const {
+    contractAddress,
+    block,
+    price,
+    available,
+    cap,
+    timeLeft,
+    begin,
+    bonusSize,
+    bonusDuration,
+    currentTime
+  } = state;
 
-  return { block, price, available, cap, timeLeft, begin, bonusSize, bonusDuration, currentTime };
+  return {
+    contractAddress,
+    block,
+    price,
+    available,
+    cap,
+    timeLeft,
+    begin,
+    bonusSize,
+    bonusDuration,
+    currentTime
+  };
 }
 
 class App extends Component {
@@ -29,18 +52,32 @@ class App extends Component {
 
   async purchase (amount) {
     const { address, wallet } = this.state;
+    const { contractAddress } = this.props;
 
     if (!address || !wallet) {
       return;
     }
 
     const nonce = await backend.nonce(address);
+    const value = await this.spend;
 
-    console.log('address', address, 'nonce', nonce);
+    // console.log('address', address, 'nonce', nonce, 'value', int2hex(value));
 
-    // const tx = new EthereumTx({
+    const tx = new EthereumTx({
+      nonce,
+      to: contractAddress,
+      data: '0x',
+      gasLimit: int2hex(50000),
+      gasPrice: int2hex(50000000000),
+      value: int2hex(value)
+    });
 
-    // })
+    tx.sign(wallet.privKey);
+
+    const serializedTx = `0x${tx.serialize().toString('hex')}`;
+
+    console.log('tx', serializedTx);
+    backend.sendTx(serializedTx);
   }
 
   get inBonus () {

@@ -9,6 +9,7 @@ const { hex2int } = require('./utils');
 
 class Sale {
   constructor (wsUrl, contractAddress) {
+    this._address = contractAddress;
     this._block = 0;
     this._current = 0;
     this._begin = 0;
@@ -81,6 +82,10 @@ class Sale {
 
   get connector () {
     return this._connector;
+  }
+
+  get contractAddress () {
+    return this._address;
   }
 
   get status () {

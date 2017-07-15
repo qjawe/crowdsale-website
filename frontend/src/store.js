@@ -3,56 +3,52 @@ import { createStore } from 'redux';
 const STATUS_UPDATE = Symbol('STATUS_UPDATE');
 const TIME_TICK = Symbol('TIME_TICK');
 
-const actions = {
-  [STATUS_UPDATE] (state, status) {
-    const {
-      block,
-      price,
-      available,
-      cap,
-      connected,
-      begin,
-      end,
-      bonusDuration,
-      bonusSize,
-      currentTime,
-    } = status;
+const actions = {};
 
-    const timeLeft = Math.max(0, end - block.timestamp);
+function action(handler) {
+  const type = Symbol();
 
-    return Object.assign({}, state, {
-      block,
-      price,
-      available,
-      cap,
-      connected,
-      begin,
-      end,
-      bonusDuration,
-      bonusSize,
-      currentTime,
-      timeLeft
-    });
-  },
+  actions[type] = handler;
 
-  [TIME_TICK] (state, timeLeft) {
-    return Object.assign({}, state, { timeLeft });
-  }
-};
-
-export function statusUpdate (status) {
-  return {
-    type: STATUS_UPDATE,
-    value: status
-  };
+  return (value) => ({ type, value });
 }
 
-export function timeTick (timeLeft) {
-  return {
-    type: TIME_TICK,
-    value: timeLeft
-  };
-}
+export const statusUpdate = action((state, status) => {
+  const {
+    contractAddress,
+    block,
+    price,
+    available,
+    cap,
+    connected,
+    begin,
+    end,
+    bonusDuration,
+    bonusSize,
+    currentTime,
+  } = status;
+
+  const timeLeft = Math.max(0, end - block.timestamp);
+
+  return Object.assign({}, state, {
+    contractAddress,
+    block,
+    price,
+    available,
+    cap,
+    connected,
+    begin,
+    end,
+    bonusDuration,
+    bonusSize,
+    currentTime,
+    timeLeft
+  });
+});
+
+export const timeTick = action((state, timeLeft) => {
+  return Object.assign({}, state, { timeLeft });
+});
 
 const initialState = {
   block: 0,

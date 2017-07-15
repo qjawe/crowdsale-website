@@ -104,7 +104,12 @@ class Request {
     clearTimeout(this._timeout);
 
     this._cleanUp();
-    this._reject(error);
+
+    if (!(error instanceof Error) && error && error.message) {
+      this._reject(new Error(error.message));
+    } else {
+      this._reject(error);
+    }
   }
 }
 

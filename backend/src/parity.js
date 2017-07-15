@@ -41,6 +41,19 @@ class ParityConnector extends EventEmitter {
   }
 
   /**
+   * Send a signed TX to the Parity node
+   *
+   * @param  {String} tx `0x` prefixed hex data
+   *
+   * @return {Promise<String>} `0x` prefixed tx hash
+   */
+  sendTx (tx) {
+    return this
+      ._transport
+      .request('eth_sendRawTransaction', tx);
+  }
+
+  /**
    * Get the balance for address
    *
    * @param  {String} address
