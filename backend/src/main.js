@@ -24,9 +24,15 @@ router.get('/:address/nonce', async (ctx, next) => {
 router.post('/tx', async (ctx, next) => {
   const { tx } = ctx.request.body;
 
-  const hash = await sale.connector.sendTx(tx);
+  try {
+    const hash = await sale.connector.sendTx(tx);
 
-  ctx.body = { hash };
+    ctx.body = { hash };
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = error.message;
+    ctx.app.emit('error', error, ctx);
+  }
 });
 
 router.get('/', (ctx) => {
