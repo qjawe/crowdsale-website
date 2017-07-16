@@ -78,8 +78,8 @@ class WalletFile extends Component {
   get accountInfo () {
     return (
       <div>
-        <AccountIcon address={ this.address }/>
-        <strong>{ this.address }</strong>
+        <AccountIcon address={ this.address } style={{height: '2em'}}/>
+        <strong style={{marginLeft: '1em'}}>{ this.address }</strong>
       </div>
     );
   }
@@ -104,8 +104,12 @@ class WalletFile extends Component {
       return (
         <div>
           { this.error }
-          <Input type="password" onChange={ this.onPasswordChange.bind(this) } />
-          <Button content='Unlock' onClick={ this.unlockAccount.bind(this) } />
+          <Input
+            type="password"
+            onChange={ this.onPasswordChange.bind(this) } // TODO: Enter should unlock.
+            label={ <Button content='Unlock' primary onClick={ this.unlockAccount.bind(this) } /> }
+            labelPosition='right'
+          />
         </div>
       )
     }
