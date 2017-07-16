@@ -9,6 +9,7 @@ const { hex2int } = require('./utils');
 
 class Sale {
   constructor (wsUrl, contractAddress) {
+    this._address = contractAddress;
     this._block = 0;
     this._current = 0;
     this._begin = 0;
@@ -17,45 +18,41 @@ class Sale {
     this._cap = 0;
     this._bonusDuration = 0;
     this._bonusSize = 0;
+    this._statementHash = '0x';
 
     this._connector = new ParityConnector(wsUrl);
     this._contract = new Contract(this._connector.transport, contractAddress);
 
-    this
-      ._contract
+    const contract = this._contract;
+
+    contract
+      .register('buyin', 'uint8', 'bytes32', 'bytes32')
       .register('currentPrice')
       .register('beginTime')
       .register('BONUS_DURATION')
       .register('BONUS_SIZE')
+      .register('STATEMENT_HASH')
       .register('endTime')
       .register('tokensAvailable')
       .register('tokenCap');
+
+    this._buyinId = contract.buyin.id;
 
     this
       ._connector
       .on('block', (block) => this.update(block));
 
-    this
-      ._contract
-      .beginTime()
-      .then(hex2int)
-      .then((begin) => {
+    Promise
+      .all([
+        contract.beginTime().then(hex2int),
+        contract.STATEMENT_HASH(),
+        contract.BONUS_DURATION().then(hex2int),
+        contract.BONUS_SIZE().then(hex2int)
+      ])
+      .then(([begin, statementHash, bonusDuration, bonusSize]) => {
         this._begin = begin;
-      });
-
-    this
-      ._contract
-      .BONUS_DURATION()
-      .then(hex2int)
-      .then((bonusDuration) => {
+        this._statementHash = statementHash;
         this._bonusDuration = bonusDuration;
-      });
-
-    this
-      ._contract
-      .BONUS_SIZE()
-      .then(hex2int)
-      .then((bonusSize) => {
         this._bonusSize = bonusSize;
       });
   }
@@ -81,6 +78,18 @@ class Sale {
 
   get connector () {
     return this._connector;
+  }
+
+  get contractAddress () {
+    return this._address;
+  }
+
+  get buyinId () {
+    return this._buyinId;
+  }
+
+  get statementHash () {
+    return this._statementHash;
   }
 
   get status () {
