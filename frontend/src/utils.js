@@ -17,16 +17,27 @@ export async function post(url, body) {
   return response.json();
 }
 
+
+function validateHex (hex) {
+  if (typeof hex !== 'string' || hex.substring(0, 2) !== '0x') {
+    throw new Error('hex must be a `0x` prefixed string');
+  }
+}
+
 export function int2hex (int) {
   return `0x${int.toString(16)}`;
 }
 
 export function hex2buf (hex) {
-  if (typeof hex !== 'string' || hex.substring(0, 2) !== '0x') {
-    throw new Error('hex must be a `0x` prefixed string');
-  }
+  validateHex(hex);
 
   return Buffer.from(hex.substring(2), 'hex');
+}
+
+export function hex2int (hex) {
+  validateHex(hex);
+
+  return parseInt(hex.substring(2), 16);
 }
 
 const PADDING = '0000000000000000000000000000000000000000000000000000000000000000';

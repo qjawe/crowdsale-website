@@ -4,7 +4,7 @@ import { formatUnit } from './utils';
 import { Bond } from 'oo7';
 import { Rspan } from 'oo7-react';
 import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
-import { int2hex, hex2buf, buildABIData } from './utils';
+import { int2hex, hex2int, hex2buf, buildABIData } from './utils';
 import backend from './backend';
 import EthereumTx from 'ethereumjs-tx';
 import { ecsign } from 'ethereumjs-util';
@@ -83,9 +83,9 @@ class App extends Component {
 
     const serializedTx = `0x${tx.serialize().toString('hex')}`;
 
-    const hash = await backend.sendTx(serializedTx);
+    const { hash, requiredEth } = await backend.sendTx(serializedTx);
 
-    this.setState({ hash });
+    this.setState({ hash, requiredEth });
   }
 
   get theDeal () {
@@ -127,9 +127,20 @@ class App extends Component {
       return null;
     }
 
-    const { hash } = this.state;
+    const { hash, requiredEth } = this.state;
 
     if (hash) {
+      if (requiredEth) {
+        const required = hex2int(requiredEth);
+
+        return (
+          <div>
+            <div>Insufficient funds!</div>
+            <div>Transaction has been queued and will be sent once <InlineBalance value={required} units='finney' precise/> is on the account.</div>
+          </div>
+        )
+      }
+
       if (hash === '0x') {
         return (
           <div>Sending transaction...</div>
