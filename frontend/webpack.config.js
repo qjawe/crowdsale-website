@@ -19,16 +19,15 @@ module.exports = {
   },
   module: {
     loaders: [
-<<<<<<< HEAD
       {
         test: /\.jsx?$/,
         exclude: /node_modules/,
         loader: 'babel-loader'
+      },
+      {
+        test: /\.md$/,
+        loader: 'babel-loader?{"presets":["es2015","react"]}!react-markdown-loader'
       }
-=======
-      { test: /\.md$/, loader: 'babel-loader?{"presets":["es2015","react"]}!react-markdown-loader' },
-      { test: /\.jsx?$/, exclude: /node_modules/, loader: "babel-loader", query: { presets: ['es2015', 'react'] } }
->>>>>>> cbeb9d6cba8fcc9b701448d1013b2d1c56f2f8e6
     ]
   },
   resolve: {
