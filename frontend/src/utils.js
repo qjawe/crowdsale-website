@@ -1,11 +1,11 @@
 
-export async function get(url) {
+export async function get (url) {
   let response = await fetch(url);
 
   return response.json();
 }
 
-export async function post(url, body) {
+export async function post (url, body) {
   let response = await fetch(url, {
     method: 'post',
     body: JSON.stringify(body),
@@ -50,7 +50,7 @@ export function buildABIData (fnId, ...args) {
         chunk = arg.toString(16);
         break;
       default:
-        chunk = arg.toString('hex')
+        chunk = arg.toString('hex');
     }
 
     if (chunk.length > 64) {

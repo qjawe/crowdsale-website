@@ -48,7 +48,6 @@ class App extends Component {
       super();
       this.state = {};
       this.spend = new Bond;
-      window.value = this.spend;
   }
 
   onWallet ({ address, wallet }) {
@@ -96,6 +95,7 @@ class App extends Component {
     const tokens = this
       .spend
       .map((contribution) => Math.floor(contribution / price * (100 + (this.inBonus ? bonusSize : 0))) / 100);
+
     return {
       inBonus, maxSpend, refund, tokens
     };

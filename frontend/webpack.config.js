@@ -1,6 +1,11 @@
-var path = require('path');
+const path = require('path');
+
+const ENV = process.env.NODE_ENV || 'development';
+const isProd = ENV === 'production';
 
 module.exports = {
+  cache: !isProd,
+  devtool: isProd ? '#eval' : '#source-map',
   entry: {
     app: path.resolve(__dirname, 'src/main.jsx')
   },
@@ -14,7 +19,11 @@ module.exports = {
   },
   module: {
     loaders: [
-      { test: /\.jsx?$/, exclude: /node_modules/, loader: "babel-loader", query: { presets: ['es2015', 'react'] } }
+      {
+        test: /\.jsx?$/,
+        exclude: /node_modules/,
+        loader: 'babel-loader'
+      }
     ]
   },
   resolve: {

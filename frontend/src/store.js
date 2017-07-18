@@ -1,11 +1,8 @@
 import { createStore } from 'redux';
 
-const STATUS_UPDATE = Symbol('STATUS_UPDATE');
-const TIME_TICK = Symbol('TIME_TICK');
-
 const actions = {};
 
-function action(handler) {
+function action (handler) {
   const type = Symbol();
 
   actions[type] = handler;
@@ -27,7 +24,7 @@ export const statusUpdate = action((state, status) => {
     end,
     bonusDuration,
     bonusSize,
-    currentTime,
+    currentTime
   } = status;
 
   const timeLeft = Math.max(0, end - block.timestamp);
@@ -72,7 +69,7 @@ const initialState = {
   connected: 'disconnected'
 };
 
-function sale(state = initialState, { type, value }) {
+function sale (state = initialState, { type, value }) {
   if (type in actions) {
     return actions[type](state, value);
   }
