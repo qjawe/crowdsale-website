@@ -4,6 +4,8 @@
 
 - Make sure Parity is running on default settings.
 
+- Install [Redis](https://redis.io), run `redis-server` with all default settings.
+
 - Start the backend service:
     ```
     $ cd backend

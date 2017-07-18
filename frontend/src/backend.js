@@ -20,9 +20,9 @@ class Backend {
   }
 
   async sendTx (tx) {
-    const { hash } = await post(this.url('/tx'), { tx });
+    const { hash, requiredEth } = await post(this.url('/tx'), { tx });
 
-    return hash;
+    return { hash, requiredEth };
   }
 }
 

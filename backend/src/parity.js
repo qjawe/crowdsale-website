@@ -4,7 +4,7 @@
 'use strict';
 
 const RpcTransport = require('./transport');
-const { hex2int } = require('./utils');
+const { hex2int, hex2big } = require('./utils');
 const EventEmitter = require('events');
 
 class ParityConnector extends EventEmitter {
@@ -64,7 +64,7 @@ class ParityConnector extends EventEmitter {
     return this
       ._transport
       .request('eth_getBalance', address)
-      .then(hex2int);
+      .then(hex2big);
   }
   /**
    * Direct access to the underlying transport.

@@ -3,15 +3,19 @@
 
 'use strict';
 
+const config = require('config');
 const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
 const cors = require('kcors');
 const Sale = require('./sale');
+const redis = require('./redis');
+const EthereumTx = require('ethereumjs-tx');
+const { buf2hex, buf2big, big2hex } = require('./utils');
 
 const app = new Koa();
 const router = new Router();
-const sale = new Sale('ws://127.0.0.1:8546/', '0x385FdDdF25d299f51657639eEe73c79bDA08062c');
+const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
 
 router.get('/:address/nonce', async (ctx, next) => {
   const { address } = ctx.params;
@@ -23,6 +27,25 @@ router.get('/:address/nonce', async (ctx, next) => {
 
 router.post('/tx', async (ctx, next) => {
   const { tx } = ctx.request.body;
+
+  const txBuf = Buffer.from(tx.substring(2), 'hex');
+  const txObj = new EthereumTx(txBuf);
+  // const to = buf2hex(txObj.to);
+  const from = buf2hex(txObj.from);
+  const value = buf2big(txObj.value);
+  // const data = buf2hex(txObj.data);
+  const gasPrice = buf2big(txObj.gasPrice);
+  const gasLimit = buf2big(txObj.gasLimit);
+
+  const requiredEth = value.add(gasPrice.mul(gasLimit));
+  const balance = await sale.connector.balance(from);
+
+  if (balance.cmp(requiredEth) < 0) {
+    console.log('TODO: Queue tx for later send!');
+
+    ctx.body = { hash: '0x', requiredEth: big2hex(requiredEth) };
+    return;
+  }
 
   try {
     const hash = await sale.connector.sendTx(tx);

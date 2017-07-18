@@ -3,10 +3,16 @@
 
 'use strict';
 
-function hex2int (hex) {
+const BigNumber = require('bignumber.js');
+
+function validateHex (hex) {
   if (typeof hex !== 'string' || hex.substring(0, 2) !== '0x') {
     throw new Error('hex must be a `0x` prefixed string');
   }
+}
+
+function hex2int (hex) {
+  validateHex(hex);
 
   return parseInt(hex.substring(2), 16);
 }
@@ -16,9 +22,7 @@ function int2hex (int) {
 }
 
 function hex2buf (hex) {
-  if (typeof hex !== 'string' || hex.substring(0, 2) !== '0x') {
-    throw new Error('hex must be a `0x` prefixed string');
-  }
+  validateHex(hex);
 
   return Buffer.from(hex.substring(2), 'hex');
 }
@@ -26,6 +30,19 @@ function hex2buf (hex) {
 function buf2hex (buf) {
   return `0x${buf.toString('hex')}`;
 }
+
+function hex2big (hex) {
+  validateHex(hex);
+
+  return new BigNumber(hex);
+}
+
+function buf2big (buf) {
+  return hex2big(buf2hex(buf));
+}
+
+// The interface is the same
+const big2hex = int2hex;
 
 function pause (time) {
   return new Promise((resolve, reject) => {
@@ -38,5 +55,8 @@ module.exports = {
   int2hex,
   hex2buf,
   buf2hex,
+  hex2big,
+  buf2big,
+  big2hex,
   pause
 };
