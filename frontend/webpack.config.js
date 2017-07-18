@@ -26,7 +26,7 @@ module.exports = {
       },
       {
         test: /\.md$/,
-        loader: 'babel-loader?{"presets":["es2015","react"]}!react-markdown-loader'
+        loader: 'babel-loader!react-markdown-loader'
       }
     ]
   },

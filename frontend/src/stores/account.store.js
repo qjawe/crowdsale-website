@@ -1,18 +1,25 @@
+import Util from 'ethereumjs-util';
 import Wallet from 'ethereumjs-wallet';
 import { action, observable } from 'mobx';
 
-export default class AccountStore {
+class AccountStore {
   @observable address = '';
   @observable error = null;
-  @observable wallet = {};
+  @observable unlocked = false;
+  @observable publicKey = null;
+  @observable privateKey = null;
+  @observable wallet = null;
 
   load (file) {
+    this.setError(null);
+
     return this.read(file)
       .then((wallet) => {
+        this.setAccountInfo({ address: wallet.address });
         this.setWallet(wallet);
       })
       .catch((error) => {
-        this.setError(error);
+        this.setError(error.message);
       });
   }
 
@@ -22,8 +29,8 @@ export default class AccountStore {
 
       reader.readAsText(file);
 
-      reader.addEventListener('error', (error) => {
-        return reject(error);
+      reader.addEventListener('error', () => {
+        return reject(new Error('Unable to read the file.'));
       });
 
       reader.addEventListener('load', (event) => {
@@ -32,10 +39,19 @@ export default class AccountStore {
 
           return resolve(keyObject);
         } catch (error) {
-          return reject(error);
+          return reject(new Error('Invalid JSON file.'));
         }
       });
     });
+  }
+
+  @action
+  setAccountInfo ({ address, publicKey, privateKey }) {
+    const cleanAddress = Util.toChecksumAddress('0x' + address.replace(/^0x/, ''));
+
+    this.address = cleanAddress;
+    this.publicKey = publicKey;
+    this.privateKey = privateKey;
   }
 
   @action
@@ -44,12 +60,20 @@ export default class AccountStore {
   }
 
   @action
+  setUnlocked (unlocked) {
+    this.unlocked = unlocked;
+  }
+
+  @action
   setWallet (wallet) {
     this.wallet = wallet;
+    console.warn('wallet', wallet);
   }
 
   unlock (password) {
-    return new Promise((resolve, reject) => {
+    this.setError(null);
+
+    return new Promise((resolve) => {
       // Defer to allow the UI to render before blocking
       setTimeout(() => {
         let wallet;
@@ -57,11 +81,25 @@ export default class AccountStore {
         try {
           wallet = Wallet.fromV3(this.wallet, password);
         } catch (_) {
-          return reject('Invalid password');
+          this.setError('Invalid password');
+          return resolve();
         }
 
-        return resolve(wallet);
+        const address = '0x' + wallet.getAddress().toString('hex');
+        const publicKey = wallet.getPublicKey();
+        const privateKey = wallet.getPrivateKey();
+
+        this.setAccountInfo({
+          address,
+          publicKey,
+          privateKey
+        });
+
+        this.setUnlocked(true);
+        return resolve();
       }, 0);
     });
   }
 }
+
+export default new AccountStore();

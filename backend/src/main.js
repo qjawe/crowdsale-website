@@ -9,7 +9,7 @@ const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
 const cors = require('kcors');
 const Sale = require('./sale');
-const redis = require('./redis');
+// const redis = require('./redis');
 const EthereumTx = require('ethereumjs-tx');
 const { buf2hex, buf2big, big2hex } = require('./utils');
 
@@ -71,7 +71,8 @@ router.get('/', (ctx) => {
     available,
     cap,
     bonusDuration,
-    bonusSize
+    bonusSize,
+    totalReceived
   } = sale;
 
   ctx.body = {
@@ -86,7 +87,8 @@ router.get('/', (ctx) => {
     available,
     cap,
     bonusDuration,
-    bonusSize
+    bonusSize,
+    totalReceived
   };
 });
 

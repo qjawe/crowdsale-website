@@ -10,8 +10,12 @@ import Terms from './terms.md';
 import backend from './backend';
 import EthereumTx from 'ethereumjs-tx';
 import { ecsign } from 'ethereumjs-util';
-import WalletFile from './components/WalletFile';
 import humanizeDuration from 'humanize-duration';
+
+import AccountManager from './components/AccountManager';
+import Auction from './components/Auction';
+
+import auctionStore from './stores/auction.store';
 
 function mapStateToProps (state) {
   const {
@@ -46,6 +50,21 @@ function mapStateToProps (state) {
 }
 
 class App extends Component {
+
+  render () {
+    // const { inBonus, maxSpend, refund, tokens } = this.theDeal;
+
+    return (
+      <div style={ { fontFamily: 'monospace' } }>
+        <Auction.Info />
+
+        <div style={{textAlign: 'center', margin: '1em 2em'}}>
+          <AccountManager />
+        </div>
+      </div>
+    );
+  }
+
   constructor () {
       super();
       this.state = {
@@ -97,41 +116,6 @@ class App extends Component {
     this.setState({ hash, requiredEth });
   }
 
-  get theDeal () {
-    const { block, price, available, cap, timeLeft, bonusSize, bonusDuration, begin, currentTime } = this.props;
-    const inBonus = block.timestamp - begin + 120 < bonusDuration;
-    const maxSpend = price * available;
-    const refund = this.spend.map(v => v > maxSpend ? v.sub(maxSpend) : 0);
-    const tokens = this
-      .spend
-      .map((contribution) => Math.floor(contribution / price * (100 + (this.inBonus ? bonusSize : 0))) / 100);
-
-    return {
-      inBonus, maxSpend, refund, tokens
-    };
-  }
-
-  render () {
-    const { block, price, available, cap, timeLeft, bonusSize, currentTime } = this.props;
-    const { inBonus, maxSpend, refund, tokens } = this.theDeal;
-
-    console.log('timeLeft', timeLeft);
-
-    return (
-      <div style={ { fontFamily: 'monospace' } }>
-        <h1>Price: <InlineBalance value={price} units='finney' precise/></h1>
-        <p>Block: { block.number } | Tokens available: { available } / { cap } | Maximum spend: <InlineBalance value={maxSpend}/>{inBonus ? (<span> | EARLY-BIRD BONUS {bonusSize}%</span>) : null}</p>
-        <p>The sale will end before {humanizeDuration(timeLeft * 1000)}, depending on how many more people buy in.</p>
-
-        <div style={{textAlign: 'center', margin: '1em 2em'}}>
-          <WalletFile onWallet={ this.onWallet.bind(this) }/>
-          { this.renderForm(inBonus, maxSpend, refund, tokens) }
-        </div>
-
-      </div>
-    );
-  }
-
   renderForm (inBonus, maxSpend, refund, tokens) {
     if (!this.state.wallet) {
       return null;
@@ -156,7 +140,7 @@ class App extends Component {
           <div>Sending transaction...</div>
         );
       }
-
+Terms
       return (
         <div>
           <div>Transaction sent!</div>
