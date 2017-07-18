@@ -3,17 +3,19 @@
 
 'use strict';
 
+const config = require('config');
 const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
 const cors = require('kcors');
 const Sale = require('./sale');
+const redis = require('./redis');
 const EthereumTx = require('ethereumjs-tx');
 const { buf2hex, buf2big, big2hex } = require('./utils');
 
 const app = new Koa();
 const router = new Router();
-const sale = new Sale('ws://127.0.0.1:8546/', '0x0F9b1129b309B29216b43Ea8a766AaeFb5324224');
+const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
 
 router.get('/:address/nonce', async (ctx, next) => {
   const { address } = ctx.params;

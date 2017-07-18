@@ -4,7 +4,9 @@ import { formatUnit } from './utils';
 import { Bond } from 'oo7';
 import { Rspan } from 'oo7-react';
 import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
+import { Segment, Checkbox, Separator } from 'semantic-ui-react';
 import { int2hex, hex2int, hex2buf, buildABIData } from './utils';
+import Terms from './terms.md';
 import backend from './backend';
 import EthereumTx from 'ethereumjs-tx';
 import { ecsign } from 'ethereumjs-util';
@@ -46,13 +48,21 @@ function mapStateToProps (state) {
 class App extends Component {
   constructor () {
       super();
-      this.state = {};
+      this.state = {
+        termsAccepted: false
+      };
       this.spend = new Bond;
       window.value = this.spend;
   }
 
   onWallet ({ address, wallet }) {
     this.setState({ address, wallet });
+  }
+
+  onTermsChecked (_, { checked }) {
+    this.setState({
+      termsAccepted: checked
+    });
   }
 
   async purchase (amount) {
@@ -74,7 +84,7 @@ class App extends Component {
       to: contractAddress,
       nonce,
       data,
-      gasLimit: int2hex(100000),
+      gasLimit: int2hex(200000),
       gasPrice: int2hex(50000000000),
       value: int2hex(value)
     });
@@ -159,13 +169,23 @@ class App extends Component {
 
     return (
       <div>
-        <div>Enter how much you would like to spend: <BalanceBond bond={this.spend} valid/></div>
-        <Rspan>{this.spend.map(v => +v > 0 ?
-            <div>By spending <InlineBalance value={this.spend}/>, you will receive <Rspan>{this.spend.map(v => <b>at least {Math.floor(Math.min(v, maxSpend) / price * (100 + (inBonus ? bonusSize : 0)) / 100)} DOTs</b>)}</Rspan>
-            <Rspan>{refund.map(v => +v > 0 ? (<span> and be refunded <b>at least <InlineBalance value={v}/></b></span>) : null)}</Rspan>.<br/>
-            <BButton content='Purchase DOTs' onClick={() => this.spend.then(this.purchase.bind(this))}/>
-            </div>
-        : null)}</Rspan>
+        <Segment>
+          <Terms/>
+        </Segment>
+        <div>
+          <Checkbox onChange={this.onTermsChecked.bind(this)} checked={this.state.termsAccepted} /> I agree to have these Terms and Conditions signed my behalf using my private key.
+        </div>
+        {this.state.termsAccepted ? (
+          <div>
+            <div>Enter how much you would like to spend: <BalanceBond bond={this.spend} valid/></div>
+            <Rspan>{this.spend.map(v => +v > 0 ?
+                <div>By spending <InlineBalance value={this.spend}/>, you will receive <Rspan>{this.spend.map(v => <b>at least {Math.floor(Math.min(v, maxSpend) / price * (100 + (inBonus ? bonusSize : 0)) / 100)} DOTs</b>)}</Rspan>
+                <Rspan>{refund.map(v => +v > 0 ? (<span> and be refunded <b>at least <InlineBalance value={v}/></b></span>) : null)}</Rspan>.<br/>
+                <BButton content='Purchase DOTs' onClick={() => this.spend.then(this.purchase.bind(this))}/>
+                </div>
+            : null)}</Rspan>
+          </div>
+        ) : null }
       </div>
     )
   }
