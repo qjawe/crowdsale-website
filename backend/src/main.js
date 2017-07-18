@@ -11,7 +11,7 @@ const Sale = require('./sale');
 
 const app = new Koa();
 const router = new Router();
-const sale = new Sale('ws://127.0.0.1:8546/', '0x0F9b1129b309B29216b43Ea8a766AaeFb5324224');
+const sale = new Sale('ws://127.0.0.1:8546/', '0x385FdDdF25d299f51657639eEe73c79bDA08062c');
 
 router.get('/:address/nonce', async (ctx, next) => {
   const { address } = ctx.params;
