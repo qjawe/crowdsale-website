@@ -1,76 +1,28 @@
-import React, { Component } from 'react';
-import { connect } from 'react-redux';
-import { formatUnit } from './utils';
-import { Bond } from 'oo7';
-import { Rspan } from 'oo7-react';
-import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
-import { Segment, Checkbox, Separator } from 'semantic-ui-react';
-import { int2hex, hex2int, hex2buf, buildABIData } from './utils';
-import Terms from './terms.md';
-import backend from './backend';
 import EthereumTx from 'ethereumjs-tx';
 import { ecsign } from 'ethereumjs-util';
-import humanizeDuration from 'humanize-duration';
+import React, { Component } from 'react';
+import { Rspan } from 'oo7-react';
+import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
+import { Segment, Checkbox } from 'semantic-ui-react';
+
+import backend from './backend';
+import Terms from './terms.md';
+import { int2hex, hex2int, hex2buf, buildABIData } from './utils';
 
 import AccountManager from './components/AccountManager';
 import Auction from './components/Auction';
 
-import auctionStore from './stores/auction.store';
-
-function mapStateToProps (state) {
-  const {
-    contractAddress,
-    statementHash,
-    buyinId,
-    block,
-    price,
-    available,
-    cap,
-    timeLeft,
-    begin,
-    bonusSize,
-    bonusDuration,
-    currentTime
-  } = state;
-
-  return {
-    contractAddress,
-    statementHash,
-    buyinId,
-    block,
-    price,
-    available,
-    cap,
-    timeLeft,
-    begin,
-    bonusSize,
-    bonusDuration,
-    currentTime
-  };
-}
-
-class App extends Component {
-
+export default class App extends Component {
   render () {
-    // const { inBonus, maxSpend, refund, tokens } = this.theDeal;
-
     return (
-      <div style={ { fontFamily: 'monospace' } }>
+      <div style={{ fontFamily: 'monospace' }}>
         <Auction.Info />
 
-        <div style={{textAlign: 'center', margin: '1em 2em'}}>
+        <div style={{ textAlign: 'center', margin: '1em 2em' }}>
           <AccountManager />
         </div>
       </div>
     );
-  }
-
-  constructor () {
-      super();
-      this.state = {
-        termsAccepted: false
-      };
-      this.spend = new Bond;
   }
 
   onWallet ({ address, wallet }) {
@@ -140,7 +92,7 @@ class App extends Component {
           <div>Sending transaction...</div>
         );
       }
-Terms
+
       return (
         <div>
           <div>Transaction sent!</div>
@@ -174,5 +126,3 @@ Terms
     )
   }
 }
-
-export default connect(mapStateToProps, null)(App);

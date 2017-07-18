@@ -7,7 +7,9 @@ module.exports = {
   cache: !isProd,
   devtool: isProd ? '#eval' : '#source-map',
   entry: {
-    app: path.resolve(__dirname, 'src/main.jsx')
+    app: [
+      path.resolve(__dirname, 'src/main.js')
+    ]
   },
   node: {
     fs: 'empty'
@@ -32,5 +34,6 @@ module.exports = {
   },
   resolve: {
     extensions: ['.js', '.json', '.jsx']
-  }
+  },
+  plugins: []
 };

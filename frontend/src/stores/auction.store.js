@@ -2,6 +2,8 @@ import { action, computed, observable } from 'mobx';
 
 import backend from '../backend';
 
+const REFRESH_DELAY = 2000;
+
 class AuctionStore {
   @observable available = 0;
   @observable begin = 0;
@@ -24,7 +26,7 @@ class AuctionStore {
 
     setInterval(() => {
       this.refresh();
-    }, 2500);
+    }, REFRESH_DELAY);
   }
 
   bonus (value) {
@@ -57,11 +59,10 @@ class AuctionStore {
 
     accepted = value + bonus;
 
-    const available = this.tokensAvailable();
     let tokens = accepted / price;
 
-    if (tokens > available) {
-      accepted = available * price;
+    if (tokens > this.available) {
+      accepted = this.available * price;
       if (value > accepted) {
         refund = value - accepted;
       }
@@ -75,14 +76,6 @@ class AuctionStore {
     };
   }
 
-  tokensAvailable () {
-    if (!this.isActive()) {
-      return 0;
-    }
-
-    return this.cap - this.totalReceived / this.price;
-  }
-
   @computed
   get inBonus () {
     return this.now < this.begin + this.bonusDuration;
@@ -90,15 +83,7 @@ class AuctionStore {
 
   @computed
   get maxSpend () {
-    console.log({
-      isActive: this.isActive(),
-      cap: this.cap,
-      totalReceived: this.totalReceived,
-      price: this.price,
-      tokensAvailable: this.tokensAvailable()
-    });
-
-    return this.price * this.tokensAvailable();
+    return this.price * this.available;
   }
 
   @computed

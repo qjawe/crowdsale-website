@@ -11,7 +11,7 @@ export default class Price extends Component {
 
     return (
       <div>
-        Price:
+        <span>Price: </span>
         <InlineBalance
           precise
           units='finney'
