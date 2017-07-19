@@ -101,6 +101,7 @@ export default class Buy extends Component {
         <br />
         <BButton
           content='Purchase DOTs'
+          onClick={this.handlePurchase}
         />
       </div>
     );
@@ -122,7 +123,7 @@ export default class Buy extends Component {
               value={required}
               units='finney'
             />
-            <span>is on the account.</span>
+            <span> is on the account.</span>
           </div>
         </div>
       );
@@ -147,6 +148,10 @@ export default class Buy extends Component {
       </div>
     );
   }
+
+  handlePurchase = () => {
+    buyStore.purchase();
+  };
 
   handleTermsChecked = (_, { checked }) => {
     buyStore.setTermsAccepted(checked);

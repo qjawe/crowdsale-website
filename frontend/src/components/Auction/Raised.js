@@ -5,20 +5,16 @@ import { Statistic } from 'semantic-ui-react';
 
 import auctionStore from '../../stores/auction.store';
 
-/**
- * <span> | EARLY-BIRD BONUS {bonusSize.toNumber()}%</span>
- */
-
 @observer
-export default class Spendable extends Component {
+export default class Raised extends Component {
   render () {
-    const { bonusSize, inBonus, maxSpend } = auctionStore;
+    const { totalReceived } = auctionStore;
 
     return (
       <Statistic>
-        <Statistic.Label>Maximum spend</Statistic.Label>
+        <Statistic.Label>Raised</Statistic.Label>
         <Statistic.Value>
-          <InlineBalance value={maxSpend} />
+          <InlineBalance value={totalReceived} />
         </Statistic.Value>
       </Statistic>
     );

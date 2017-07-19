@@ -1,24 +1,23 @@
 import { observer } from 'mobx-react';
-import { InlineBalance } from 'parity-reactive-ui';
 import React, { Component } from 'react';
 import { Statistic } from 'semantic-ui-react';
 
 import auctionStore from '../../stores/auction.store';
 
 @observer
-export default class Price extends Component {
+export default class Bonus extends Component {
   render () {
-    const { price } = auctionStore;
+    const { bonusSize, inBonus } = auctionStore;
 
     return (
       <Statistic>
-        <Statistic.Label>Price</Statistic.Label>
+        <Statistic.Label>Bonus</Statistic.Label>
         <Statistic.Value>
-          <InlineBalance
-            precise
-            units='finney'
-            value={price}
-          />
+          {
+            inBonus
+            ? `${bonusSize.toNumber()}%`
+            : '0%'
+          }
         </Statistic.Value>
       </Statistic>
     );

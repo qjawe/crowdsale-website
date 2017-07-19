@@ -1,21 +1,32 @@
 import React, { Component } from 'react';
+import { Container, Divider, Header, Icon } from 'semantic-ui-react';
 
 import AccountManager from './AccountManager';
 import Auction from './Auction';
 import Buy from './Buy';
 
+const style = {
+  margin: '1em 0'
+};
+
 export default class App extends Component {
   render () {
     return (
-      <div style={{ fontFamily: 'monospace' }}>
+      <Container text style={style}>
+        <Header
+          as='h2'
+          icon
+          textAlign='center'
+        >
+          <Icon name='shop' circular />
+          Polkadot Sale
+        </Header>
+        <Divider />
         <Auction.Info />
-
-        <div style={{ textAlign: 'center', margin: '1em 2em' }}>
-          <AccountManager />
-        </div>
-
+        <Divider />
+        <AccountManager />
         <Buy />
-      </div>
+      </Container>
     );
   }
 }
