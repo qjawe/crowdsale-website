@@ -3,9 +3,28 @@ import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
 import { AccountIcon } from 'parity-reactive-ui';
-import { Input, Button } from 'semantic-ui-react';
+import { Button, Container, Dimmer, Icon, Input, Label, Loader, Message, Segment } from 'semantic-ui-react';
 
 import accountStore from '../stores/account.store';
+
+const dropzoneStyle = {
+  cursor: 'pointer',
+  width: '100%',
+  height: 200,
+  borderWidth: 2,
+  borderColor: '#666',
+  borderStyle: 'dashed',
+  borderRadius: 5,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexDirection: 'column'
+};
+
+const innerDropzoneStyle = {
+  width: 200,
+  textAlign: 'center'
+};
 
 @observer
 export default class AccountManager extends Component {
@@ -17,41 +36,66 @@ export default class AccountManager extends Component {
 
   render () {
     const { loading } = this.state;
-    const { address, error, unlocked, wallet } = accountStore;
 
-    if (loading) {
-      return (
+    return (
+      <Segment basic>
+        <Dimmer
+          active={loading}
+          inverted
+        >
+          <Loader>Working</Loader>
+        </Dimmer>
         <div>
-          Working...
+          {this.renderError()}
+          {this.renderContent()}
         </div>
-      );
-    }
+      </Segment>
+    );
+  }
+
+  renderAccountInfo (address) {
+    return (
+      <Label image>
+        <AccountIcon
+          address={address}
+        />
+        <strong>
+          {address}
+        </strong>
+      </Label>
+    );
+  }
+
+  renderContent () {
+    const { address, unlocked, wallet } = accountStore;
 
     if (!wallet) {
       return (
         <div>
-          { error }
-
-          <Dropzone onDrop={this.handleDropWallet}>
-            <p>Drop the JSON wallet file here, or click to select the file.</p>
+          <Dropzone
+            onDrop={this.handleDropWallet}
+            style={dropzoneStyle}
+          >
+            <Icon name='file' size='huge' />
+            <br />
+            <div style={innerDropzoneStyle}>
+                Drop a Wallet JSON file here
+                or click to select a file.
+            </div>
           </Dropzone>
-
-          <input
-            ref={this.onSetFileRef}
-            type='file'
-            style={{ display: 'none' }}
-            onChange={this.onFileChange}
-          />
         </div>
       );
     }
 
     if (!unlocked) {
       return (
-        <div>
-          { error }
-          { this.renderAccountInfo(address) }
+        <Container textAlign='center'>
+          <div>Unlocking account</div>
+          <div>{ this.renderAccountInfo(address) }</div>
+          <br />
+          <p>Please type in your password:</p>
           <Input
+            autoFocus
             label={
               <Button
                 content='Unlock'
@@ -60,33 +104,33 @@ export default class AccountManager extends Component {
               />
             }
             labelPosition='right'
-            onChange={this.onPasswordChange} // TODO: Enter should unlock.
+            onChange={this.handlePasswordChange} // TODO: Enter should unlock.
             onKeyUp={this.handlePasswordKeyUp}
             type='password'
           />
-        </div>
+        </Container>
       );
     }
 
     return (
-      <div>
-        Unlocked account
-        { this.renderAccountInfo(address) }
-      </div>
+      <Container textAlign='center'>
+        <div>{ this.renderAccountInfo(address) }</div>
+      </Container>
     );
   }
 
-  renderAccountInfo (address) {
+  renderError () {
+    const { error } = accountStore;
+
+    if (!error) {
+      return null;
+    }
     return (
-      <div>
-        <AccountIcon
-          address={address}
-          style={{ height: '2em' }}
-        />
-        <strong style={{ marginLeft: '1em' }}>
-          {address}
-        </strong>
-      </div>
+      <Message negative>
+        <p>
+          <b>Error:</b> {error}
+        </p>
+      </Message>
     );
   }
 
@@ -98,6 +142,12 @@ export default class AccountManager extends Component {
     }
 
     return accountStore.load(file);
+  };
+
+  handlePasswordChange = (event) => {
+    const { value } = event.target;
+
+    this.password = value;
   };
 
   handlePasswordKeyUp = (event) => {
@@ -116,26 +166,5 @@ export default class AccountManager extends Component {
         this.password = '';
         this.setState({ loading: false });
       });
-  };
-
-  /**
-   * Open the file selector
-   */
-  onLoadWalletClick = () => {
-    if (!this.fileInput) {
-      return;
-    }
-
-    return this.fileInput.click();
-  };
-
-  onPasswordChange = (event) => {
-    const { value } = event.target;
-
-    this.password = value;
-  };
-
-  onSetFileRef = (input) => {
-    this.fileInput = input;
   };
 }

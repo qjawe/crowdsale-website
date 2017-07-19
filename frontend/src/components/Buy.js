@@ -1,13 +1,18 @@
 import { observer } from 'mobx-react';
 import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
 import React, { Component } from 'react';
-import { Segment, Checkbox } from 'semantic-ui-react';
+import { Button, Checkbox, Container, Segment } from 'semantic-ui-react';
 
 import Terms from '../terms.md';
 
 import accountStore from '../stores/account.store';
 import buyStore from '../stores/buy.store';
 import { hex2int } from '../utils';
+
+const spendTextStyle = {
+  fontSize: '1.3em',
+  marginRight: '0.5em'
+};
 
 @observer
 export default class Buy extends Component {
@@ -24,6 +29,7 @@ export default class Buy extends Component {
 
     return (
       <div>
+        {this.renderForm()}
         <Segment>
           <Terms />
         </Segment>
@@ -37,31 +43,30 @@ export default class Buy extends Component {
             onChange={this.handleTermsChecked}
           />
         </div>
-        {this.renderForm()}
+        {this.renderPurchase()}
       </div>
     );
   }
 
   renderForm () {
-    const { spendBond, termsAccepted } = buyStore;
-
-    if (!termsAccepted) {
-      return null;
-    }
+    const { spendBond } = buyStore;
+    const { tokens } = buyStore.theDeal;
 
     return (
-      <div>
+      <Container textAlign='center'>
         <div>
-          <span>Enter how much you would like to spend: </span>
+          <span style={spendTextStyle}>I would like to spend </span>
           <BalanceBond
             bond={spendBond}
             valid
           />
         </div>
-        <div>
-          {this.renderSpendInfo()}
+        <div style={spendTextStyle}>
+          <span>for which I will receive </span>
+          <b>at least {tokens.toFormat()} DOTs</b>
+          {this.renderRefund()}
         </div>
-      </div>
+      </Container>
     );
   }
 
@@ -80,30 +85,21 @@ export default class Buy extends Component {
     );
   }
 
-  renderSpendInfo () {
-    const { spend } = buyStore;
-    const { tokens } = buyStore.theDeal;
+  renderPurchase () {
+    const { termsAccepted } = buyStore;
 
-    if (spend.lte(0)) {
+    if (!termsAccepted) {
       return null;
     }
 
     return (
-      <div>
-        <span>By spending </span>
-        <InlineBalance value={spend} />
-        <span>, you will receive </span>
-        <b>at least {tokens.toFormat()} DOTs</b>
-        <span>
-          {this.renderRefund()}
-        </span>
-        <span>.</span>
-        <br />
-        <BButton
+      <Container textAlign='right'>
+        <Button
           content='Purchase DOTs'
           onClick={this.handlePurchase}
+          primary
         />
-      </div>
+      </Container>
     );
   }
 
