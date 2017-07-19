@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react';
-import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
+import { InlineBalance, BalanceBond } from 'parity-reactive-ui';
 import React, { Component } from 'react';
-import { Button, Checkbox, Container, Message, Segment } from 'semantic-ui-react';
+import { Button, Checkbox, Container, Dimmer, Loader, Message, Segment } from 'semantic-ui-react';
 
 import Terms from '../terms.md';
 
@@ -14,6 +14,10 @@ const spendTextStyle = {
   marginRight: '0.5em'
 };
 
+const marginBottomStyle = {
+  marginBottom: '1.5em'
+};
+
 @observer
 export default class Buy extends Component {
   render () {
@@ -21,14 +25,24 @@ export default class Buy extends Component {
       return null;
     }
 
-    const { termsAccepted, txHash } = buyStore;
-
-    if (txHash) {
-      return this.renderTransaction();
-    }
+    const { mining, sending, termsAccepted, txHash } = buyStore;
 
     return (
-      <div>
+      <Segment basic>
+        <Dimmer
+          active={sending || mining}
+          inverted
+        >
+          <Loader>
+            {
+              sending
+              ? 'Sending transaction'
+              : 'Mining transaction'
+            }
+          </Loader>
+        </Dimmer>
+
+        {this.renderTransaction()}
         {this.renderForm()}
         <Segment>
           <Terms />
@@ -44,7 +58,7 @@ export default class Buy extends Component {
           />
         </div>
         {this.renderPurchase()}
-      </div>
+      </Segment>
     );
   }
 
@@ -86,16 +100,13 @@ export default class Buy extends Component {
   }
 
   renderPurchase () {
-    const { termsAccepted } = buyStore;
-
-    if (!termsAccepted) {
-      return null;
-    }
+    const { spend, termsAccepted } = buyStore;
 
     return (
       <Container textAlign='right'>
         <Button
           content='Purchase DOTs'
+          disabled={!termsAccepted || !spend.gt(0)}
           onClick={this.handlePurchase}
           primary
         />
@@ -104,42 +115,43 @@ export default class Buy extends Component {
   }
 
   renderTransaction () {
-    const { requiredEth, txHash } = buyStore;
+    const { mining, requiredEth, sending, txHash } = buyStore;
 
     if (requiredEth) {
       const required = hex2int(requiredEth);
 
       return (
-        <div>
-          <Message negative>Insufficient funds!</Message>
-          <div>
-            <span>Transaction has been queued and will be sent once </span>
-            <InlineBalance
-              precise
-              value={required}
-            />
-            <span> is on the account.</span>
-          </div>
+        <div style={marginBottomStyle}>
+          <Message negative>
+            <Message.Header>Insufficient funds!</Message.Header>
+            <div>
+              <span>Please top-up your account with </span>
+              <InlineBalance
+                precise
+                value={required}
+              />
+              <span> and try again.</span>
+            </div>
+          </Message>
         </div>
       );
     }
 
-    if (txHash === '0x') {
-      return (
-        <div>Sending transaction...</div>
-      );
+    if (!txHash || sending || mining) {
+      return null;
     }
 
     return (
-      <div>
-        <div>Transaction sent!</div>
-        <div>
+      <div style={marginBottomStyle}>
+        <Message positive>
+          <Message.Header>Transaction sent!</Message.Header>
           <a
             href={`https://kovan.etherscan.io/tx/${txHash}`}
+            target='_blank'
           >
             { txHash }
           </a>
-        </div>
+        </Message>
       </div>
     );
   }

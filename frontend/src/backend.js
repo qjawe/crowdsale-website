@@ -13,6 +13,12 @@ class Backend {
     return get(this.url('/'));
   }
 
+  async getTx (txHash) {
+    const { transaction } = await get(this.url(`/tx/${txHash}`));
+
+    return transaction;
+  }
+
   async nonce (address) {
     const { nonce } = await get(this.url(`/${address}/nonce`));
 

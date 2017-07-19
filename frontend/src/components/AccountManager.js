@@ -36,6 +36,15 @@ export default class AccountManager extends Component {
 
   render () {
     const { loading } = this.state;
+    const { address, unlocked } = accountStore;
+
+    if (unlocked) {
+      return (
+        <Container textAlign='center'>
+          <div>{ this.renderAccountInfo(address) }</div>
+        </Container>
+      );
+    }
 
     return (
       <Segment basic>
@@ -87,34 +96,26 @@ export default class AccountManager extends Component {
       );
     }
 
-    if (!unlocked) {
-      return (
-        <Container textAlign='center'>
-          <div>Unlocking account</div>
-          <div>{ this.renderAccountInfo(address) }</div>
-          <br />
-          <p>Please type in your password:</p>
-          <Input
-            autoFocus
-            label={
-              <Button
-                content='Unlock'
-                onClick={this.handleUnlockAccount}
-                primary
-              />
-            }
-            labelPosition='right'
-            onChange={this.handlePasswordChange} // TODO: Enter should unlock.
-            onKeyUp={this.handlePasswordKeyUp}
-            type='password'
-          />
-        </Container>
-      );
-    }
-
     return (
       <Container textAlign='center'>
+        <div>Unlocking account</div>
         <div>{ this.renderAccountInfo(address) }</div>
+        <br />
+        <p>Please type in your password:</p>
+        <Input
+          autoFocus
+          label={
+            <Button
+              content='Unlock'
+              onClick={this.handleUnlockAccount}
+              primary
+            />
+          }
+          labelPosition='right'
+          onChange={this.handlePasswordChange} // TODO: Enter should unlock.
+          onKeyUp={this.handlePasswordKeyUp}
+          type='password'
+        />
       </Container>
     );
   }
