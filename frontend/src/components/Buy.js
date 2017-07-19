@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react';
 import { InlineBalance, BalanceBond, BButton } from 'parity-reactive-ui';
 import React, { Component } from 'react';
-import { Button, Checkbox, Container, Segment } from 'semantic-ui-react';
+import { Button, Checkbox, Container, Message, Segment } from 'semantic-ui-react';
 
 import Terms from '../terms.md';
 
@@ -111,13 +111,12 @@ export default class Buy extends Component {
 
       return (
         <div>
-          <div>Insufficient funds!</div>
+          <Message negative>Insufficient funds!</Message>
           <div>
             <span>Transaction has been queued and will be sent once </span>
             <InlineBalance
               precise
               value={required}
-              units='finney'
             />
             <span> is on the account.</span>
           </div>

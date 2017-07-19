@@ -6,7 +6,7 @@ import Auction from './Auction';
 import Buy from './Buy';
 
 const style = {
-  margin: '1em 0'
+  padding: '1em 0'
 };
 
 export default class App extends Component {
