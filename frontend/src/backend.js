@@ -1,3 +1,5 @@
+import BigNumber from 'bignumber.js';
+
 import { get, post } from './utils';
 
 class Backend {
@@ -11,6 +13,15 @@ class Backend {
 
   status () {
     return get(this.url('/'));
+  }
+
+  async getBalances (address) {
+    const { eth, dot } = await get(this.url(`/address/${address}`));
+
+    return {
+      eth: new BigNumber(eth),
+      dot: new BigNumber(dot)
+    };
   }
 
   async getTx (txHash) {

@@ -2,7 +2,7 @@ import keycode from 'keycode';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
-import { AccountIcon } from 'parity-reactive-ui';
+import { AccountIcon, InlineBalance } from 'parity-reactive-ui';
 import { Button, Container, Dimmer, Icon, Input, Label, Loader, Message, Segment } from 'semantic-ui-react';
 
 import accountStore from '../stores/account.store';
@@ -42,6 +42,7 @@ export default class AccountManager extends Component {
       return (
         <Container textAlign='center'>
           <div>{ this.renderAccountInfo(address) }</div>
+          <div>{ this.renderBalances() }</div>
         </Container>
       );
     }
@@ -75,8 +76,33 @@ export default class AccountManager extends Component {
     );
   }
 
+  renderBalances () {
+    const { balances } = accountStore;
+
+    if (!balances.eth && !balances.dot) {
+      return null;
+    }
+
+    return (
+      <div>
+        <Label>
+          {balances.eth.div(Math.pow(10, 18)).toFormat(3)}
+          <Label.Detail>
+            ETH
+          </Label.Detail>
+        </Label>
+        <Label>
+          {balances.dot.toFormat(0)}
+          <Label.Detail>
+            DOT
+          </Label.Detail>
+        </Label>
+      </div>
+    );
+  }
+
   renderContent () {
-    const { address, unlocked, wallet } = accountStore;
+    const { address, wallet } = accountStore;
 
     if (!wallet) {
       return (

@@ -2,8 +2,13 @@ import Util from 'ethereumjs-util';
 import Wallet from 'ethereumjs-wallet';
 import { action, observable } from 'mobx';
 
+import backend from '../backend';
+
+const BALANCES_REFRESH_TIMER = 2500;
+
 class AccountStore {
   @observable address = '';
+  @observable balances = {};
   @observable error = null;
   @observable unlocked = false;
   @observable publicKey = null;
@@ -21,6 +26,14 @@ class AccountStore {
       .catch((error) => {
         this.setError(error.message);
       });
+  }
+
+  pollBalances () {
+    this.updateBalances();
+
+    setInterval(() => {
+      this.updateBalances();
+    }, BALANCES_REFRESH_TIMER);
   }
 
   read (file) {
@@ -55,6 +68,11 @@ class AccountStore {
   }
 
   @action
+  setBalances (balances) {
+    this.balances = balances;
+  }
+
+  @action
   setError (error) {
     this.error = error;
   }
@@ -62,6 +80,10 @@ class AccountStore {
   @action
   setUnlocked (unlocked) {
     this.unlocked = unlocked;
+
+    if (unlocked) {
+      this.pollBalances();
+    }
   }
 
   @action
@@ -99,6 +121,12 @@ class AccountStore {
         return resolve();
       }, 0);
     });
+  }
+
+  async updateBalances () {
+    const { eth, dot } = await backend.getBalances(this.address);
+
+    this.setBalances({ eth, dot });
   }
 }
 
