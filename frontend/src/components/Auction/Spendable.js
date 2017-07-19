@@ -15,7 +15,7 @@ export default class Spendable extends Component {
         <InlineBalance value={maxSpend} />
         {
           inBonus
-          ? (<span> | EARLY-BIRD BONUS {bonusSize}%</span>)
+          ? (<span> | EARLY-BIRD BONUS {bonusSize.toNumber()}%</span>)
           : null
         }
       </div>

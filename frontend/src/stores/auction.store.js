@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 import { action, computed, observable } from 'mobx';
 
 import backend from '../backend';
@@ -5,21 +6,21 @@ import backend from '../backend';
 const REFRESH_DELAY = 2000;
 
 class AuctionStore {
-  @observable available = 0;
+  @observable available = new BigNumber(0);
   @observable begin = 0;
   @observable block = 0;
   @observable bonusDuration = 0;
-  @observable bonusSize = 0;
+  @observable bonusSize = new BigNumber(0);
   @observable buyinId = '0x';
-  @observable cap = 0;
+  @observable cap = new BigNumber(0);
   @observable connected = 'disconnected'
   @observable contractAddress = '0x';
   @observable currentTime = 0;
   @observable end = 0;
-  @observable price = 0;
+  @observable price = new BigNumber(0);
   @observable statementHash = '0x';
   @observable timeLeft = 0;
-  @observable totalReceived = 0;
+  @observable totalReceived = new BigNumber(0);
 
   constructor () {
     this.refresh();
@@ -31,10 +32,10 @@ class AuctionStore {
 
   bonus (value) {
     if (!this.isActive() || !this.inBonus) {
-      return 0;
+      return new BigNumber(0);
     }
 
-    return value * this.bonusSize / 100;
+    return value.mul(this.bonusSize).div(100);
   }
 
   isActive () {
@@ -42,8 +43,8 @@ class AuctionStore {
   }
 
   theDeal (value) {
-    let accepted = 0;
-    let refund = 0;
+    let accepted = new BigNumber(0);
+    let refund = new BigNumber(0);
 
     const bonus = this.bonus(value);
     const price = this.price;
@@ -57,14 +58,14 @@ class AuctionStore {
       };
     }
 
-    accepted = value + bonus;
+    accepted = value.add(bonus);
 
-    let tokens = accepted / price;
+    let tokens = accepted.div(price);
 
-    if (tokens > this.available) {
-      accepted = this.available * price;
-      if (value > accepted) {
-        refund = value - accepted;
+    if (tokens.gt(this.available)) {
+      accepted = this.available.mul(price);
+      if (value.gt(accepted)) {
+        refund = value.sub(accepted);
       }
     }
 
@@ -83,7 +84,7 @@ class AuctionStore {
 
   @computed
   get maxSpend () {
-    return this.price * this.available;
+    return this.price.mul(this.available);
   }
 
   @computed
@@ -123,21 +124,22 @@ class AuctionStore {
       totalReceived
     } = status;
 
-    this.available = available;
+    this.available = new BigNumber(available);
+    this.bonusSize = new BigNumber(bonusSize);
+    this.cap = new BigNumber(cap);
+    this.price = new BigNumber(price);
+    this.totalReceived = new BigNumber(totalReceived);
+
     this.begin = begin;
     this.block = block;
     this.bonusDuration = bonusDuration;
-    this.bonusSize = bonusSize;
     this.buyinId = buyinId;
-    this.cap = cap;
     this.connected = connected;
     this.contractAddress = contractAddress;
     this.currentTime = currentTime;
     this.end = end;
-    this.price = price;
     this.statementHash = statementHash;
     this.timeLeft = timeLeft;
-    this.totalReceived = totalReceived;
   }
 }
 

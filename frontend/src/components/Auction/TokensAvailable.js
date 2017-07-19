@@ -10,7 +10,7 @@ export default class TokensAvailable extends Component {
 
     return (
       <p>
-        Tokens available: { available } / { cap }
+        Tokens available: { available.toFormat() } / { cap.toFormat() }
       </p>
     );
   }
