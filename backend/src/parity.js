@@ -66,14 +66,12 @@ class ParityConnector extends EventEmitter {
       .request('eth_getBalance', address)
       .then(hex2big);
   }
+
   /**
    * Direct access to the underlying transport.
    * Get next nonce for address
    *
    * @return {RpcTransport}
-   * @param  {String} address
-   *
-   * @return {Promise<Number>} nonce
    */
   get transport () {
     return this._transport;
