@@ -5,7 +5,7 @@
 
 const ParityConnector = require('./parity');
 const Contract = require('./contract');
-const { hex2int } = require('./utils');
+const { hex2big, hex2int } = require('./utils');
 
 class Sale {
   constructor (wsUrl, contractAddress) {
@@ -28,6 +28,7 @@ class Sale {
 
     contract
       .register('buyin', 'uint8', 'bytes32', 'bytes32')
+      .register('participants', 'address')
       .register('currentPrice')
       .register('beginTime')
       .register('BONUS_DURATION')
@@ -57,6 +58,17 @@ class Sale {
         this._bonusDuration = bonusDuration;
         this._bonusSize = bonusSize;
       });
+  }
+
+  async participant (address) {
+    const rawParticipant = await this._contract.participants(address);
+    const cleanParticipant = rawParticipant.replace(/^0x/, '');
+    const [ value, bonus ] = [
+      hex2big('0x' + cleanParticipant.slice(0, 64)),
+      hex2big('0x' + cleanParticipant.slice(64))
+    ];
+
+    return { value, bonus };
   }
 
   async update (block) {

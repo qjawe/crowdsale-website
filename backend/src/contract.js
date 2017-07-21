@@ -4,7 +4,7 @@
 'use strict';
 
 const keccak = require('keccak');
-const { buf2hex } = require('./utils');
+const { buf2hex, padLeft } = require('./utils');
 
 class Method {
   constructor (name, types) {
@@ -14,6 +14,7 @@ class Method {
 
     this._name = name;
     this._id = buf2hex(sig.slice(0, 4));
+    this._types = types;
   }
 
   get id () {
@@ -22,8 +23,19 @@ class Method {
 
   data (params) {
     // TODO: convert params to hex string and append to id
+    const encodedData = this._types
+      .map((type, index) => {
+        const param = params[index];
 
-    return this._id;
+        if (type === 'address') {
+          return padLeft(param.replace(/^0x/, ''), 64);
+        }
+
+        return '';
+      })
+      .join('');
+
+    return this._id + encodedData;
   }
 }
 
