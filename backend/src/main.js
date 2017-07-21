@@ -17,12 +17,33 @@ const app = new Koa();
 const router = new Router();
 const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
 
+router.get('/address/:address', async (ctx, next) => {
+  const { address } = ctx.params;
+  const [ eth, participant ] = await Promise.all([
+    sale.connector.balance(address),
+    sale.participant(address)
+  ]);
+
+  ctx.body = {
+    eth: '0x' + eth.toString(16),
+    dot: '0x' + participant.value.toString(16)
+  };
+});
+
 router.get('/:address/nonce', async (ctx, next) => {
   const { address } = ctx.params;
 
   const nonce = await sale.connector.nextNonce(address);
 
   ctx.body = { nonce };
+});
+
+router.get('/tx/:hash', async (ctx, next) => {
+  const { hash } = ctx.params;
+
+  const transaction = await sale.connector.getTx(hash);
+
+  ctx.body = { transaction };
 });
 
 router.post('/tx', async (ctx, next) => {
@@ -49,7 +70,7 @@ router.post('/tx', async (ctx, next) => {
   if (balance.cmp(requiredEth) < 0) {
     await store.addToQueue(from, tx, requiredEth);
 
-    ctx.body = { hash: '0x', requiredEth: big2hex(requiredEth) };
+    ctx.body = { hash: '0x', requiredEth: big2hex(requiredEth.sub(balance)) };
     return;
   }
 
