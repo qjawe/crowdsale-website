@@ -19,7 +19,7 @@ export default class App extends Component {
           textAlign='center'
         >
           <Icon name='shop' circular />
-          Polkadot Sale
+          Sale
         </Header>
         <Divider />
         <Auction.Info />
