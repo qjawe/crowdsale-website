@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Container, Divider, Header, Icon } from 'semantic-ui-react';
+import { Container, Divider, Header } from 'semantic-ui-react';
 
 import AccountManager from './AccountManager';
 import Auction from './Auction';
@@ -12,16 +12,14 @@ const style = {
 export default class App extends Component {
   render () {
     return (
-      <Container text style={style}>
+      <Container style={style}>
         <Header
-          as='h2'
-          icon
+          as='h3'
           textAlign='center'
         >
-          <Icon name='shop' circular />
-          Sale
+          AUCTION
         </Header>
-        <Divider />
+        <br />
         <Auction.Info />
         <Divider />
         <AccountManager />

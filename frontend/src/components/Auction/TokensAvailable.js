@@ -7,10 +7,12 @@ import auctionStore from '../../stores/auction.store';
 @observer
 export default class TokensAvailable extends Component {
   render () {
-    const { available } = auctionStore;
+    const { available, cap } = auctionStore;
 
     return (
-      <Statistic>
+      <Statistic
+        title={`${available.toFormat()} / ${cap.toFormat()}`}
+      >
         <Statistic.Label>Tokens available</Statistic.Label>
         <Statistic.Value>
           {available.toFormat()}
