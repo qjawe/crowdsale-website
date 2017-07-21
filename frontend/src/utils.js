@@ -17,7 +17,6 @@ export async function post (url, body) {
   return response.json();
 }
 
-
 function validateHex (hex) {
   if (typeof hex !== 'string' || hex.substring(0, 2) !== '0x') {
     throw new Error('hex must be a `0x` prefixed string');

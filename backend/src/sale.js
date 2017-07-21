@@ -19,6 +19,7 @@ class Sale {
     this._bonusDuration = 0;
     this._bonusSize = 0;
     this._statementHash = '0x';
+    this._totalReceived = 0;
 
     this._connector = new ParityConnector(wsUrl);
     this._contract = new Contract(this._connector.transport, contractAddress);
@@ -34,7 +35,8 @@ class Sale {
       .register('STATEMENT_HASH')
       .register('endTime')
       .register('tokensAvailable')
-      .register('tokenCap');
+      .register('tokenCap')
+      .register('totalReceived');
 
     this._buyinId = contract.buyin.id;
 
@@ -61,17 +63,19 @@ class Sale {
     this._block = block;
 
     const contract = this._contract;
-    const [ end, price, cap, available ] = await Promise.all([
+    const [ end, price, cap, available, totalReceived ] = await Promise.all([
       contract.endTime().then(hex2int),
       contract.currentPrice().then(hex2int),
       contract.tokenCap().then(hex2int),
-      contract.tokensAvailable().then(hex2int)
+      contract.tokensAvailable().then(hex2int),
+      contract.totalReceived().then(hex2int)
     ]);
 
     this._end = end;
     this._price = price;
     this._cap = cap;
     this._available = available;
+    this._totalReceived = totalReceived;
 
     console.log(`Block ${block.number}, price is ${this._price}`);
   }
@@ -126,6 +130,10 @@ class Sale {
 
   get bonusSize () {
     return this._bonusSize;
+  }
+
+  get totalReceived () {
+    return this._totalReceived;
   }
 }
 
