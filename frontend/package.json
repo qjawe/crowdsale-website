@@ -26,6 +26,7 @@
     "react-dom": "^15.6.1",
     "react-dropzone": "^3.13.3",
     "react-markdown-loader": "^1.1.11",
+    "recharts": "^1.0.0-alpha.2",
     "semantic-ui-react": "^0.71.0"
   },
   "devDependencies": {

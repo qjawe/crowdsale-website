@@ -12,19 +12,22 @@ const style = {
 export default class App extends Component {
   render () {
     return (
-      <Container style={style}>
-        <Header
-          as='h3'
-          textAlign='center'
-        >
-          AUCTION
-        </Header>
-        <br />
-        <Auction.Info />
-        <Divider />
-        <AccountManager />
-        <Buy />
-      </Container>
+      <div>
+        <Container style={style}>
+          <Header
+            as='h3'
+            textAlign='center'
+          >
+            AUCTION
+          </Header>
+          <br />
+          <Auction.Info />
+          <Divider />
+          <AccountManager />
+          <Buy />
+        </Container>
+        <Auction.Details />
+      </div>
     );
   }
 }

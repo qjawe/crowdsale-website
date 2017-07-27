@@ -7,7 +7,7 @@ import auctionStore from '../../stores/auction.store';
 @observer
 export default class TokensAvailable extends Component {
   render () {
-    const { available, cap } = auctionStore;
+    const { available, cap, divisor } = auctionStore;
 
     return (
       <Statistic
@@ -15,7 +15,7 @@ export default class TokensAvailable extends Component {
       >
         <Statistic.Label>Tokens available</Statistic.Label>
         <Statistic.Value>
-          {available.toFormat()}
+          {available.div(divisor).toFormat(0)}
         </Statistic.Value>
       </Statistic>
     );

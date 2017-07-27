@@ -32,7 +32,7 @@ export default class Spendable extends Component {
           />
         </Statistic.Label>
         <Statistic.Value>
-          <span>{fromWei(maxSpend).toFormat(2)}</span>
+          <span>{fromWei(maxSpend).toFormat(0)}</span>
           <small> ETH</small>
         </Statistic.Value>
       </Statistic>

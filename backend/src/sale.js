@@ -13,6 +13,7 @@ class Sale {
     this._block = 0;
     this._current = 0;
     this._begin = 0;
+    this._divisor = 1;
     this._end = 0;
     this._available = 0;
     this._cap = 0;
@@ -33,6 +34,7 @@ class Sale {
       .register('beginTime')
       .register('BONUS_DURATION')
       .register('BONUS_SIZE')
+      .register('DIVISOR')
       .register('STATEMENT_HASH')
       .register('endTime')
       .register('tokensAvailable')
@@ -50,13 +52,15 @@ class Sale {
         contract.beginTime().then(hex2int),
         contract.STATEMENT_HASH(),
         contract.BONUS_DURATION().then(hex2int),
-        contract.BONUS_SIZE().then(hex2int)
+        contract.BONUS_SIZE().then(hex2int),
+        contract.DIVISOR().then(hex2int)
       ])
-      .then(([begin, statementHash, bonusDuration, bonusSize]) => {
+      .then(([begin, statementHash, bonusDuration, bonusSize, divisor]) => {
         this._begin = begin;
         this._statementHash = statementHash;
         this._bonusDuration = bonusDuration;
         this._bonusSize = bonusSize;
+        this._divisor = divisor;
       });
   }
 
@@ -122,6 +126,10 @@ class Sale {
 
   get begin () {
     return this._begin;
+  }
+
+  get divisor () {
+    return this._divisor;
   }
 
   get end () {
