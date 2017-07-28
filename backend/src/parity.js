@@ -27,6 +27,12 @@ class ParityConnector extends EventEmitter {
       });
   }
 
+  getBlock (blockNumber) {
+    return this
+      ._transport
+      .request('eth_getBlockByNumber', blockNumber, false);
+  }
+
   /**
    * Get the transaction data
    *
@@ -78,6 +84,13 @@ class ParityConnector extends EventEmitter {
       .request('eth_getBalance', address)
       .then(hex2big);
   }
+
+  getLogs (options) {
+    return this
+      ._transport
+      .request('eth_getLogs', options);
+  }
+
   /**
    * Direct access to the underlying transport.
    * Get next nonce for address

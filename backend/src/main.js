@@ -46,6 +46,12 @@ router.get('/tx/:hash', async (ctx, next) => {
   ctx.body = { transaction };
 });
 
+router.get('/chart-data', async (ctx, next) => {
+  const data = await sale.getChartData();
+
+  ctx.body = data;
+});
+
 router.post('/tx', async (ctx, next) => {
   const { tx } = ctx.request.body;
 
@@ -94,6 +100,7 @@ router.get('/', (ctx) => {
     cap,
     bonusDuration,
     bonusSize,
+    totalAccounted,
     totalReceived
   } = sale;
 
@@ -111,6 +118,7 @@ router.get('/', (ctx) => {
     cap,
     bonusDuration,
     bonusSize,
+    totalAccounted,
     totalReceived
   };
 });

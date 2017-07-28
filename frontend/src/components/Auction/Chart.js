@@ -1,6 +1,7 @@
+import { scalePow } from 'd3-scale';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import { CartesianGrid, Label, LineChart, Line, ReferenceDot, ReferenceLine, ResponsiveContainer, Text, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Label, LineChart, Line, ReferenceDot, ReferenceLine, ResponsiveContainer, Text, Tooltip, XAxis, YAxis } from 'recharts';
 
 import auctionStore from '../../stores/auction.store';
 import { fromWei } from '../../utils';
@@ -11,7 +12,9 @@ const style = {
   position: 'relative'
 };
 
-class CustomizedAxisTick extends Component {
+const yScale = scalePow().exponent(0.15);
+
+class DateTick extends Component {
   render () {
     const { value } = this.props.payload;
     const date = new Date(value);
@@ -24,9 +27,24 @@ class CustomizedAxisTick extends Component {
   }
 }
 
+class TotalAccountedTick extends Component {
+  render () {
+    const { cap, divisor } = auctionStore;
+    const { value } = this.props.payload;
+    const eth = cap.mul(value).div(divisor);
+
+    return (
+      <Text {...this.props} angle={0}>
+        {eth.toFormat()}
+      </Text>
+    );
+  }
+}
+
 class CustomChart extends Component {
   state = {
     mouse: null,
+    xDomain: this.getZoomedInterval(0),
     zoom: 0
   };
 
@@ -39,11 +57,17 @@ class CustomChart extends Component {
   }
 
   render () {
-    if (!this.props.data) {
+    const { data } = this.props;
+    const { xDomain } = this.state;
+
+    if (!data) {
       return null;
     }
 
-    const data = this.getZoomedData(this.props.data, this.state.zoom);
+    const yDomain = [
+      0,
+      Math.round(data[data.length - 1].price)
+    ];
 
     return (
       <div style={style}>
@@ -58,36 +82,74 @@ class CustomChart extends Component {
           >
             {this.renderTodayLines()}
 
+            <CartesianGrid stroke='#ccc' />
+
+            <XAxis
+              allowDataOverflow
+              dataKey='time'
+              domain={xDomain}
+              label='Time'
+              scale='time'
+              type='number'
+              padding={{ left: 20, right: 20 }}
+              interval='preserveStartEnd'
+              tick={<DateTick />}
+              ticks={xDomain}
+              tickLine={false}
+            />
+            <YAxis
+              domain={yDomain}
+              yAxisId='left'
+              padding={{ top: 20, bottom: 20 }}
+              scale={yScale}
+            >
+              <Label angle={-90}>
+                Token Price
+              </Label>
+            </YAxis>
+            <YAxis
+              domain={yDomain}
+              yAxisId='right'
+              padding={{ top: 20, bottom: 20 }}
+              orientation='right'
+              tick={<TotalAccountedTick />}
+              ticks={[
+                data[0].expectedTotalAccounted,
+                data[data.length - 1].totalAccounted
+              ]}
+              scale={yScale}
+            >
+              <Label angle={90}>
+                Total Accounted
+              </Label>
+            </YAxis>
+
             <Line
+              yAxisId='left'
               dot={false}
               type='linear'
               dataKey='price'
               stroke='#8884d8'
               strokeWidth={2}
             />
-            <CartesianGrid stroke='#ccc' />
-            <XAxis
-              dataKey='time'
-              label='Time'
-              scale='time'
-              type='number'
-              domain={['dataMin', 'dataMax']}
-              padding={{ left: 20, right: 20 }}
-              interval='preserveStartEnd'
-              tick={<CustomizedAxisTick />}
-              ticks={[
-                data[0].time,
-                data[data.length - 1].time
-              ]}
-              tickLine={false}
+            <Line
+              yAxisId='right'
+              dot={false}
+              type='linear'
+              dataKey='totalAccounted'
+              stroke='#F70D1C'
+              strokeWidth={2}
             />
-            <YAxis
-              padding={{ top: 20, bottom: 20 }}
-            >
-              <Label angle={-90}>
-                Token Price
-              </Label>
-            </YAxis>
+            <Line
+              yAxisId='right'
+              dot={false}
+              type='linear'
+              dataKey='expectedTotalAccounted'
+              stroke='gray'
+              strokeDasharray='3 3'
+              strokeWidth={2}
+              connectNulls
+            />
 
             {this.renderDot()}
           </LineChart>
@@ -107,11 +169,13 @@ class CustomChart extends Component {
         x={todayTime}
         stroke='green'
         strokeDasharray='3 3'
+        yAxisId='left'
       />,
       <ReferenceLine
         y={price}
         stroke='green'
         strokeDasharray='3 3'
+        yAxisId='left'
       />
     ];
   }
@@ -123,16 +187,42 @@ class CustomChart extends Component {
       return null;
     }
 
-    return (
+    const time = mouse.date;
+    const datum = this.props.data.find((datum) => datum.time === time);
+
+    if (!datum) {
+      return null;
+    }
+
+    const { price, totalAccounted } = datum;
+    const priceDot = (
       <ReferenceDot
-        x={mouse.date * 1000}
-        y={mouse.price}
+        x={time}
+        y={price}
         r={6}
         stroke='#8884d8'
         strokeWidth={2}
         fill='white'
+        yAxisId='left'
       />
     );
+
+    if (totalAccounted === undefined) {
+      return priceDot;
+    }
+
+    return [
+      priceDot,
+      <ReferenceDot
+        x={time}
+        y={totalAccounted}
+        r={6}
+        stroke='#F70D1C'
+        strokeWidth={2}
+        fill='white'
+        yAxisId='left'
+      />
+    ];
   }
 
   renderDotLabel () {
@@ -142,47 +232,88 @@ class CustomChart extends Component {
       return null;
     }
 
-    const date = new Date(mouse.date * 1000);
+    const time = mouse.date;
+    const datum = this.props.data.find((datum) => datum.time === time);
+
+    if (!datum) {
+      return null;
+    }
+
+    const date = new Date(time);
+    const { price, totalAccounted } = datum;
+    const { cap, divisor } = auctionStore;
 
     return (
       <div
         style={{
-          background: 'white',
-          padding: '0.25em 0.5em',
+          display: 'flex',
+          flexDirection: 'column',
           position: 'absolute',
           right: '0.5em',
           top: '0.5em',
-          border: '2px solid #8884d8',
           zIndex: 50
         }}
       >
-        {Math.round(mouse.price * 1000) / 1000} <small>ETH/DOT</small>
-        <span>, </span>
-        <span>{date.toLocaleDateString()}</span>
-        <span> @ </span>
-        <small>{date.toLocaleTimeString()}</small>
+        <div
+          style={{
+            background: 'white',
+            padding: '0.25em 0.5em',
+            border: '2px solid #8884d8'
+          }}
+        >
+          {Math.round(price * 100000) / 100000} <small>ETH/DOT</small>
+          <span>, </span>
+          <span>{date.toLocaleDateString()}</span>
+          <span> @ </span>
+          <small>{date.toLocaleTimeString()}</small>
+        </div>
+        {
+          totalAccounted
+          ? (
+            <div
+              style={{
+                background: 'white',
+                padding: '0.25em 0.5em',
+                border: '2px solid #F70D1C',
+                marginTop: '0.5em'
+              }}
+            >
+              <span>
+                { cap.mul(totalAccounted || 0).div(divisor).toFormat() } ETH accounted
+              </span>
+            </div>
+          )
+          : null
+        }
       </div>
     );
   }
 
-  getZoomedData (data, zoom) {
-    if (!this.currentTime) {
-      return data;
-    }
-
-    const time = this.currentTime / 1000;
+  getZoomedInterval (zoom, state = this.state || {}) {
+    const { mouse, xDomain } = state;
     const { begin, end } = auctionStore;
 
-    const maxInterval = Math.max(time - begin, end - time);
-    const minInterval = 0.25 * maxInterval;
-    const interval = minInterval + (maxInterval - minInterval) * ((100 - zoom) / 100);
+    if (!mouse || !xDomain || zoom === 0) {
+      return [ begin * 1000, end * 1000 ];
+    }
 
-    const max = 1000 * (time + interval);
-    const min = 1000 * (time - interval);
+    const time = mouse.date / 1000;
 
-    return data.filter((datum) => {
-      return (datum.time < max) && (datum.time > min);
-    });
+    const maxWindowSize = end - begin;
+    const minWindowSize = maxWindowSize * 0.01;
+
+    const prevWindowSize = (xDomain[1] - xDomain[0]) / 1000;
+    const nextWindowSize = maxWindowSize - (maxWindowSize - minWindowSize) * (zoom / 100);
+
+    const lowerRatio = (time - xDomain[0] / 1000) / prevWindowSize;
+
+    const nextLowerBound = time - nextWindowSize * lowerRatio;
+    const nextUpperBound = nextLowerBound + nextWindowSize;
+
+    const min = Math.max(begin * 1000, 1000 * (nextLowerBound));
+    const max = Math.min(end * 1000, 1000 * (nextUpperBound));
+
+    return [ min, max ];
   }
 
   handleMouseEnter = () => {
@@ -193,20 +324,9 @@ class CustomChart extends Component {
       return null;
     }
 
-    this.currentTime = event.activeLabel;
+    const date = event.activeLabel;
 
-    const { beginPrice, endPrice, divisor } = auctionStore;
-    // const y = event.chartY;
-
-    // const height = 400 - (3 * 20 + 25);
-    // const rawPrice = endPrice.sub(beginPrice).mul(y - 20).div(height).add(beginPrice);
-    // const price = fromWei(rawPrice.mul(divisor)).toNumber();
-    // const date = auctionStore.getTime(rawPrice);
-
-    const date = event.activeLabel / 1000;
-    const price = fromWei(auctionStore.getPrice(date)).mul(divisor).toNumber();
-
-    this.setState({ mouse: { date, price } });
+    this.setState({ mouse: { date } });
   };
 
   handleMouseLeave = () => {
@@ -221,14 +341,14 @@ class CustomChart extends Component {
     const { deltaY } = event;
 
     const prevZoom = this.state.zoom;
-    const nextZoom = Math.min(100, Math.max(0, prevZoom - deltaY / 25));
-
-    console.log('zoom', prevZoom, nextZoom);
+    const nextZoom = Math.round(Math.min(100, Math.max(0, prevZoom - deltaY / 25)));
 
     event.preventDefault();
     event.stopPropagation();
 
-    this.setState({ zoom: nextZoom });
+    const xDomain = this.getZoomedInterval(nextZoom);
+
+    this.setState({ xDomain, zoom: nextZoom });
   };
 }
 

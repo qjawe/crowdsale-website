@@ -15,6 +15,10 @@ class Backend {
     return get(this.url('/'));
   }
 
+  async chartData () {
+    return await get(this.url('/chart-data'));
+  }
+
   async getBalances (address) {
     const { eth, dot } = await get(this.url(`/address/${address}`));
 

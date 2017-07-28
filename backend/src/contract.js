@@ -3,8 +3,9 @@
 
 'use strict';
 
+const BigNumber = require('bignumber.js');
 const keccak = require('keccak');
-const { buf2hex, padLeft } = require('./utils');
+const { buf2hex, padLeft, toChecksumAddress } = require('./utils');
 
 class Method {
   constructor (name, types) {
@@ -39,11 +40,55 @@ class Method {
   }
 }
 
+class Event {
+  constructor (name, types) {
+    const sig = keccak('keccak256')
+      .update(Buffer.from(`${name}(${types.join(',')})`))
+      .digest();
+
+    this._name = name;
+    this._id = buf2hex(sig);
+    this._types = types || [];
+  }
+
+  get id () {
+    return this._id;
+  }
+
+  parse (log) {
+    const data = log.topics
+      .slice(1)
+      .concat(log.data.replace(/^0x/, '').match(/(.{64})/g));
+
+    log.params = this._types.map((type, index) => {
+      const value = data[index];
+
+      if (/uint/.test(type)) {
+        return new BigNumber('0x' + value);
+      }
+
+      if (type === 'address') {
+        const address = '0x' + value.slice(-40);
+
+        return toChecksumAddress(address);
+      }
+
+      return value;
+    });
+
+    return log;
+  }
+}
+
 class Contract {
   constructor (transport, address) {
     this._address = address;
     this._transport = transport;
+
     this._methods = new Map();
+    this._events = new Map();
+
+    this.events = {};
   }
 
   register (name, ...types) {
@@ -54,6 +99,34 @@ class Contract {
     this[name].id = method.id;
 
     return this;
+  }
+
+  registerEvent (name, ...types) {
+    const event = new Event(name, types);
+
+    this._events.set(name, event);
+    this.events[name] = { id: event.id };
+    this.events[event.id] = name;
+
+    return this;
+  }
+
+  parseLogs (logs) {
+    return logs.map((log) => {
+      const eventId = log.topics[0];
+      const eventName = this.events[eventId];
+      const event = this._events.get(eventName);
+
+      if (!event) {
+        console.warn(`could not find an event matching ${eventId}`);
+        return null;
+      }
+
+      const parsedLog = event.parse(log);
+
+      parsedLog.name = eventName;
+      return parsedLog;
+    });
   }
 
   _call (name, params) {

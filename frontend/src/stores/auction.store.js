@@ -29,10 +29,6 @@ class AuctionStore {
 
   constructor () {
     this.refresh();
-
-    setInterval(() => {
-      this.refresh();
-    }, REFRESH_DELAY);
   }
 
   bonus (value) {
@@ -140,11 +136,25 @@ class AuctionStore {
   }
 
   async refresh () {
-    const status = await backend.status();
-    const { block, end } = status;
+    try {
+      const status = await backend.status();
+      const { block, end } = status;
 
-    status.timeLeft = Math.max(0, end - block.timestamp);
-    this.update(status);
+      status.timeLeft = Math.max(0, end - block.timestamp);
+      this.update(status);
+    } catch (error) {
+      console.error(error);
+    }
+
+    setTimeout(() => {
+      this.refresh();
+    }, REFRESH_DELAY);
+  }
+
+  @action
+  setChart (chart) {
+    console.warn('set chart', chart);
+    this.chart = chart;
   }
 
   @action
@@ -168,6 +178,9 @@ class AuctionStore {
       totalReceived
     } = status;
 
+    // Only update the chart when the end time changes
+    const update = (end !== this.end);
+
     this.available = new BigNumber(available);
     this.bonusSize = new BigNumber(bonusSize);
     this.cap = new BigNumber(cap);
@@ -186,19 +199,23 @@ class AuctionStore {
     this.statementHash = statementHash;
     this.timeLeft = timeLeft;
 
-    this.updateChartData();
+    if (update) {
+      this.updateChartData();
+    }
   }
 
-  @action
-  updateChartData () {
-    const { begin, beginPrice, divisor, end, endPrice } = this;
+  async updateChartData () {
+    const { begin, beginPrice, cap, divisor, end, endPrice } = this;
+    const totalAccountedRawData = await backend.chartData();
 
-    // Only update the chart when the end time changes
-    if (this.chart.end === end) {
-      return;
-    }
+    const totalAccountedData = totalAccountedRawData
+      .map((datum) => {
+        const value = fromWei(datum.totalAccounted).div(cap).mul(divisor).toNumber();
 
-    const NUM_TICKS = 50;
+        return { value, time: datum.time * 1000 };
+      });
+
+    const NUM_TICKS = 200;
     const data = [];
 
     const priceInteval = beginPrice.sub(endPrice).div(NUM_TICKS);
@@ -210,22 +227,58 @@ class AuctionStore {
       data.push({ time: date * 1000, price: fromWei(price.mul(divisor)).toNumber() });
     }
 
-    const realEnd = Math.round(Math.min(end, (new Date().getTime() / 1000) + 3600 * 24 * 7));
+    // const realEnd = Math.round(Math.min(end, (new Date().getTime() / 1000) + 3600 * 24 * 7));
+    const realEnd = end;
     const dateInterval = (realEnd - begin) / NUM_TICKS;
 
     for (let i = 0; i <= NUM_TICKS; i++) {
-      const date = begin + dateInterval * i;
+      const date = Math.round(begin + dateInterval * i);
       const price = this.getPrice(date);
 
       data.push({ time: date * 1000, price: fromWei(price.mul(divisor)).toNumber() });
     }
 
-    this.chart = {
-      end: end,
+    const now = Date.now();
+    const lastTAD = totalAccountedData[totalAccountedData.length - 1];
+    const nowPrice = this.getPrice(Math.round(now / 1000));
+
+    data.push({
+      time: now,
+      price: fromWei(nowPrice.mul(divisor)).toNumber(),
+      totalAccounted: lastTAD.value
+    });
+
+    data.forEach((datum) => {
+      const { time } = datum;
+
+      if (time >= now) {
+        datum.expectedTotalAccounted = lastTAD.value;
+        return;
+      }
+
+      if (time >= lastTAD.time && time < now) {
+        datum.totalAccounted = lastTAD.value;
+        return;
+      }
+
+      const index = totalAccountedData.findIndex((d) => d.time > time);
+
+      if (index === 0) {
+        datum.totalAccounted = 0;
+        return;
+      }
+
+      if (index >= 1) {
+        datum.totalAccounted = totalAccountedData[index - 1].value;
+        return;
+      }
+    });
+
+    this.setChart({
       data: data
         .sort((ptA, ptB) => ptB.time - ptA.time)
-        .filter((pt) => pt.time < realEnd * 1000)
-    };
+        .filter((pt) => pt.time <= realEnd * 1000)
+    });
   }
 }
 

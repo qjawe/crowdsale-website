@@ -3,6 +3,9 @@
 
 'use strict';
 
+const BigNumber = require('bignumber.js');
+const { uniq } = require('lodash');
+
 const ParityConnector = require('./parity');
 const Contract = require('./contract');
 const { hex2big, hex2int } = require('./utils');
@@ -21,6 +24,7 @@ class Sale {
     this._bonusSize = 0;
     this._statementHash = '0x';
     this._totalReceived = 0;
+    this._totalAccounted = 0;
 
     this._connector = new ParityConnector(wsUrl);
     this._contract = new Contract(this._connector.transport, contractAddress);
@@ -39,7 +43,13 @@ class Sale {
       .register('endTime')
       .register('tokensAvailable')
       .register('tokenCap')
+      .register('totalAccounted')
       .register('totalReceived');
+
+    contract
+      .registerEvent('Buyin', 'address', 'uint256', 'uint256', 'uint256', 'uint256')
+      .registerEvent('PrepayBuyin', 'address', 'uint256', 'uint256', 'uint256')
+      .registerEvent('Injected', 'address', 'uint256', 'uint256');
 
     this._buyinId = contract.buyin.id;
 
@@ -79,12 +89,13 @@ class Sale {
     this._block = block;
 
     const contract = this._contract;
-    const [ end, price, cap, available, totalReceived ] = await Promise.all([
+    const [ end, price, cap, available, totalReceived, totalAccounted ] = await Promise.all([
       contract.endTime().then(hex2int),
       contract.currentPrice().then(hex2int),
       contract.tokenCap().then(hex2int),
       contract.tokensAvailable().then(hex2int),
-      contract.totalReceived().then(hex2int)
+      contract.totalReceived().then(hex2int),
+      contract.totalAccounted().then(hex2int)
     ]);
 
     this._end = end;
@@ -92,8 +103,53 @@ class Sale {
     this._cap = cap;
     this._available = available;
     this._totalReceived = totalReceived;
+    this._totalAccounted = totalAccounted;
 
     console.log(`Block ${block.number}, price is ${this._price}`);
+  }
+
+  async getChartData () {
+    const contract = this._contract;
+    const topics = [ [
+      contract.events.Buyin.id,
+      contract.events.PrepayBuyin.id,
+      contract.events.Injected.id
+    ] ];
+
+    const options = {
+      address: this.contractAddress,
+      fromBlock: '0x0',
+      toBlock: 'latest',
+      topics
+    };
+
+    const rawLogs = await this.connector.getLogs(options);
+    const logs = contract.parseLogs(rawLogs);
+
+    const blockNumbers = uniq(logs.map((log) => log.blockNumber));
+    const blocks = await Promise.all(blockNumbers.map((bn) => this.connector.getBlock(bn)));
+
+    logs.forEach((log) => {
+      const bnIndex = blockNumbers.indexOf(log.blockNumber);
+      const block = blocks[bnIndex];
+
+      log.timestamp = hex2int(block.timestamp);
+    });
+
+    let totalAccounted = new BigNumber(0);
+
+    return logs
+      .sort((logA, logB) => logA.timestamp - logB.timestamp)
+      .map((log) => {
+        const value = log.params[1];
+
+        totalAccounted = totalAccounted.add(value);
+
+        return {
+          totalAccounted: '0x' + totalAccounted.toString(16),
+          time: log.timestamp
+        };
+      });
   }
 
   get connector () {
@@ -154,6 +210,10 @@ class Sale {
 
   get totalReceived () {
     return this._totalReceived;
+  }
+
+  get totalAccounted () {
+    return this._totalAccounted;
   }
 }
 

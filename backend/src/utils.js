@@ -3,6 +3,7 @@
 
 'use strict';
 
+const keccak = require('keccak');
 const BigNumber = require('bignumber.js');
 
 function validateHex (hex) {
@@ -58,6 +59,23 @@ function padLeft (input, length) {
   return padLeft('0' + input, length);
 }
 
+function toChecksumAddress (_address) {
+  const address = (_address || '').toLowerCase();
+
+  const hashBuffer = keccak('keccak256')
+              .update(Buffer.from(address.slice(-40)))
+              .digest();
+
+  const hash = buf2hex(hashBuffer);
+  let result = '0x';
+
+  for (let n = 0; n < 40; n++) {
+    result = `${result}${parseInt(hash[n], 16) > 7 ? address[n + 2].toUpperCase() : address[n + 2]}`;
+  }
+
+  return result;
+}
+
 module.exports = {
   hex2int,
   int2hex,
@@ -67,5 +85,6 @@ module.exports = {
   buf2big,
   big2hex,
   padLeft,
-  pause
+  pause,
+  toChecksumAddress
 };
