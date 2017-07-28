@@ -72,7 +72,7 @@ async function confirmTx (address, nonce, hash, value) {
 
   return redis.set(`done:${address}:${nonce}`, JSON.stringify({
     hash,
-    value: big2hex(value)
+    value
   }));
 }
 

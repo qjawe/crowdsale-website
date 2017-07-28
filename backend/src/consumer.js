@@ -43,6 +43,9 @@ class QueueConsumer {
 
       try {
         const hash = await connector.sendTx(tx);
+        const receipt = await connector.transactionReceipt(hash);
+
+        console.log('receipt check', receipt);
 
         // TODO: get the value minus refunds
         await store.confirmTx(address, nonce, hash, '0x');

@@ -14,8 +14,8 @@ class Sale {
     this._current = 0;
     this._begin = 0;
     this._end = 0;
-    this._available = 0;
-    this._cap = 0;
+    this._available = '0x0';
+    this._cap = '0x0';
     this._bonusDuration = 0;
     this._bonusSize = 0;
     this._statementHash = '0x';
@@ -77,9 +77,9 @@ class Sale {
     const contract = this._contract;
     const [ end, price, cap, available, totalReceived ] = await Promise.all([
       contract.endTime().then(hex2int),
-      contract.currentPrice().then(hex2int),
-      contract.tokenCap().then(hex2int),
-      contract.tokensAvailable().then(hex2int),
+      contract.currentPrice(),
+      contract.tokenCap(),
+      contract.tokensAvailable(),
       contract.totalReceived().then(hex2int)
     ]);
 
@@ -89,7 +89,7 @@ class Sale {
     this._available = available;
     this._totalReceived = totalReceived;
 
-    console.log(`Block ${block.number}, price is ${this._price}`);
+    console.log(`Block ${block.number}, price is ${hex2int(this._price)} wei`);
   }
 
   get connector () {

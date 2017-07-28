@@ -50,12 +50,8 @@ function pause (time) {
   });
 }
 
-function padLeft (input, length) {
-  if (input.length >= length) {
-    return input;
-  }
+function splitArguments (data) {
 
-  return padLeft('0' + input, length);
 }
 
 module.exports = {
@@ -66,6 +62,5 @@ module.exports = {
   hex2big,
   buf2big,
   big2hex,
-  padLeft,
   pause
 };
