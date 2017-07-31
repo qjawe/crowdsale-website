@@ -8,7 +8,7 @@ const { uniq } = require('lodash');
 
 const ParityConnector = require('./parity');
 const Contract = require('./contract');
-const { hex2big, int2date, hex2int } = require('./utils');
+const { hex2big, hex2bool, int2date, hex2int, toChecksumAddress } = require('./utils');
 
 class Sale {
   constructor (wsUrl, contractAddress) {
@@ -17,6 +17,7 @@ class Sale {
     this._block = {};
     this._bonusDuration = '0x0';
     this._bonusSize = '0x0';
+    this._certifier = null;
     this._currentPrice = '0x0';
     this._divisor = '0x1';
     this._endTime = new Date();
@@ -34,6 +35,7 @@ class Sale {
     contract
       .register('buyin', 'uint8', 'bytes32', 'bytes32')
       .register('participants', 'address')
+      .register('certifier')
       .register('currentPrice')
       .register('beginTime')
       .register('BONUS_DURATION')
@@ -60,18 +62,35 @@ class Sale {
     Promise
       .all([
         contract.beginTime().then(hex2int).then(int2date),
+        contract.certifier(),
         contract.STATEMENT_HASH(),
         contract.BONUS_DURATION(),
         contract.BONUS_SIZE(),
         contract.DIVISOR()
       ])
-      .then(([beginTime, statementHash, bonusDuration, bonusSize, divisor]) => {
+      .then(([beginTime, _certifierAddress, statementHash, bonusDuration, bonusSize, divisor]) => {
         this._beginTime = beginTime;
         this._statementHash = statementHash;
         this._bonusDuration = bonusDuration;
         this._bonusSize = bonusSize;
         this._divisor = divisor;
+
+        const certifierAddress = toChecksumAddress('0x' + _certifierAddress.slice(-40));
+
+        this._certifier = new Contract(this._connector.transport, certifierAddress);
+        this._certifier
+          .register('certified', 'address');
       });
+  }
+
+  async certified (who) {
+    if (!this._certifier) {
+      return false;
+    }
+
+    const certified = await this._certifier.certified(who);
+
+    return hex2bool(certified);
   }
 
   async participant (address) {

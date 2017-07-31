@@ -30,6 +30,13 @@ router.get('/address/:address', async (ctx, next) => {
   };
 });
 
+router.get('/certified/:address', async (ctx, next) => {
+  const { address } = ctx.params;
+  const certified = await sale.certified(address);
+
+  ctx.body = certified;
+});
+
 router.get('/:address/nonce', async (ctx, next) => {
   const { address } = ctx.params;
 
