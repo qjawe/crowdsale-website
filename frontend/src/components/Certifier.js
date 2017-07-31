@@ -1,6 +1,13 @@
 import PropTypes from 'proptypes';
 import React, { Component } from 'react';
-import { Button, Header, Icon, Modal } from 'semantic-ui-react';
+import Recaptcha from 'react-google-recaptcha';
+import { Button, Header, Modal } from 'semantic-ui-react';
+
+const STEPS = {
+  HOME: Symbol(),
+  VERIFY_WITH_KRAKEN: Symbol(),
+  VERIFY_WITH_PARITY: Symbol()
+};
 
 export default class Buy extends Component {
   static propTypes = {
@@ -8,7 +15,9 @@ export default class Buy extends Component {
   };
 
   state = {
-    open: false
+    open: false,
+    step: STEPS.HOME,
+    stoken: null
   };
 
   render () {
@@ -29,11 +38,29 @@ export default class Buy extends Component {
   }
 
   renderModal () {
-    const { open } = this.state;
+    const { open, step } = this.state;
 
     if (!open) {
       return null;
     }
+
+    if (step === STEPS.HOME) {
+      return this.renderHome();
+    }
+
+    if (step === STEPS.VERIFY_WITH_PARITY) {
+      return this.renderVerifyParity();
+    }
+
+    if (step === STEPS.VERIFY_WITH_KRAKEN) {
+      return this.renderVerifyKraken();
+    }
+
+    return null;
+  }
+
+  renderHome () {
+    const { stoken } = this.state;
 
     return (
       <Modal
@@ -50,23 +77,79 @@ export default class Buy extends Component {
           <p>
             Vestibulum erat turpis, accumsan quis porta at, consequat at arcu. Aliquam placerat et orci eget facilisis. Nam fermentum sodales sapien ut ultrices. Donec porta ante nec risus sollicitudin condimentum. Aliquam et tortor felis. Quisque vestibulum eu purus luctus scelerisque. Sed in mauris lorem. Vestibulum nibh mi, auctor sit amet condimentum vel, auctor id lectus. Aenean facilisis risus diam, quis bibendum diam aliquet in. Etiam sagittis non metus nec gravida. Cras mi massa, varius sit amet bibendum id, interdum eu elit. Nulla molestie felis tortor, sed interdum nunc porttitor sit amet. Vestibulum tincidunt porttitor eros, finibus aliquet orci tincidunt ac. Sed vel elit vel elit iaculis tempus. Morbi porttitor efficitur pellentesque.
           </p>
-          <div
-            className='g-recaptcha'
-            data-sitekey='6LeJMisUAAAAAGYZUeDSlR_DEuoQ9ClF9XACEJDt'
-          />
+        </Modal.Content>
+        <Modal.Content textAlign='center'>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
+            <Recaptcha
+              onChange={this.handleRecaptcha}
+              sitekey='6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
+              theme='dark'
+            />
+          </div>
         </Modal.Content>
         <Modal.Actions>
           <Button
+            disabled={!stoken}
             onClick={this.handleVerifyKraken}
             inverted
           >
             Verify with Kraken
           </Button>
           <Button
+            disabled={!stoken}
             onClick={this.handleVerifyParity}
             inverted
           >
             Verify with Parity
+          </Button>
+        </Modal.Actions>
+      </Modal>
+    );
+  }
+
+  renderVerifyKraken () {
+    return (
+      <Modal
+        basic
+        closeIcon='close'
+        open
+        onClose={this.handleClose}
+      >
+        <Modal.Content>
+          Verifying with Kraken
+        </Modal.Content>
+        <Modal.Actions>
+          <Button
+            onClick={this.handleClose}
+            inverted
+          >
+            Done
+          </Button>
+        </Modal.Actions>
+      </Modal>
+    );
+  }
+
+  renderVerifyParity () {
+    return (
+      <Modal
+        basic
+        closeIcon='close'
+        open
+        onClose={this.handleClose}
+      >
+        <Modal.Content>
+          Verifying with Parity
+        </Modal.Content>
+        <Modal.Actions>
+          <Button
+            onClick={this.handleClose}
+            inverted
+          >
+            Done
           </Button>
         </Modal.Actions>
       </Modal>
@@ -79,5 +162,17 @@ export default class Buy extends Component {
 
   handleClose = () => {
     this.setState({ open: false });
+  };
+
+  handleRecaptcha = (stoken) => {
+    this.setState({ stoken });
+  };
+
+  handleVerifyKraken = () => {
+    this.setState({ step: STEPS.VERIFY_WITH_KRAKEN });
+  };
+
+  handleVerifyParity = () => {
+    this.setState({ step: STEPS.VERIFY_WITH_PARITY });
   };
 }
