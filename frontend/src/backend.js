@@ -15,6 +15,10 @@ class Backend {
     return get(this.url('/'));
   }
 
+  async certified (address) {
+    return await get(this.url(`/certified/${address}`));
+  }
+
   async chartData () {
     return await get(this.url('/chart-data'));
   }

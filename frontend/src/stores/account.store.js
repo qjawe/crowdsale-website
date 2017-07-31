@@ -5,10 +5,15 @@ import { action, observable } from 'mobx';
 import backend from '../backend';
 
 const BALANCES_REFRESH_TIMER = 2500;
+const CERTIFIED_REFRESH_TIMER = 2500;
+
+let balancesTimeoutId = null;
+let certifiedTimeoutId = null;
 
 class AccountStore {
   @observable address = '';
   @observable balances = {};
+  @observable certified = null;
   @observable error = null;
   @observable unlocked = false;
   @observable publicKey = null;
@@ -28,12 +33,22 @@ class AccountStore {
       });
   }
 
-  pollBalances () {
-    this.updateBalances();
+  async pollBalances () {
+    await this.updateBalances();
 
-    setInterval(() => {
-      this.updateBalances();
+    clearTimeout(balancesTimeoutId);
+    balancesTimeoutId = setTimeout(() => {
+      this.pollBalances();
     }, BALANCES_REFRESH_TIMER);
+  }
+
+  async pollCertified () {
+    await this.updateCertified();
+
+    clearTimeout(certifiedTimeoutId);
+    certifiedTimeoutId = setTimeout(() => {
+      this.pollCertified();
+    }, CERTIFIED_REFRESH_TIMER);
   }
 
   read (file) {
@@ -73,6 +88,11 @@ class AccountStore {
   }
 
   @action
+  setCertified (certified) {
+    this.certified = certified;
+  }
+
+  @action
   setError (error) {
     this.error = error;
   }
@@ -83,6 +103,7 @@ class AccountStore {
 
     if (unlocked) {
       this.pollBalances();
+      this.pollCertified();
     }
   }
 
@@ -127,6 +148,12 @@ class AccountStore {
     const { eth, dot } = await backend.getBalances(this.address);
 
     this.setBalances({ eth, dot });
+  }
+
+  async updateCertified () {
+    const certified = await backend.certified(this.address);
+
+    this.setCertified(certified);
   }
 }
 

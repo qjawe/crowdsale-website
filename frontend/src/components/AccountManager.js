@@ -3,9 +3,13 @@ import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
 import { AccountIcon, InlineBalance } from 'parity-reactive-ui';
-import { Button, Container, Dimmer, Icon, Input, Label, Loader, Message, Segment } from 'semantic-ui-react';
+import { Button, Container, Dimmer, Header, Icon, Input, Label, Loader, Message, Popup, Segment } from 'semantic-ui-react';
 
 import accountStore from '../stores/account.store';
+
+const hSpaceStyle = {
+  width: '0.5em'
+};
 
 const dropzoneStyle = {
   cursor: 'pointer',
@@ -64,15 +68,56 @@ export default class AccountManager extends Component {
   }
 
   renderAccountInfo (address) {
+    const { certified } = accountStore;
+    let color = 'yellow';
+
+    if (certified !== null) {
+      color = certified
+        ? 'green'
+        : 'red';
+    }
+
+    const certifiedIcon = certified !== false
+      ? null
+      : (
+        <span>
+          <span style={hSpaceStyle}>&nbsp;</span>
+          <Popup
+            content={`
+              Lorem ipsum dolor sit amet,
+              consectetur adipiscing elit.
+              Pellentesque urna erat, lacinia
+              vitae mollis finibus, consequat in
+              tortor. Sed nec elementum tortor.
+            `}
+            size='small'
+            trigger={<Icon name='info circle' />}
+          />
+        </span>
+      );
+
     return (
-      <Label image>
+      <div style={{
+        alignItems: 'center',
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'center'
+      }}>
         <AccountIcon
           address={address}
+          style={{ height: 32 }}
         />
-        <strong>
+        <Label
+          color={color}
+          size='large'
+          style={{
+            marginLeft: '0.5em'
+          }}
+        >
           {address}
-        </strong>
-      </Label>
+        </Label>
+        {certifiedIcon}
+      </div>
     );
   }
 
@@ -124,15 +169,13 @@ export default class AccountManager extends Component {
 
     return (
       <Container textAlign='center'>
-        <div>Unlocking account</div>
         <div>{ this.renderAccountInfo(address) }</div>
         <br />
-        <p>Please type in your password:</p>
         <Input
           autoFocus
           label={
             <Button
-              content='Unlock'
+              content='Unlock your wallet'
               onClick={this.handleUnlockAccount}
               primary
             />

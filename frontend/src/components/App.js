@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
 import { Container, Divider, Header } from 'semantic-ui-react';
+import 'parity-reactive-ui';
 
-import AccountManager from './AccountManager';
 import Auction from './Auction';
-import Buy from './Buy';
+import Sale from './Sale';
 
 const style = {
+  marginBottom: '2em',
   padding: '1em 0'
 };
 
@@ -23,8 +24,7 @@ export default class App extends Component {
           <br />
           <Auction.Info />
           <Divider />
-          <AccountManager />
-          <Buy />
+          <Sale />
         </Container>
         <Auction.Details />
       </div>
