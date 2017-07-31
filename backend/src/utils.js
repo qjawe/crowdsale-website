@@ -12,6 +12,10 @@ function validateHex (hex) {
   }
 }
 
+function int2date (int) {
+  return new Date(int * 1000);
+}
+
 function hex2int (hex) {
   validateHex(hex);
 
@@ -77,6 +81,7 @@ function toChecksumAddress (_address) {
 }
 
 module.exports = {
+  int2date,
   hex2int,
   int2hex,
   hex2buf,

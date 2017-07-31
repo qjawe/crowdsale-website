@@ -8,23 +8,23 @@ const { uniq } = require('lodash');
 
 const ParityConnector = require('./parity');
 const Contract = require('./contract');
-const { hex2big, hex2int } = require('./utils');
+const { hex2big, int2date, hex2int } = require('./utils');
 
 class Sale {
   constructor (wsUrl, contractAddress) {
     this._address = contractAddress;
-    this._block = 0;
-    this._current = 0;
-    this._begin = 0;
-    this._divisor = 1;
-    this._end = 0;
-    this._available = 0;
-    this._cap = 0;
-    this._bonusDuration = 0;
-    this._bonusSize = 0;
+    this._beginTime = new Date();
+    this._block = {};
+    this._bonusDuration = '0x0';
+    this._bonusSize = '0x0';
+    this._currentPrice = '0x0';
+    this._divisor = '0x1';
+    this._endTime = new Date();
+    this._tokensAvailable = '0x0';
+    this._tokenCap = '0x0';
     this._statementHash = '0x';
-    this._totalReceived = 0;
-    this._totalAccounted = 0;
+    this._totalReceived = '0x0';
+    this._totalAccounted = '0x0';
 
     this._connector = new ParityConnector(wsUrl);
     this._contract = new Contract(this._connector.transport, contractAddress);
@@ -59,14 +59,14 @@ class Sale {
 
     Promise
       .all([
-        contract.beginTime().then(hex2int),
+        contract.beginTime().then(hex2int).then(int2date),
         contract.STATEMENT_HASH(),
-        contract.BONUS_DURATION().then(hex2int),
-        contract.BONUS_SIZE().then(hex2int),
-        contract.DIVISOR().then(hex2int)
+        contract.BONUS_DURATION(),
+        contract.BONUS_SIZE(),
+        contract.DIVISOR()
       ])
-      .then(([begin, statementHash, bonusDuration, bonusSize, divisor]) => {
-        this._begin = begin;
+      .then(([beginTime, statementHash, bonusDuration, bonusSize, divisor]) => {
+        this._beginTime = beginTime;
         this._statementHash = statementHash;
         this._bonusDuration = bonusDuration;
         this._bonusSize = bonusSize;
@@ -86,26 +86,35 @@ class Sale {
   }
 
   async update (block) {
+    block.timestamp = int2date(block.timestamp);
+
     this._block = block;
 
     const contract = this._contract;
-    const [ end, price, cap, available, totalReceived, totalAccounted ] = await Promise.all([
-      contract.endTime().then(hex2int),
-      contract.currentPrice().then(hex2int),
-      contract.tokenCap().then(hex2int),
-      contract.tokensAvailable().then(hex2int),
-      contract.totalReceived().then(hex2int),
-      contract.totalAccounted().then(hex2int)
+    const [
+      endTime,
+      currentPrice,
+      tokenCap,
+      tokensAvailable,
+      totalReceived,
+      totalAccounted
+    ] = await Promise.all([
+      contract.endTime().then(hex2int).then(int2date),
+      contract.currentPrice(),
+      contract.tokenCap(),
+      contract.tokensAvailable(),
+      contract.totalReceived(),
+      contract.totalAccounted()
     ]);
 
-    this._end = end;
-    this._price = price;
-    this._cap = cap;
-    this._available = available;
+    this._endTime = endTime;
+    this._currentPrice = currentPrice;
+    this._tokenCap = tokenCap;
+    this._tokensAvailable = tokensAvailable;
     this._totalReceived = totalReceived;
     this._totalAccounted = totalAccounted;
 
-    console.log(`Block ${block.number}, price is ${this._price}`);
+    console.log(`Block ${block.number}, price is ${hex2int(currentPrice)}`);
   }
 
   async getChartData () {
@@ -133,7 +142,7 @@ class Sale {
       const bnIndex = blockNumbers.indexOf(log.blockNumber);
       const block = blocks[bnIndex];
 
-      log.timestamp = hex2int(block.timestamp);
+      log.timestamp = int2date(block.timestamp);
     });
 
     let totalAccounted = new BigNumber(0);
@@ -152,6 +161,26 @@ class Sale {
       });
   }
 
+  get beginTime () {
+    return this._beginTime;
+  }
+
+  get block () {
+    return this._block;
+  }
+
+  get bonusDuration () {
+    return this._bonusDuration;
+  }
+
+  get bonusSize () {
+    return this._bonusSize;
+  }
+
+  get buyinId () {
+    return this._buyinId;
+  }
+
   get connector () {
     return this._connector;
   }
@@ -160,8 +189,16 @@ class Sale {
     return this._address;
   }
 
-  get buyinId () {
-    return this._buyinId;
+  get currentPrice () {
+    return this._currentPrice;
+  }
+
+  get divisor () {
+    return this._divisor;
+  }
+
+  get endTime () {
+    return this._endTime;
   }
 
   get statementHash () {
@@ -172,40 +209,12 @@ class Sale {
     return this._connector.status;
   }
 
-  get block () {
-    return this._block;
+  get tokensAvailable () {
+    return this._tokensAvailable;
   }
 
-  get price () {
-    return this._price;
-  }
-
-  get begin () {
-    return this._begin;
-  }
-
-  get divisor () {
-    return this._divisor;
-  }
-
-  get end () {
-    return this._end;
-  }
-
-  get available () {
-    return this._available;
-  }
-
-  get cap () {
-    return this._cap;
-  }
-
-  get bonusDuration () {
-    return this._bonusDuration;
-  }
-
-  get bonusSize () {
-    return this._bonusSize;
+  get tokenCap () {
+    return this._tokenCap;
   }
 
   get totalReceived () {

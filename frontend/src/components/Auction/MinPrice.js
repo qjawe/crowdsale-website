@@ -7,13 +7,13 @@ import auctionStore from '../../stores/auction.store';
 @observer
 export default class Price extends Component {
   render () {
-    const { currentPrice } = auctionStore;
+    const { endPrice } = auctionStore;
 
     return (
       <Statistic>
-        <Statistic.Label>Current Price</Statistic.Label>
+        <Statistic.Label>The final price will be at least</Statistic.Label>
         <Statistic.Value>
-          <span>{auctionStore.formatPrice(currentPrice).toFormat(5)}</span>
+          <span>{auctionStore.formatPrice(endPrice).toFormat(5)}</span>
           <small> ETH/DOT</small>
         </Statistic.Value>
       </Statistic>

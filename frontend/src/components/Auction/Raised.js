@@ -61,8 +61,8 @@ const innerCircleStyle = {
 @observer
 export default class Raised extends Component {
   render () {
-    const { available, cap } = auctionStore;
-    const ratio = 1 - available.div(cap).toNumber();
+    const { tokensAvailable, tokenCap } = auctionStore;
+    const ratio = 1 - tokensAvailable.div(tokenCap).toNumber();
     const percentage = ratio * 100;
     const edges = `calc(${DOTS_SIZE}px + ${CIRCLE_SIZE / 2}rem)`;
     const circleCenter = `calc(${percentage}% + ${edges} - 2*${ratio}*${edges})`;
