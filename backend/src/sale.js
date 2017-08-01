@@ -37,7 +37,20 @@ class Sale {
       .register('endTime')
       .register('tokensAvailable')
       .register('tokenCap')
-      .register('totalReceived');
+      .register('totalReceived')
+      .register('certifier');
+
+    this._certifier = contract
+      .certifier()
+      .then((hex) => {
+        const certifierAddress = '0x' + hex.substring(66 - 40);
+
+        const certifier = new Contract(this._connector.transport, certifierAddress);
+
+        certifier.register('certified', 'address');
+
+        return certifier;
+      });
 
     this._buyinId = contract.buyin.id;
 
@@ -69,6 +82,12 @@ class Sale {
     ];
 
     return { value, bonus };
+  }
+
+  async isVerified (address) {
+    const certifier = await this._certifier;
+
+    return await certifier.certified(address).then(hex2int) === 1;
   }
 
   async update (block) {
