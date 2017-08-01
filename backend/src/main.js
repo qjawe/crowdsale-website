@@ -13,11 +13,29 @@ const Sale = require('./sale');
 const EthereumTx = require('ethereumjs-tx');
 const { buf2hex, buf2big, big2hex } = require('./utils');
 
+const onfido = require('./onfido');
+const recaptcha = require('./recaptcha');
+
 const app = new Koa();
 const router = new Router();
 const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
 
-router.get('/address/:address', async (ctx, next) => {
+router.post('/applicant', async (ctx, next) => {
+  const { firstName, lastName, stoken } = ctx.request.body;
+
+  try {
+    await recaptcha.validate(stoken);
+    const { applicantId, sdkToken } = await onfido.createApplicant({ firstName, lastName });
+
+    ctx.body = { applicantId, sdkToken };
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = error.message;
+    ctx.app.emit('error', error, ctx);
+  }
+});
+
+router.get('/balances/:address', async (ctx, next) => {
   const { address } = ctx.params;
   const [ eth, participant ] = await Promise.all([
     sale.connector.balance(address),
@@ -26,7 +44,7 @@ router.get('/address/:address', async (ctx, next) => {
 
   ctx.body = {
     eth: '0x' + eth.toString(16),
-    dot: '0x' + participant.value.toString(16)
+    accounted: '0x' + participant.value.toString(16)
   };
 });
 

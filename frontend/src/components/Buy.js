@@ -26,7 +26,9 @@ export default class Buy extends Component {
       return null;
     }
 
-    if (!buyStore.termsAccepted) {
+    const { notFromJapan, termsAccepted } = buyStore;
+
+    if (!termsAccepted || !notFromJapan) {
       return null;
     }
 

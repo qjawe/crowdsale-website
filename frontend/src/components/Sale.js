@@ -96,6 +96,5 @@ export default class Sale extends Component {
 
   handleNoWallet = () => {
     this.setState({ step: STEPS.CREATE_WALLET });
-
   };
 }

@@ -1,7 +1,12 @@
+import { observer } from 'mobx-react';
 import PropTypes from 'proptypes';
 import React, { Component } from 'react';
 import Recaptcha from 'react-google-recaptcha';
 import { Button, Header, Modal } from 'semantic-ui-react';
+
+import Certifiers from './Certifiers';
+
+import certifierStore from '../stores/certifier.store';
 
 const STEPS = {
   HOME: Symbol(),
@@ -9,15 +14,15 @@ const STEPS = {
   VERIFY_WITH_PARITY: Symbol()
 };
 
-export default class Buy extends Component {
+@observer
+export default class Certifier extends Component {
   static propTypes = {
     disabled: PropTypes.bool
   };
 
   state = {
     open: false,
-    step: STEPS.HOME,
-    stoken: null
+    step: STEPS.HOME
   };
 
   render () {
@@ -27,7 +32,7 @@ export default class Buy extends Component {
       <div>
         {this.renderModal()}
         <Button
-          content='Complete Compliance'
+          content='Verify your Identity'
           disabled={disabled}
           onClick={this.handleCertify}
           primary
@@ -60,13 +65,13 @@ export default class Buy extends Component {
   }
 
   renderHome () {
-    const { stoken } = this.state;
+    const { stoken } = certifierStore;
 
     return (
       <Modal
         basic
         closeIcon='close'
-        open={open}
+        open
         onClose={this.handleClose}
       >
         <Header content='VERIFYING YOUR IDENTITY' />
@@ -78,7 +83,7 @@ export default class Buy extends Component {
             Vestibulum erat turpis, accumsan quis porta at, consequat at arcu. Aliquam placerat et orci eget facilisis. Nam fermentum sodales sapien ut ultrices. Donec porta ante nec risus sollicitudin condimentum. Aliquam et tortor felis. Quisque vestibulum eu purus luctus scelerisque. Sed in mauris lorem. Vestibulum nibh mi, auctor sit amet condimentum vel, auctor id lectus. Aenean facilisis risus diam, quis bibendum diam aliquet in. Etiam sagittis non metus nec gravida. Cras mi massa, varius sit amet bibendum id, interdum eu elit. Nulla molestie felis tortor, sed interdum nunc porttitor sit amet. Vestibulum tincidunt porttitor eros, finibus aliquet orci tincidunt ac. Sed vel elit vel elit iaculis tempus. Morbi porttitor efficitur pellentesque.
           </p>
         </Modal.Content>
-        <Modal.Content textAlign='center'>
+        <Modal.Content>
           <div style={{
             display: 'flex',
             justifyContent: 'center'
@@ -135,24 +140,7 @@ export default class Buy extends Component {
 
   renderVerifyParity () {
     return (
-      <Modal
-        basic
-        closeIcon='close'
-        open
-        onClose={this.handleClose}
-      >
-        <Modal.Content>
-          Verifying with Parity
-        </Modal.Content>
-        <Modal.Actions>
-          <Button
-            onClick={this.handleClose}
-            inverted
-          >
-            Done
-          </Button>
-        </Modal.Actions>
-      </Modal>
+      <Certifiers.Parity />
     );
   }
 
@@ -165,7 +153,7 @@ export default class Buy extends Component {
   };
 
   handleRecaptcha = (stoken) => {
-    this.setState({ stoken });
+    certifierStore.setSToken(stoken);
   };
 
   handleVerifyKraken = () => {

@@ -6,6 +6,7 @@ import { AccountIcon, InlineBalance } from 'parity-reactive-ui';
 import { Button, Container, Dimmer, Header, Icon, Input, Label, Loader, Message, Popup, Segment } from 'semantic-ui-react';
 
 import accountStore from '../stores/account.store';
+import auctionStore from '../stores/auction.store';
 
 const hSpaceStyle = {
   width: '0.5em'
@@ -123,8 +124,9 @@ export default class AccountManager extends Component {
 
   renderBalances () {
     const { balances } = accountStore;
+    const { currentPrice } = auctionStore;
 
-    if (!balances.eth && !balances.dot) {
+    if (!balances.eth && !balances.accounted) {
       return null;
     }
 
@@ -137,7 +139,7 @@ export default class AccountManager extends Component {
           </Label.Detail>
         </Label>
         <Label>
-          {balances.dot.toFormat(0)}
+          >= {balances.accounted.div(currentPrice).toFormat(3)}
           <Label.Detail>
             DOT
           </Label.Detail>

@@ -13,6 +13,7 @@ const TRANSACTION_REFRESH_DELAY = 500;
 
 class BuyStore {
   @observable mining = false;
+  @observable notFromJapan = false;
   @observable requiredEth = 0;
   @observable termsAccepted = false;
   // Buyin transaction hash
@@ -86,6 +87,11 @@ class BuyStore {
     this.updateTx({ sending: false, mining: true });
 
     return this.pollTransaction();
+  }
+
+  @action
+  setNotFromJapan (notFromJapan) {
+    this.notFromJapan = notFromJapan;
   }
 
   @action

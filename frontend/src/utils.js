@@ -21,7 +21,13 @@ export async function post (url, body) {
     }
   });
 
-  return response.json();
+  try {
+    const json = await response.json();
+
+    return json;
+  } catch (error) {
+    return response.text();
+  }
 }
 
 function validateHex (hex) {

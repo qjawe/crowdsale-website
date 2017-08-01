@@ -23,6 +23,7 @@
     "koa-body": "^2.3.0",
     "koa-bodyparser": "^4.2.0",
     "koa-router": "^7.2.1",
+    "node-fetch": "^1.7.1",
     "redis": "^2.7.1",
     "ws": "^3.0.0"
   },

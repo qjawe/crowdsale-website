@@ -23,12 +23,20 @@ class Backend {
     return await get(this.url('/chart-data'));
   }
 
+  async createApplicant ({ firstName, lastName, stoken }) {
+    return await post(this.url('/applicant'), {
+      firstName,
+      lastName,
+      stoken
+    });
+  }
+
   async getBalances (address) {
-    const { eth, dot } = await get(this.url(`/address/${address}`));
+    const { eth, accounted } = await get(this.url(`/balances/${address}`));
 
     return {
       eth: new BigNumber(eth),
-      dot: new BigNumber(dot)
+      accounted: new BigNumber(accounted)
     };
   }
 

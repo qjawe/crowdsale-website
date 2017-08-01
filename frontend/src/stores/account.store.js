@@ -145,9 +145,9 @@ class AccountStore {
   }
 
   async updateBalances () {
-    const { eth, dot } = await backend.getBalances(this.address);
+    const { eth, accounted } = await backend.getBalances(this.address);
 
-    this.setBalances({ eth, dot });
+    this.setBalances({ eth, accounted });
   }
 
   async updateCertified () {
