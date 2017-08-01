@@ -6,8 +6,17 @@ import certifierStore from '../../stores/certifier.store';
 
 @observer
 export default class ParityCertifier extends Component {
+
+  componentWillUnmount () {
+    certifierStore.unmountOnfido();
+  }
+
   render () {
-    const { error, firstName, lastName, loading } = certifierStore;
+    const { error, firstName, lastName, loading, onfido } = certifierStore;
+
+    if (onfido && onfido.sdkToken) {
+      return this.renderOnfidoForm();
+    }
 
     return (
       <Modal
@@ -73,6 +82,28 @@ export default class ParityCertifier extends Component {
     );
   }
 
+  renderOnfidoForm () {
+    return (
+      <Modal
+        basic
+        closeIcon='close'
+        open
+        onClose={this.handleClose}
+      >
+        <Header content='VERIFYING WITH PARITY' />
+        <Modal.Content>
+          <div id='onfido-mount' ref={this.handleSetOnfidoElt} />
+        </Modal.Content>
+        <Modal.Actions>
+        </Modal.Actions>
+      </Modal>
+    );
+  }
+
+  handleClose = () => {
+
+  };
+
   handleFirstNameChange = (event) => {
     const firstName = event.target.value;
 
@@ -88,4 +119,8 @@ export default class ParityCertifier extends Component {
   handleNext = () => {
     certifierStore.createApplicant();
   };
+
+  handleSetOnfidoElt = () => {
+    certifierStore.mountOnfido();
+  }
 }

@@ -24,6 +24,16 @@ async function _call (endpoint, data = {}) {
   });
 }
 
+async function checkApplicant (applicantId) {
+  return await _call(`/applicants/${applicantId}/checks`, {
+    type: 'express',
+    reports: [
+      { name: 'document' },
+      { name: 'facial_similarity' }
+    ]
+  });
+}
+
 async function createApplicant ({ firstName, lastName }) {
   const applicant = await _call('/applicants', {
     first_name: firstName,
@@ -39,5 +49,6 @@ async function createApplicant ({ firstName, lastName }) {
 }
 
 module.exports = {
+  checkApplicant,
   createApplicant
 };

@@ -1,4 +1,5 @@
 import { action, observable } from 'mobx';
+import Onfido from 'onfido-sdk-ui';
 
 import backend from '../backend';
 
@@ -7,7 +8,7 @@ class CertifierStore {
   @observable firstName = '';
   @observable lastName = '';
   @observable loading = false;
-  @observable sdkToken = null;
+  @observable onfido = null;
   @observable stoken = null;
 
   async createApplicant () {
@@ -16,18 +17,45 @@ class CertifierStore {
     const { firstName, lastName, stoken } = this;
 
     try {
-      const sdkToken = await backend.createApplicant({
+      const { applicantId, sdkToken } = await backend.createApplicant({
         firstName,
         lastName,
         stoken
       });
 
-      this.setSDKToken(sdkToken);
+      this.setOnfido({ applicantId, sdkToken });
     } catch (error) {
       this.setError(error);
     }
 
     this.setLoading(false);
+  }
+
+  handleOnfidoComplete = async () => {
+    const result = await backend.checkApplicant(this.onfido.applicantId);
+
+    console.warn('complete', result);
+  };
+
+  mountOnfido () {
+    this.onfidoOut = Onfido.init({
+      useModal: false,
+      token: this.onfido.sdkToken,
+      containerId: 'onfido-mount',
+      onComplete: this.handleOnfidoComplete,
+      steps: [
+        {
+          type: 'document',
+          options: {
+          }
+        },
+        'face'
+      ]
+    });
+  }
+
+  unmountOnfido () {
+    this.onfidoOut.tearDown();
   }
 
   @action
@@ -51,8 +79,8 @@ class CertifierStore {
   }
 
   @action
-  setSDKToken (sdkToken) {
-    this.sdkToken = sdkToken;
+  setOnfido ({ applicantId, sdkToken }) {
+    this.onfido = { applicantId, sdkToken };
   }
 
   @action

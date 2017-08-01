@@ -20,7 +20,21 @@ const app = new Koa();
 const router = new Router();
 const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
 
-router.post('/applicant', async (ctx, next) => {
+router.post('/check-applicant', async (ctx, next) => {
+  const { applicantId } = ctx.request.body;
+
+  try {
+    const result = await onfido.checkApplicant(applicantId);
+
+    ctx.body = result;
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = error.message;
+    ctx.app.emit('error', error, ctx);
+  }
+});
+
+router.post('/create-applicant', async (ctx, next) => {
   const { firstName, lastName, stoken } = ctx.request.body;
 
   try {

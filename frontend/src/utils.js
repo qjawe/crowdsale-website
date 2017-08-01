@@ -21,13 +21,13 @@ export async function post (url, body) {
     }
   });
 
-  try {
-    const json = await response.json();
+  if (!response.ok) {
+    const text = await response.text();
 
-    return json;
-  } catch (error) {
-    return response.text();
+    throw new Error(text);
   }
+
+  return response.json();
 }
 
 function validateHex (hex) {
