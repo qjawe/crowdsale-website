@@ -85,8 +85,10 @@ class ParityConnector extends EventEmitter {
           ._transport
           .request('eth_getTransactionReceipt', hash)
           .then((receipt) => {
+            console.log('receipt.blockNumber', receipt.blockNumber);
+
             if (!receipt.blockNumber) {
-              if (attempts === 60) {
+              if (attempts >= 60) {
                 reject(new Error('Exceeded allowed attempts'));
               } else {
                 // Try again next block
@@ -96,11 +98,18 @@ class ParityConnector extends EventEmitter {
               return;
             }
 
-            console.log('tx went through', receipt);
-
             resolve(receipt);
           })
-          .catch((err) => reject(err));
+          .catch((err) => {
+            if (attempts >= 10) {
+              reject(err);
+            } else {
+              console.error('Error while getting receipt, will retry:', err.message);
+
+              // Try again next block
+              this.once('block', attempt);
+            }
+          });
       };
 
       attempt();

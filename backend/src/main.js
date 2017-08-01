@@ -19,14 +19,14 @@ const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
 
 router.get('/address/:address', async (ctx, next) => {
   const { address } = ctx.params;
-  const [ eth, participant, isVerified ] = await Promise.all([
+  const [ eth, participant, isCertified ] = await Promise.all([
     sale.connector.balance(address),
     sale.participant(address),
-    sale.isVerified(address)
+    sale.isCertified(address)
   ]);
 
   ctx.body = {
-    verified: isVerified,
+    certified: isCertified,
     eth: '0x' + eth.toString(16),
     dot: '0x' + participant.value.toString(16)
   };

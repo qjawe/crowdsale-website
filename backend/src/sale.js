@@ -8,6 +8,13 @@ const Contract = require('./contract');
 const { hex2big, hex2int } = require('./utils');
 
 class Sale {
+  /**
+   * Abstraction over the sale contract, found here:
+   * https://github.com/paritytech/second-price-auction/blob/master/src/contracts/SecondPriceAuction.sol
+   *
+   * @param {String} wsUrl           including protocol, eg.: ws://example.com:5555/
+   * @param {String} contractAddress `0x` prefixed
+   */
   constructor (wsUrl, contractAddress) {
     this._address = contractAddress;
     this._block = 0;
@@ -43,8 +50,7 @@ class Sale {
     this._certifier = contract
       .certifier()
       .then((hex) => {
-        const certifierAddress = '0x' + hex.substring(66 - 40);
-
+        const certifierAddress = '0x' + hex.slice(-40);
         const certifier = new Contract(this._connector.transport, certifierAddress);
 
         certifier.register('certified', 'address');
@@ -73,6 +79,13 @@ class Sale {
       });
   }
 
+  /**
+   * Get the amount of DOTs and received bonus held by the address
+   *
+   * @param {String} address `0x` prefixed
+   *
+   * @return {Object} containing `value` and `bonus` as `BigNumber`s
+   */
   async participant (address) {
     const rawParticipant = await this._contract.participants(address);
     const cleanParticipant = rawParticipant.replace(/^0x/, '');
@@ -84,12 +97,24 @@ class Sale {
     return { value, bonus };
   }
 
-  async isVerified (address) {
+  /**
+   * Check whether or not the address is certified
+   *
+   * @param {String} address `0x` prefixed
+   *
+   * @return {Boolean}
+   */
+  async isCertified (address) {
     const certifier = await this._certifier;
 
     return await certifier.certified(address).then(hex2int) === 1;
   }
 
+  /**
+   * Trigger an update of the state of the sale for the current block
+   *
+   * @param {Object} block object as returned from Parity JSON-RPC
+   */
   async update (block) {
     this._block = block;
 

@@ -19,6 +19,33 @@ class QueueConsumer {
     this._connector = new ParityConnector(wsUrl);
     this._contract = new Contract(this._connector.transport, contractAddress);
     this._connector.on('block', () => this.update());
+
+    this._connector.transactionReceipt('0x25f747f1a0eec8ff7d1c3be3ab927597ee8eac56aeb9252d29ca844d055ba6d9').then(console.log);
+
+    this._contract.event(
+      'Buyin',
+      {
+        indexed: true,
+        label: 'who',
+        type: 'address'
+      },
+      {
+        label: 'accepted',
+        type: 'uint256'
+      },
+      {
+        label: 'refund',
+        type: 'uint256'
+      },
+      {
+        label: 'price',
+        type: 'uint256'
+      },
+      {
+        label: 'bonus',
+        type: 'uint256'
+      }
+    );
   }
 
   async update () {
@@ -37,18 +64,16 @@ class QueueConsumer {
 
       const txBuf = Buffer.from(tx.substring(2), 'hex');
       const txObj = new EthereumTx(txBuf);
-      const nonce = buf2hex(txObj.nonce);
+      const nonce = txObj.nonce.length ? buf2hex(txObj.nonce) : '0x0';
 
       console.log('send', address, nonce);
 
       try {
         const hash = await connector.sendTx(tx);
-        const receipt = await connector.transactionReceipt(hash);
+        const { logs } = await connector.transactionReceipt(hash);
+        const { accepted } = this._contract.findEvent('Buyin', logs);
 
-        console.log('receipt check', receipt);
-
-        // TODO: get the value minus refunds
-        await store.confirmTx(address, nonce, hash, '0x');
+        await store.confirmTx(address, nonce, hash, accepted);
       } catch (err) {
         await store.rejectTx(address, nonce, err.message);
       }
