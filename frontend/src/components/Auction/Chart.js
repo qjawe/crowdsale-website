@@ -323,9 +323,9 @@ class CustomChart extends Component {
     const { mouse, xDomain } = state;
     const { beginTime, endTime } = auctionStore;
 
-    const padding = (endTime - beginTime) * 0.05;
+    const padding = (endTime - beginTime) * 0.1;
     const begin = beginTime.getTime() - padding;
-    const end = endTime.getTime() + padding;
+    const end = endTime.getTime();
 
     if (!mouse || !xDomain || zoom === 0) {
       return [ begin, end ];

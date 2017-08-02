@@ -96,6 +96,7 @@ class Contract {
 
     this._methods.set(name, method);
     this[name] = (...params) => this._call(name, params);
+    this[name].getCallData = (...params) => method.data(params);
     this[name].id = method.id;
 
     return this;
@@ -138,6 +139,10 @@ class Contract {
         to: this._address,
         data: method.data(params)
       });
+  }
+
+  get address () {
+    return this._address;
   }
 }
 

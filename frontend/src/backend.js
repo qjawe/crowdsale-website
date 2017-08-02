@@ -29,6 +29,14 @@ class Backend {
     });
   }
 
+  async checkStatus ({ applicantId, checkId, address }) {
+    return await post(this.url('/check-status'), {
+      applicantId,
+      checkId,
+      address
+    });
+  }
+
   async createApplicant ({ firstName, lastName, stoken }) {
     return await post(this.url('/create-applicant'), {
       firstName,

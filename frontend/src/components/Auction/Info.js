@@ -5,6 +5,7 @@ import { Statistic } from 'semantic-ui-react';
 import Bonus from './Bonus';
 import MinPrice from './MinPrice';
 import Price from './Price';
+import Progress from './Progress';
 import Raised from './Raised';
 import Spendable from './Spendable';
 import TokensAvailable from './TokensAvailable';
@@ -39,13 +40,14 @@ export default class Info extends Component {
           <Spendable />
         </Statistic.Group>
 
-        <Raised />
+        <Progress />
 
         <Statistic.Group
           style={statGroupStyle}
           size='small'
-          widths='one'
+          widths='two'
         >
+          <Raised />
           <MinPrice />
         </Statistic.Group>
       </div>

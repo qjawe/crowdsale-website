@@ -21,6 +21,7 @@ class AuctionStore {
   @observable statementHash = '0x';
   @observable tokensAvailable = new BigNumber(0);
   @observable tokenCap = new BigNumber(0);
+  @observable totalAccounted = new BigNumber(0);
   @observable totalReceived = new BigNumber(0);
 
   USDWEI = new BigNumber(10).pow(18).div(200);
@@ -144,7 +145,10 @@ class AuctionStore {
     try {
       const status = await backend.status();
 
-      this.update(status);
+      // Same block, no updates
+      if (this.block.hash !== status.block.hash) {
+        this.update(status);
+      }
     } catch (error) {
       console.error(error);
     }
@@ -175,12 +179,13 @@ class AuctionStore {
       statementHash,
       tokensAvailable,
       tokenCap,
+      totalAccounted,
       totalReceived
     } = status;
 
     // Only update the chart when the price updates
-    const nextCurrentPrice = new BigNumber(currentPrice);
-    const update = !nextCurrentPrice.eq(this.currentPrice);
+    const nextTotalAccounted = new BigNumber(totalAccounted);
+    const update = !nextTotalAccounted.eq(this.totalAccounted);
 
     this.beginTime = new Date(beginTime);
     this.bonusDuration = new BigNumber(bonusDuration);
@@ -190,6 +195,7 @@ class AuctionStore {
     this.endTime = new Date(endTime);
     this.tokensAvailable = new BigNumber(tokensAvailable);
     this.tokenCap = new BigNumber(tokenCap);
+    this.totalAccounted = new BigNumber(totalAccounted);
     this.totalReceived = new BigNumber(totalReceived);
 
     this.block = block;

@@ -10,5 +10,11 @@ module.exports = {
   },
   recaptcha: {
     secret: '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe'
-  }
+  },
+  account: {
+    filename: 'empty-phrase.json',
+    password: ''
+  },
+  // Gas Price of 2GWei
+  gasPrice: '0x77359400'
 };

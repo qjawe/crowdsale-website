@@ -27,6 +27,12 @@ class ParityConnector extends EventEmitter {
       });
   }
 
+  estimateGas (options) {
+    return this
+      ._transport
+      .request('eth_estimateGas', options);
+  }
+
   getBlock (blockNumber) {
     return this
       ._transport

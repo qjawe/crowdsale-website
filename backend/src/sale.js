@@ -79,6 +79,7 @@ class Sale {
 
         this._certifier = new Contract(this._connector.transport, certifierAddress);
         this._certifier
+          .register('certify', 'address')
           .register('certified', 'address');
       });
   }
@@ -178,6 +179,10 @@ class Sale {
           time: log.timestamp
         };
       });
+  }
+
+  get certifier () {
+    return this._certifier;
   }
 
   get beginTime () {

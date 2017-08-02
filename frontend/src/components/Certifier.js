@@ -20,21 +20,28 @@ export default class Certifier extends Component {
     disabled: PropTypes.bool
   };
 
-  state = {
-    open: false,
+  static initialState = {
     step: STEPS.HOME
   };
 
+  state = Certifier.initialState;
+
   render () {
+    const { pending } = certifierStore;
     const { disabled } = this.props;
 
     return (
       <div>
         {this.renderModal()}
         <Button
-          content='Verify your Identity'
-          disabled={disabled}
+          content={
+            pending
+            ? 'Verifying your identity...'
+            : 'Verify your identity'
+          }
+          disabled={disabled || pending}
           onClick={this.handleCertify}
+          loading={pending}
           primary
           size='big'
         />
@@ -43,7 +50,8 @@ export default class Certifier extends Component {
   }
 
   renderModal () {
-    const { open, step } = this.state;
+    const { open } = certifierStore;
+    const { step } = this.state;
 
     if (!open) {
       return null;
@@ -145,11 +153,12 @@ export default class Certifier extends Component {
   }
 
   handleCertify = () => {
-    this.setState({ open: true });
+    certifierStore.setOpen(true);
   };
 
   handleClose = () => {
-    this.setState({ open: false });
+    certifierStore.setOpen(false);
+    this.setState(Certifier.initialState);
   };
 
   handleRecaptcha = (stoken) => {

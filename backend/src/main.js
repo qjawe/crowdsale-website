@@ -8,6 +8,7 @@ const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
 const cors = require('kcors');
+const Certifier = require('./certifier');
 const Sale = require('./sale');
 // const redis = require('./redis');
 const EthereumTx = require('ethereumjs-tx');
@@ -19,6 +20,28 @@ const recaptcha = require('./recaptcha');
 const app = new Koa();
 const router = new Router();
 const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
+const certifier = new Certifier(sale);
+
+router.post('/check-status', async (ctx, next) => {
+  const { applicantId, checkId, address } = ctx.request.body;
+
+  try {
+    const { pending, valid } = await onfido.checkStatus(applicantId, checkId);
+
+    if (pending || !valid) {
+      ctx.body = { pending, valid };
+      return;
+    }
+
+    const tx = await certifier.certify(address);
+
+    ctx.body = { valid, tx };
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = error.message;
+    ctx.app.emit('error', error, ctx);
+  }
+});
 
 router.post('/check-applicant', async (ctx, next) => {
   const { applicantId } = ctx.request.body;

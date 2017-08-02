@@ -10,7 +10,7 @@ const style = {
 const containerStyle = {
   display: 'flex',
   flexDirection: 'row',
-  padding: '1em 0'
+  padding: '2em 0 3em'
 };
 
 const contentStyle = {
