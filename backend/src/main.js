@@ -9,7 +9,7 @@ const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
 const cors = require('kcors');
 const Sale = require('./sale');
-// const redis = require('./redis');
+const store = require('./store');
 const EthereumTx = require('ethereumjs-tx');
 const { buf2hex, buf2big, big2hex } = require('./utils');
 
@@ -19,12 +19,14 @@ const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
 
 router.get('/address/:address', async (ctx, next) => {
   const { address } = ctx.params;
-  const [ eth, participant ] = await Promise.all([
+  const [ eth, participant, isCertified ] = await Promise.all([
     sale.connector.balance(address),
-    sale.participant(address)
+    sale.participant(address),
+    sale.isCertified(address)
   ]);
 
   ctx.body = {
+    certified: isCertified,
     eth: '0x' + eth.toString(16),
     dot: '0x' + participant.value.toString(16)
   };
@@ -51,6 +53,12 @@ router.post('/tx', async (ctx, next) => {
 
   const txBuf = Buffer.from(tx.substring(2), 'hex');
   const txObj = new EthereumTx(txBuf);
+
+  if (!txObj.verifySignature()) {
+    ctx.status = 400;
+    ctx.body = 'Invalid transaction';
+  }
+
   // const to = buf2hex(txObj.to);
   const from = buf2hex(txObj.from);
   const value = buf2big(txObj.value);
@@ -62,7 +70,7 @@ router.post('/tx', async (ctx, next) => {
   const balance = await sale.connector.balance(from);
 
   if (balance.cmp(requiredEth) < 0) {
-    console.log('TODO: Queue tx for later send!');
+    await store.addToQueue(from, tx, requiredEth);
 
     ctx.body = { hash: '0x', requiredEth: big2hex(requiredEth.sub(balance)) };
     return;

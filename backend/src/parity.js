@@ -66,6 +66,55 @@ class ParityConnector extends EventEmitter {
   }
 
   /**
+   * Get a transaction receipt by hash.
+   *
+   * Note: This will await till the transaction has been mined.
+   *
+   * @param  {String} hash `0x` prefixed tx hash
+   *
+   * @return {Promise<Object>} tx receipt: https://github.com/paritytech/parity/wiki/JSONRPC-eth-module#returns-20
+   */
+  transactionReceipt (hash) {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+
+      const attempt = () => {
+        attempts += 1;
+
+        this
+          ._transport
+          .request('eth_getTransactionReceipt', hash)
+          .then((receipt) => {
+            console.log('receipt.blockNumber', receipt.blockNumber);
+
+            if (receipt.blockNumber) {
+              return resolve(receipt);
+            }
+
+            if (attempts >= 60) {
+              reject(new Error('Exceeded allowed attempts'));
+            } else {
+              // Try again next block
+              this.once('block', attempt);
+            }
+          })
+          .catch((err) => {
+            if (attempts >= 10) {
+              reject(err);
+            } else {
+              console.error('Error while getting receipt, will retry:', err.message);
+
+              // Try again next block
+              this.once('block', attempt);
+            }
+          });
+      };
+
+      attempt();
+    });
+  }
+
+  /**
    * Get the balance for address
    *
    * @param  {String} address
@@ -78,14 +127,12 @@ class ParityConnector extends EventEmitter {
       .request('eth_getBalance', address)
       .then(hex2big);
   }
+
   /**
    * Direct access to the underlying transport.
    * Get next nonce for address
    *
    * @return {RpcTransport}
-   * @param  {String} address
-   *
-   * @return {Promise<Number>} nonce
    */
   get transport () {
     return this._transport;

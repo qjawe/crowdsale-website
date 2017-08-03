@@ -5,6 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "node src/main.js",
+    "start:consumer": "node src/consumer.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --ignore-path .gitignore ./src/",
     "lint:js:cached": "eslint --cache --ignore-path .gitignore ./src/",
@@ -23,6 +24,7 @@
     "koa-body": "^2.3.0",
     "koa-bodyparser": "^4.2.0",
     "koa-router": "^7.2.1",
+    "lodash.chunk": "^4.2.0",
     "redis": "^2.7.1",
     "ws": "^3.0.0"
   },
