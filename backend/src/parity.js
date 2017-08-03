@@ -87,18 +87,16 @@ class ParityConnector extends EventEmitter {
           .then((receipt) => {
             console.log('receipt.blockNumber', receipt.blockNumber);
 
-            if (!receipt.blockNumber) {
-              if (attempts >= 60) {
-                reject(new Error('Exceeded allowed attempts'));
-              } else {
-                // Try again next block
-                this.once('block', attempt);
-              }
-
-              return;
+            if (receipt.blockNumber) {
+              return resolve(receipt);
             }
 
-            resolve(receipt);
+            if (attempts >= 60) {
+              reject(new Error('Exceeded allowed attempts'));
+            } else {
+              // Try again next block
+              this.once('block', attempt);
+            }
           })
           .catch((err) => {
             if (attempts >= 10) {

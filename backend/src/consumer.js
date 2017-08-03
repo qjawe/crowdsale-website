@@ -20,8 +20,6 @@ class QueueConsumer {
     this._contract = new Contract(this._connector.transport, contractAddress);
     this._connector.on('block', () => this.update());
 
-    this._connector.transactionReceipt('0x25f747f1a0eec8ff7d1c3be3ab927597ee8eac56aeb9252d29ca844d055ba6d9').then(console.log);
-
     this._contract.event(
       'Buyin',
       {
@@ -65,8 +63,6 @@ class QueueConsumer {
       const txBuf = Buffer.from(tx.substring(2), 'hex');
       const txObj = new EthereumTx(txBuf);
       const nonce = txObj.nonce.length ? buf2hex(txObj.nonce) : '0x0';
-
-      console.log('send', address, nonce);
 
       try {
         const hash = await connector.sendTx(tx);

@@ -146,13 +146,8 @@ class Contract {
   }
 
   /**
-   * Register a function. This allows you to call contract functions like
-   * regular JS functions:
-   *
-   * ```
-   * contract.register('foo', 'uint256');
-   * contract.foo(100);
-   * ```
+   * Register an event. Use `findEvent` on an array of logs
+   * to get value mapping objects from RPC responses.
    *
    * @param {String}    name   of the event
    * @param {...Object} fields objects containing types, eg.:
