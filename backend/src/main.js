@@ -4,18 +4,21 @@
 'use strict';
 
 const config = require('config');
-const Koa = require('koa');
-const Router = require('koa-router');
-const bodyParser = require('koa-bodyparser');
-const cors = require('kcors');
-const Sale = require('./sale');
-const store = require('./store');
 const EthereumTx = require('ethereumjs-tx');
+const Koa = require('koa');
+const bodyParser = require('koa-bodyparser');
+const Router = require('koa-router');
+const cors = require('kcors');
+
+const ParityConnector = require('./parity');
+const Sale = require('./contracts/sale');
+const store = require('./store');
 const { buf2hex, buf2big, big2hex } = require('./utils');
 
 const app = new Koa();
 const router = new Router();
-const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
+const connector = new ParityConnector(config.get('nodeWs'));
+const sale = new Sale(connector, config.get('saleContract'));
 
 router.get('/address/:address', async (ctx, next) => {
   const { address } = ctx.params;

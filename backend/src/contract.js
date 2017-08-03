@@ -3,31 +3,26 @@
 
 'use strict';
 
-const BigNumber = require('bignumber.js');
-const keccak = require('keccak');
-const { buf2hex } = require('./utils');
+const EthereumAbi = require('ethereumjs-abi');
+
+const { buf2hex, ejs2val, hex2buf } = require('./utils');
 
 class Event {
   /**
    * Abstraction over a contract event
    *
-   * @param {String}        name   event name
-   * @param {Array<Object>} fields array of objects containing types, eg.:
-   *                               [{
-   *                                 indexed: false,
-   *                                 label: 'count',
-   *                                 type: 'uint256'
-   *                               }]
+   * @param {Object}  iface  The event interface (from the ABI)
    */
-  constructor (name, fields) {
-    const fieldTypes = fields.map((field) => field.type);
-    const sig = keccak('keccak256')
-                .update(Buffer.from(`${name}(${fieldTypes.join(',')})`))
-                .digest();
+  constructor (iface) {
+    const { inputs, name } = iface;
+
+    const types = inputs.map((input) => input.type);
+    const id = EthereumAbi.eventID(name, types);
+
+    this._topic = buf2hex(id);
 
     this._name = name;
-    this._topic = buf2hex(sig);
-    this._fields = fields;
+    this._inputs = inputs;
   }
 
   /**
@@ -39,13 +34,59 @@ class Event {
     return this._topic;
   }
 
-  /**
-   * Event fields
-   *
-   * @return {Array<Object>} same as on constructor
-   */
-  get fields () {
-    return this._fields;
+  encode (filters = []) {
+    const inputs = this._inputs
+      .filter((input) => input.indexed);
+
+    const topics = [ this.topic ];
+
+    filters
+      .forEach((filter, index) => {
+        const input = inputs[index];
+
+        topics[index + 1] = this.encodeFitler(filter, input.type);
+      });
+
+    return topics;
+  }
+
+  encodeFitler (filter, type) {
+    if (filter === null) {
+      return null;
+    }
+
+    if (Array.isArray(filter)) {
+      return filter.map((f) => this.encodeFitler(f, type));
+    }
+
+    return '0x' + EthereumAbi.rawEncode([ type ], [ filter ]).toString('hex');
+  }
+
+  decode (logs) {
+    return logs.map((log) => {
+      log.event = this._name;
+      log.params = {};
+
+      this._inputs
+        .filter((input) => input.indexed)
+        .map((input, index) => {
+          const rawValue = log.topics[index + 1];
+          const value = EthereumAbi.rawDecode([ input.type ], hex2buf(rawValue))[0];
+
+          log.params[input.name] = ejs2val(value, input.type);
+        });
+      const dataInputs = this._inputs.filter((input) => !input.indexed);
+      const dataTypes = dataInputs.map((input) => input.type);
+      const values = EthereumAbi.rawDecode(dataTypes, hex2buf(log.data));
+
+      values.forEach((value, index) => {
+        const input = dataInputs[index];
+
+        log.params[input.name] = ejs2val(value, input.type);
+      });
+
+      return log;
+    });
   }
 }
 
@@ -53,17 +94,20 @@ class Method {
   /**
    * Abstraction over a contract function
    *
-   * @param {String}        name  function name
-   * @param {Array<String>} types array of string types, eg.: ['uint256']
+   * @param {Object}  iface  The function interface (from the ABI)
    */
-  constructor (name, types) {
-    const sig = keccak('keccak256')
-                .update(Buffer.from(`${name}(${types.join(',')})`))
-                .digest();
+  constructor (iface) {
+    const { inputs, outputs, name } = iface;
+
+    const types = inputs.map((input) => input.type);
+    const id = EthereumAbi.methodID(name, types);
+
+    this._id = buf2hex(id.slice(0, 4));
+    this._types = types;
 
     this._name = name;
-    this._id = buf2hex(sig.slice(0, 4));
-    this._types = types;
+    this._inputs = inputs;
+    this._outputs = outputs;
   }
 
   /**
@@ -75,35 +119,28 @@ class Method {
     return this._id;
   }
 
-  /**
-   * Convert an array of arguments to a call data
-   *
-   * @param  {Array<String|Number|BigNumber>} args strings need to be `0x` prefixed
-   *
-   * @return {String} `0x` prefixed call data (including the 4 byte function signature)
-   */
-  data (args) {
-    if (args.length !== this._types.length) {
-      throw new Error(`[${this._name}] Wrong number of arguments: ${args.length}, expected ${this._types.length}`);
+  encode (args = []) {
+    const params = [].concat(args);
+    const types = this._types;
+
+    if (params.length !== types.length) {
+      throw new Error(`Expected ${types.length} params for "${this._name}" ; ${params.length} given`);
     }
 
-    const encodedData = this._types
-      .map((type, index) => {
-        const arg = args[index];
+    const encoded = EthereumAbi.rawEncode(types, params);
 
-        if (typeof arg === 'string' && arg.substring(0, 2) === '0x') {
-          return arg.substring(2).padStart(64, '0');
-        }
+    return this.id + encoded.toString('hex');
+  }
 
-        if (typeof arg === 'number' || arg instanceof BigNumber) {
-          return arg.toString(16).padStart(64, '0');
-        }
+  decode (data) {
+    const types = this._outputs.map((output) => output.type);
+    const decoded = EthereumAbi.rawDecode(types, hex2buf(data));
 
-        throw new Error(`[${this._name}] Cannot convert argument ${index} to call data`);
-      })
-      .join('');
+    return decoded.map((value, index) => {
+      const type = types[index];
 
-    return this._id + encodedData;
+      return ejs2val(value, type);
+    });
   }
 }
 
@@ -112,126 +149,171 @@ class Contract {
    * Abstraction over an Ethereum contract
    *
    * @param {RpcTransport} transport
-   * @param {String}       address `0x` prefixed contract address
+   * @param {String}       address    `0x` prefixed contract address
+   * @param {Array}        abi        The contract ABI
+   * @param {Array}        statics    The names of constant storage values
+   *                                  (ie. that won't change)
    */
-  constructor (transport, address) {
+  constructor (transport, address, abi, statics = []) {
+    this._abi = abi;
     this._address = address;
     this._transport = transport;
+    this._statics = statics;
+
+    this._constants = new Map();
     this._methods = new Map();
     this._events = new Map();
+
+    this.methods = {};
+    this.events = {};
+
+    abi.forEach((iface) => {
+      const { constant, name, type } = iface;
+
+      if (type === 'function') {
+        const method = new Method(iface);
+
+        this._methods.set(name, method);
+        this._methods.set(method.id, method);
+
+        // Constants are methods of the contract that
+        // takes no inputs, and has one output, for example
+        // the contract public storage
+        if (constant && iface.inputs.length === 0 && iface.outputs.length === 1) {
+          this._constants.set(name, method);
+        }
+
+        this.methods[name] = (...params) => {
+          const data = method.encode(params);
+
+          if (constant) {
+            return {
+              get: () => this._call(method, data),
+              data
+            };
+          }
+
+          return {
+            post: (options) => this._post(method, data, options),
+            data
+          };
+        };
+      } else if (type === 'event') {
+        const event = new Event(iface);
+
+        this._events.set(name, event);
+        this._events.set(event.topic, event);
+
+        this.events[name] = (...filters) => {
+          return {
+            get: (options) => this._getEvents(event, filters, options)
+          };
+        };
+      }
+    });
+  }
+
+  get address () {
+    return this._address;
   }
 
   /**
-   * Register a function. This allows you to call contract functions like
-   * regular JS functions:
+   * Parse the given logs for the contract events
    *
-   * ```
-   * contract.register('foo', 'uint256');
-   * contract.foo(100);
-   * ```
-   *
-   * @param {String}    name  of the function
-   * @param {...String} types by their string names
-   *
-   * @return {Contract} `this` for chaining
-   */
-  register (name, ...types) {
-    const method = new Method(name, types);
-
-    this._methods.set(name, method);
-    this[name] = (...args) => this._call(name, args);
-    this[name].id = method.id;
-
-    return this;
-  }
-
-  /**
-   * Register a function. This allows you to call contract functions like
-   * regular JS functions:
-   *
-   * ```
-   * contract.register('foo', 'uint256');
-   * contract.foo(100);
-   * ```
-   *
-   * @param {String}    name   of the event
-   * @param {...Object} fields objects containing types, eg.:
-   *                                   [{
-   *                                     indexed: false,
-   *                                     label: 'count',
-   *                                     type: 'uint256'
-   *                                   }]
-   *
-   * @return {Contract} `this` for chaining
-   */
-  event (name, ...types) {
-    const event = new Event(name, types);
-
-    this._events.set(name, event);
-
-    return this;
-  }
-
-  /**
-   * Find a log event for a particular event and construct a response object
-   * mapping it's values to the event's field labels.
-   *
-   * @param {String} name of the event
    * @param {Array}  logs array of log objects as returned from Parity
    *
-   * @return {Object} constructed map of field labels to their values as
-   *                  `0x` prefixed hex encoded 32-byte words.
+   * @return {Array} logs enhanced with the `event` and `params` fields
    */
-  findEvent (name, logs) {
-    const event = this._events.get(name);
+  parse (logs) {
+    return logs.map((log) => {
+      const topic = log.topics[0];
+      const event = this._events.get(topic);
 
-    const log = logs.find((log) => log.topics[0] === event.topic);
+      if (!event) {
+        console.warn('could not find an event for this log', log.topics);
+        return log;
+      }
 
-    if (!log) {
-      return null;
+      return event.decode([ log ])[0];
+    });
+  }
+
+  /**
+   * Update the contract constants and attach the
+   * new value to the contract
+   *
+   * @param  {String} methodName  The update can be filtered by method name
+   * @return {Promise}
+   */
+  async update (methodName) {
+    let methodNames = [];
+
+    if (methodName) {
+      if (!this._methods.has(methodName)) {
+        throw new Error(`The contract has no method ${methodName}`);
+      }
+
+      methodNames = [methodName];
+    } else {
+      for (const name of this._constants.keys()) {
+        methodNames.push(name);
+      }
     }
 
-    const indexed = event.fields.filter((field) => field.indexed);
-    const nonIndexed = event.fields.filter((field) => !field.indexed);
-    const result = {};
-
-    if (
-      log.topics.length !== indexed.length + 1 ||
-      log.data.length !== 2 + nonIndexed.length * 64
-    ) {
-      throw new Error('Logged event is incompatible with provided field types');
-    }
-
-    indexed.forEach(({ label }, index) => {
-      result[label] = log.topics[index + 1];
+    methodNames = methodNames.filter((name) => {
+      return !this._statics.includes(name) || this[name] === undefined;
     });
 
-    nonIndexed.forEach(({ label }, index) => {
-      const offset = 2 + 64 * index;
-
-      result[label] = `0x${log.data.substring(offset, offset + 64)}`;
+    const promises = methodNames.map((name) => {
+      return this.methods[name]().get();
     });
 
-    return result;
+    return Promise.all(promises)
+      .then((results) => {
+        methodNames.forEach((name, index) => {
+          this[name] = results[index][0];
+        });
+      });
   }
 
   /**
    * Call into a registered contract function
    *
-   * @param  {String}                         name of the function
-   * @param  {Array<String|Number|BigNumber>} args strings need to be `0x` prefixed
+   * @param  {Object}  method of the function
+   * @param  {String}  data - Hex encoded data
    *
-   * @return {Promise} result of `eth_call`
+   * @return {Promise<Array>} decoded result of `eth_call`
    */
-  _call (name, args) {
-    const method = this._methods.get(name);
-
+  _call (method, data) {
     return this
       ._transport
       .request('eth_call', {
         to: this._address,
-        data: method.data(args)
+        data
+      })
+      .then((data) => {
+        return method.decode(data);
       });
+  }
+
+  _getEvents (event, filters, options) {
+    const topics = event.encode(filters);
+
+    return this
+      ._transport
+      .request('eth_getLogs', Object.assign({}, {
+        fromBlock: '0x0',
+        toBlock: 'latest',
+        address: this.address,
+        topics
+      }, options))
+      .then((logs) => {
+        return event.decode(logs);
+      });
+  }
+
+  _post (method, args = [], options = {}) {
+    throw new Error('Not Implemented');
   }
 }
 

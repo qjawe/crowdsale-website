@@ -54,7 +54,30 @@ function splitArguments (data) {
 
 }
 
+function ejs2val (value, type) {
+  if (Array.isArray(value)) {
+    const subtype = /^(.+)\[.*\]$/.exec(type)[1];
+
+    return value.map((val) => ejs2val(val, subtype));
+  }
+
+  if (/(int|fixed)/.test(type)) {
+    return new BigNumber('0x' + value.toString('hex'));
+  }
+
+  if (/bytes/.test(type)) {
+    return '0x' + value.toString('hex');
+  }
+
+  if (/address/.test(type)) {
+    return '0x' + value.toString('hex');
+  }
+
+  return value;
+}
+
 module.exports = {
+  ejs2val,
   hex2int,
   int2hex,
   hex2buf,
