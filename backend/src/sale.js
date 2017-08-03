@@ -4,7 +4,7 @@
 'use strict';
 
 const ParityConnector = require('./parity');
-const Contract = require('./contract');
+const { SaleContract, CertifierContract } = require('./contracts');
 const { hex2big, hex2int } = require('./utils');
 
 class Sale {
@@ -29,33 +29,16 @@ class Sale {
     this._totalReceived = 0;
 
     this._connector = new ParityConnector(wsUrl);
-    this._contract = new Contract(this._connector.transport, contractAddress);
+    this._contract = new SaleContract(this._connector.transport, contractAddress);
 
     const contract = this._contract;
-
-    contract
-      .register('buyin', 'uint8', 'bytes32', 'bytes32')
-      .register('participants', 'address')
-      .register('currentPrice')
-      .register('beginTime')
-      .register('BONUS_DURATION')
-      .register('BONUS_SIZE')
-      .register('STATEMENT_HASH')
-      .register('endTime')
-      .register('tokensAvailable')
-      .register('tokenCap')
-      .register('totalReceived')
-      .register('certifier');
 
     this._certifier = contract
       .certifier()
       .then((hex) => {
         const certifierAddress = '0x' + hex.slice(-40);
-        const certifier = new Contract(this._connector.transport, certifierAddress);
 
-        certifier.register('certified', 'address');
-
-        return certifier;
+        return new CertifierContract(this._connector.transport, certifierAddress);
       });
 
     this._buyinId = contract.buyin.id;

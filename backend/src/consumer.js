@@ -6,8 +6,8 @@
 const config = require('config');
 const store = require('./store');
 const ParityConnector = require('./parity');
-const Contract = require('./contract');
 const EthereumTx = require('ethereumjs-tx');
+const { SaleContract } = require('./contracts');
 const { buf2hex } = require('./utils');
 
 class QueueConsumer {
@@ -18,33 +18,8 @@ class QueueConsumer {
   constructor (wsUrl, contractAddress) {
     this._updateLock = false;
     this._connector = new ParityConnector(wsUrl);
-    this._contract = new Contract(this._connector.transport, contractAddress);
+    this._contract = new SaleContract(this._connector.transport, contractAddress);
     this._connector.on('block', () => this.update());
-
-    this._contract.event(
-      'Buyin',
-      {
-        indexed: true,
-        label: 'who',
-        type: 'address'
-      },
-      {
-        label: 'accepted',
-        type: 'uint256'
-      },
-      {
-        label: 'refund',
-        type: 'uint256'
-      },
-      {
-        label: 'price',
-        type: 'uint256'
-      },
-      {
-        label: 'bonus',
-        type: 'uint256'
-      }
-    );
   }
 
   async update () {
