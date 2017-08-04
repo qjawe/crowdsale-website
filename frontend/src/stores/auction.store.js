@@ -154,7 +154,7 @@ class AuctionStore {
   @computed
   get now () {
     if (!this.block || !this.block.timestamp) {
-      return 0;
+      return new Date(0);
     }
 
     return new Date(this.block.timestamp);

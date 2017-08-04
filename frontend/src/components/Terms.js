@@ -33,6 +33,7 @@ export default class Terms extends Component {
           checked={termsAccepted}
           onChange={this.handleTermsChecked}
         />
+        <br />
         <Checkbox
           label={`
             Please tick to confirm you are not a citizen of Japan

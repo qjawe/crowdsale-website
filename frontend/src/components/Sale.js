@@ -24,12 +24,12 @@ export default class Sale extends Component {
     const { unlocked } = accountStore;
     const { step } = this.state;
 
-    if (step === STEPS.HOME) {
-      return this.renderHome();
-    }
-
     if (unlocked) {
       return this.renderBuy();
+    }
+
+    if (step === STEPS.HOME) {
+      return this.renderHome();
     }
 
     if (step === STEPS.LOAD_WALLET) {

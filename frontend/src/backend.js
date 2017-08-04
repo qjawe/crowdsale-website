@@ -23,10 +23,6 @@ class Backend {
     return get(this.url('/'));
   }
 
-  async certified (address) {
-    return await get(this.url(`/certified/${address}`));
-  }
-
   async chartData () {
     return await get(this.url('/chart-data'));
   }
@@ -53,12 +49,13 @@ class Backend {
     });
   }
 
-  async getBalances (address) {
-    const { eth, accounted } = await get(this.url(`/balances/${address}`));
+  async getAddressInfo (address) {
+    const { eth, accounted, certified } = await get(this.url(`/address/${address}`));
 
     return {
       eth: new BigNumber(eth),
-      accounted: new BigNumber(accounted)
+      accounted: new BigNumber(accounted),
+      certified
     };
   }
 

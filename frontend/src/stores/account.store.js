@@ -4,11 +4,9 @@ import { action, observable } from 'mobx';
 
 import backend from '../backend';
 
-const BALANCES_REFRESH_TIMER = 2500;
-const CERTIFIED_REFRESH_TIMER = 2500;
+const ACCOUNT_INFO_REFRESH_TIMER = 2500;
 
-let balancesTimeoutId = null;
-let certifiedTimeoutId = null;
+let accountInfoTimeoutId = null;
 
 class AccountStore {
   @observable address = '';
@@ -33,22 +31,13 @@ class AccountStore {
       });
   }
 
-  async pollBalances () {
-    await this.updateBalances();
+  async pollAccountInfo () {
+    await this.updateAccountInfo();
 
-    clearTimeout(balancesTimeoutId);
-    balancesTimeoutId = setTimeout(() => {
-      this.pollBalances();
-    }, BALANCES_REFRESH_TIMER);
-  }
-
-  async pollCertified () {
-    await this.updateCertified();
-
-    clearTimeout(certifiedTimeoutId);
-    certifiedTimeoutId = setTimeout(() => {
-      this.pollCertified();
-    }, CERTIFIED_REFRESH_TIMER);
+    clearTimeout(accountInfoTimeoutId);
+    accountInfoTimeoutId = setTimeout(() => {
+      this.pollAccountInfo();
+    }, ACCOUNT_INFO_REFRESH_TIMER);
   }
 
   read (file) {
@@ -102,15 +91,13 @@ class AccountStore {
     this.unlocked = unlocked;
 
     if (unlocked) {
-      this.pollBalances();
-      this.pollCertified();
+      this.pollAccountInfo();
     }
   }
 
   @action
   setWallet (wallet) {
     this.wallet = wallet;
-    console.warn('wallet', wallet);
   }
 
   unlock (password) {
@@ -144,15 +131,10 @@ class AccountStore {
     });
   }
 
-  async updateBalances () {
-    const { eth, accounted } = await backend.getBalances(this.address);
+  async updateAccountInfo () {
+    const { eth, accounted, certified } = await backend.getAddressInfo(this.address);
 
     this.setBalances({ eth, accounted });
-  }
-
-  async updateCertified () {
-    const certified = await backend.certified(this.address);
-
     this.setCertified(certified);
   }
 }
