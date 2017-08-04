@@ -50,10 +50,6 @@ function pause (time) {
   });
 }
 
-function splitArguments (data) {
-
-}
-
 function ejs2val (value, type) {
   if (Array.isArray(value)) {
     const subtype = /^(.+)\[.*\]$/.exec(type)[1];
