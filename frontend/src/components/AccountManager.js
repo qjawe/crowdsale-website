@@ -2,8 +2,8 @@ import keycode from 'keycode';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
-import { AccountIcon, InlineBalance } from 'parity-reactive-ui';
-import { Button, Container, Dimmer, Header, Icon, Input, Label, Loader, Message, Popup, Segment } from 'semantic-ui-react';
+import { AccountIcon } from 'parity-reactive-ui';
+import { Button, Container, Checkbox, Dimmer, Icon, Input, Label, Loader, Message, Popup, Segment } from 'semantic-ui-react';
 
 import accountStore from '../stores/account.store';
 import auctionStore from '../stores/auction.store';
@@ -14,7 +14,7 @@ const hSpaceStyle = {
 
 const dropzoneStyle = {
   cursor: 'pointer',
-  width: '100%',
+  width: 400,
   height: 200,
   borderWidth: 2,
   borderColor: '#666',
@@ -23,7 +23,8 @@ const dropzoneStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  flexDirection: 'column'
+  flexDirection: 'column',
+  margin: '0.5em auto'
 };
 
 const innerDropzoneStyle = {
@@ -34,7 +35,8 @@ const innerDropzoneStyle = {
 @observer
 export default class AccountManager extends Component {
   state = {
-    loading: false
+    loading: false,
+    rememberWallet: false
   };
 
   password = '';
@@ -150,6 +152,7 @@ export default class AccountManager extends Component {
 
   renderContent () {
     const { address, wallet } = accountStore;
+    const { rememberWallet } = this.state;
 
     if (!wallet) {
       return (
@@ -186,6 +189,14 @@ export default class AccountManager extends Component {
           onChange={this.handlePasswordChange} // TODO: Enter should unlock.
           onKeyUp={this.handlePasswordKeyUp}
           type='password'
+        />
+        <br />
+        <Checkbox
+          checked={rememberWallet}
+          label='Remember password-encrypted wallet'
+          onChange={this.handleRememberWalletChange}
+          style={{ marginTop: '0.5em' }}
+          toggle
         />
       </Container>
     );
@@ -230,10 +241,18 @@ export default class AccountManager extends Component {
     }
   };
 
+  handleRememberWalletChange = (_, element) => {
+    const { checked } = element;
+
+    this.setState({ rememberWallet: checked });
+  };
+
   handleUnlockAccount = () => {
+    const { rememberWallet } = this.state;
+
     this.setState({ loading: true });
 
-    return accountStore.unlock(this.password)
+    return accountStore.unlock(this.password, rememberWallet)
       .then(() => {
         this.password = '';
         this.setState({ loading: false });

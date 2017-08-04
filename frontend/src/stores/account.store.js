@@ -1,9 +1,11 @@
 import Util from 'ethereumjs-util';
 import Wallet from 'ethereumjs-wallet';
 import { action, observable } from 'mobx';
+import store from 'store';
 
 import backend from '../backend';
 
+const WALLET_LS_KEY = '__crowdsale::wallet';
 const ACCOUNT_INFO_REFRESH_TIMER = 2500;
 
 let accountInfoTimeoutId = null;
@@ -18,17 +20,28 @@ class AccountStore {
   @observable privateKey = null;
   @observable wallet = null;
 
+  constructor () {
+    this.loadWallet();
+  }
+
   load (file) {
     this.setError(null);
 
     return this.read(file)
       .then((wallet) => {
-        this.setAccountInfo({ address: wallet.address });
         this.setWallet(wallet);
       })
       .catch((error) => {
         this.setError(error.message);
       });
+  }
+
+  loadWallet () {
+    const wallet = store.get(WALLET_LS_KEY);
+
+    if (wallet) {
+      this.setWallet(wallet);
+    }
   }
 
   async pollAccountInfo () {
@@ -60,6 +73,10 @@ class AccountStore {
         }
       });
     });
+  }
+
+  saveWallet () {
+    store.set(WALLET_LS_KEY, this.wallet || {});
   }
 
   @action
@@ -97,10 +114,14 @@ class AccountStore {
 
   @action
   setWallet (wallet) {
+    if (wallet) {
+      this.setAccountInfo({ address: wallet.address });
+    }
+
     this.wallet = wallet;
   }
 
-  unlock (password) {
+  unlock (password, rememberWallet = false) {
     this.setError(null);
 
     return new Promise((resolve) => {
@@ -113,6 +134,10 @@ class AccountStore {
         } catch (_) {
           this.setError('Invalid password');
           return resolve();
+        }
+
+        if (rememberWallet) {
+          this.saveWallet();
         }
 
         const address = '0x' + wallet.getAddress().toString('hex');

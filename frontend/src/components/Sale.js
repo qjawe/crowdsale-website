@@ -21,19 +21,19 @@ export default class Sale extends Component {
   };
 
   render () {
-    const { unlocked } = accountStore;
+    const { unlocked, wallet } = accountStore;
     const { step } = this.state;
 
     if (unlocked) {
       return this.renderBuy();
     }
 
-    if (step === STEPS.HOME) {
-      return this.renderHome();
+    if (wallet || step === STEPS.LOAD_WALLET) {
+      return this.renderLoadWallet();
     }
 
-    if (step === STEPS.LOAD_WALLET) {
-      return this.renderLoadWallet();
+    if (step === STEPS.HOME) {
+      return this.renderHome();
     }
 
     return null;
