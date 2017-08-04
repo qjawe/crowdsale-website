@@ -4,126 +4,121 @@
 'use strict';
 
 const config = require('config');
-const Koa = require('koa');
-const Router = require('koa-router');
-const bodyParser = require('koa-bodyparser');
-const cors = require('kcors');
-const Sale = require('./sale');
-const store = require('./store');
 const EthereumTx = require('ethereumjs-tx');
+const Koa = require('koa');
+const bodyParser = require('koa-bodyparser');
+const etag = require('koa-etag');
+const Router = require('koa-router');
+const cors = require('kcors');
+
+const Certifier = require('./contracts/certifier');
+const Sale = require('./contracts/sale');
+const ParityConnector = require('./parity');
+const store = require('./store');
 const { buf2hex, buf2big, big2hex } = require('./utils');
 
 const app = new Koa();
 const router = new Router();
-const sale = new Sale(config.get('nodeWs'), config.get('saleContract'));
+const connector = new ParityConnector(config.get('nodeWs'));
 
-router.get('/address/:address', async (ctx, next) => {
-  const { address } = ctx.params;
-  const [ eth, participant, isCertified ] = await Promise.all([
-    sale.connector.balance(address),
-    sale.participant(address),
-    sale.isCertified(address)
-  ]);
+main();
 
-  ctx.body = {
-    certified: isCertified,
-    eth: '0x' + eth.toString(16),
-    dot: '0x' + participant.value.toString(16)
-  };
-});
+async function main () {
+  const sale = new Sale(connector, config.get('saleContract'));
 
-router.get('/:address/nonce', async (ctx, next) => {
-  const { address } = ctx.params;
+  await sale.update();
 
-  const nonce = await sale.connector.nextNonce(address);
+  const certifier = new Certifier(connector, sale.values.certifier);
 
-  ctx.body = { nonce };
-});
+  connector.on('block', () => {
+    sale.update();
+  });
 
-router.get('/tx/:hash', async (ctx, next) => {
-  const { hash } = ctx.params;
+  router.get('/address/:address', async (ctx, next) => {
+    const { address } = ctx.params;
+    const [ eth, [ value ], [ certified ] ] = await Promise.all([
+      connector.balance(address),
+      sale.methods.participants(address).get(),
+      certifier.methods.certified(address).get()
+    ]);
 
-  const transaction = await sale.connector.getTx(hash);
+    ctx.body = {
+      certified,
+      eth: '0x' + eth.toString(16),
+      accounted: '0x' + value.toString(16)
+    };
+  });
 
-  ctx.body = { transaction };
-});
+  router.get('/:address/nonce', async (ctx, next) => {
+    const { address } = ctx.params;
 
-router.post('/tx', async (ctx, next) => {
-  const { tx } = ctx.request.body;
+    const nonce = await connector.nextNonce(address);
 
-  const txBuf = Buffer.from(tx.substring(2), 'hex');
-  const txObj = new EthereumTx(txBuf);
+    ctx.body = { nonce };
+  });
 
-  if (!txObj.verifySignature()) {
-    ctx.status = 400;
-    ctx.body = 'Invalid transaction';
-  }
+  router.get('/tx/:hash', async (ctx, next) => {
+    const { hash } = ctx.params;
 
-  // const to = buf2hex(txObj.to);
-  const from = buf2hex(txObj.from);
-  const value = buf2big(txObj.value);
-  // const data = buf2hex(txObj.data);
-  const gasPrice = buf2big(txObj.gasPrice);
-  const gasLimit = buf2big(txObj.gasLimit);
+    const transaction = await connector.getTx(hash);
 
-  const requiredEth = value.add(gasPrice.mul(gasLimit));
-  const balance = await sale.connector.balance(from);
+    ctx.body = { transaction };
+  });
 
-  if (balance.cmp(requiredEth) < 0) {
-    await store.addToQueue(from, tx, requiredEth);
+  router.post('/tx', async (ctx, next) => {
+    const { tx } = ctx.request.body;
 
-    ctx.body = { hash: '0x', requiredEth: big2hex(requiredEth.sub(balance)) };
-    return;
-  }
+    const txBuf = Buffer.from(tx.substring(2), 'hex');
+    const txObj = new EthereumTx(txBuf);
 
-  try {
-    const hash = await sale.connector.sendTx(tx);
+    if (!txObj.verifySignature()) {
+      ctx.status = 400;
+      ctx.body = 'Invalid transaction';
+    }
 
-    ctx.body = { hash };
-  } catch (error) {
-    ctx.status = 400;
-    ctx.body = error.message;
-    ctx.app.emit('error', error, ctx);
-  }
-});
+    // const to = buf2hex(txObj.to);
+    const from = buf2hex(txObj.from);
+    const value = buf2big(txObj.value);
+    // const data = buf2hex(txObj.data);
+    const gasPrice = buf2big(txObj.gasPrice);
+    const gasLimit = buf2big(txObj.gasLimit);
 
-router.get('/', (ctx) => {
-  const {
-    contractAddress,
-    statementHash,
-    buyinId,
-    block,
-    price,
-    begin,
-    end,
-    status,
-    available,
-    cap,
-    bonusDuration,
-    bonusSize,
-    totalReceived
-  } = sale;
+    const requiredEth = value.add(gasPrice.mul(gasLimit));
+    const balance = await connector.balance(from);
 
-  ctx.body = {
-    contractAddress,
-    statementHash,
-    buyinId,
-    block,
-    price,
-    begin,
-    end,
-    status,
-    available,
-    cap,
-    bonusDuration,
-    bonusSize,
-    totalReceived
-  };
-});
+    if (balance.cmp(requiredEth) < 0) {
+      await store.addToQueue(from, tx, requiredEth);
 
-app
-  .use(bodyParser())
-  .use(cors())
-  .use(router.routes())
-  .use(router.allowedMethods())
-  .listen(4000);
+      ctx.body = { hash: '0x', requiredEth: big2hex(requiredEth.sub(balance)) };
+      return;
+    }
+
+    try {
+      const hash = await connector.sendTx(tx);
+
+      ctx.body = { hash };
+    } catch (error) {
+      ctx.status = 400;
+      ctx.body = error.message;
+      ctx.app.emit('error', error, ctx);
+    }
+  });
+
+  router.get('/block', (ctx) => {
+    ctx.body = connector.block;
+  });
+
+  router.get('/', (ctx) => {
+    const extras = {};
+
+    ctx.body = Object.assign({}, sale.values, extras);
+  });
+
+  app
+    .use(bodyParser())
+    .use(cors())
+    .use(etag())
+    .use(router.routes())
+    .use(router.allowedMethods())
+    .listen(4000);
+}

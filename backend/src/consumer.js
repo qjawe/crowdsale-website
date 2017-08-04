@@ -4,10 +4,11 @@
 'use strict';
 
 const config = require('config');
+const EthereumTx = require('ethereumjs-tx');
+
+const Sale = require('./contracts/sale');
 const store = require('./store');
 const ParityConnector = require('./parity');
-const EthereumTx = require('ethereumjs-tx');
-const { SaleContract } = require('./contracts');
 const { buf2hex } = require('./utils');
 
 class QueueConsumer {
@@ -18,7 +19,8 @@ class QueueConsumer {
   constructor (wsUrl, contractAddress) {
     this._updateLock = false;
     this._connector = new ParityConnector(wsUrl);
-    this._contract = new SaleContract(this._connector.transport, contractAddress);
+    this._sale = new Sale(this._connector.transport, contractAddress);
+
     this._connector.on('block', () => this.update());
   }
 
@@ -49,7 +51,14 @@ class QueueConsumer {
       try {
         const hash = await connector.sendTx(tx);
         const { logs } = await connector.transactionReceipt(hash);
-        const { accepted } = this._contract.findEvent('Buyin', logs);
+
+        const buyinLog = this._sale.parse(logs).find((log) => log.event === 'Buyin');
+
+        if (!buyinLog) {
+          throw new Error(`Could not find Buyin() event log in ${hash}`);
+        }
+
+        const { accepted } = buyinLog.params;
 
         await store.confirmTx(address, nonce, hash, accepted);
       } catch (err) {

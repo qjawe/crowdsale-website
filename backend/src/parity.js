@@ -4,7 +4,7 @@
 'use strict';
 
 const RpcTransport = require('./transport');
-const { hex2int, hex2big } = require('./utils');
+const { hex2big } = require('./utils');
 const EventEmitter = require('events');
 
 class ParityConnector extends EventEmitter {
@@ -20,10 +20,9 @@ class ParityConnector extends EventEmitter {
     this
       ._transport
       .subscribe('eth_getBlockByNumber', 'latest', false)
-      .forEach((result) => {
-        result.timestamp = hex2int(result.timestamp);
-        result.number = hex2int(result.number);
-        this.emit('block', result);
+      .forEach((block) => {
+        this.block = block;
+        this.emit('block', block);
       });
   }
 
