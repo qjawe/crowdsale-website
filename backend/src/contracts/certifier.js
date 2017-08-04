@@ -14,7 +14,7 @@ const Contract = require('../contract');
 
 const gasPrice = config.get('gasPrice');
 const { filename, password } = config.get('account');
-const keyFile = fs.readFileSync(path.resolve(__dirname, `../keys/${filename}`));
+const keyFile = fs.readFileSync(path.resolve(__dirname, `../../keys/${filename}`));
 const keyObject = JSON.parse(keyFile.toString());
 
 const wallet = Wallet.fromV3(keyObject, password);
