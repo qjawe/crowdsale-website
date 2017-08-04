@@ -40,6 +40,8 @@ class AccountStore {
     const wallet = store.get(WALLET_LS_KEY);
 
     if (wallet) {
+      wallet.fromLS = true;
+
       this.setWallet(wallet);
     }
   }

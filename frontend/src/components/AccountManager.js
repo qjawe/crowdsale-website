@@ -176,6 +176,22 @@ export default class AccountManager extends Component {
       <Container textAlign='center'>
         <div>{ this.renderAccountInfo(address) }</div>
         <br />
+
+        {
+          !wallet.fromLS
+          ? (
+            <div>
+              <Checkbox
+                checked={rememberWallet}
+                label='Remember my password-encrypted wallet'
+                onChange={this.handleRememberWalletChange}
+                style={{ marginBottom: '1em' }}
+              />
+            </div>
+          )
+          : null
+        }
+
         <Input
           autoFocus
           label={
@@ -189,14 +205,6 @@ export default class AccountManager extends Component {
           onChange={this.handlePasswordChange} // TODO: Enter should unlock.
           onKeyUp={this.handlePasswordKeyUp}
           type='password'
-        />
-        <br />
-        <Checkbox
-          checked={rememberWallet}
-          label='Remember password-encrypted wallet'
-          onChange={this.handleRememberWalletChange}
-          style={{ marginTop: '0.5em' }}
-          toggle
         />
       </Container>
     );
