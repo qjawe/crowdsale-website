@@ -5,7 +5,6 @@
 
 const { SecondPriceAuction } = require('../abis');
 const Contract = require('../contract');
-const { hex2int } = require('../utils');
 
 const STATICS = [
   'ERA_PERIOD',
