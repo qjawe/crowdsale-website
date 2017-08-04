@@ -40,19 +40,6 @@ class Sale extends Contract {
     this._transport = connector.transport;
   }
 
-  /**
-   * Get the amount of ETH accounted and the bonus held by the address
-   *
-   * @param {String} address `0x` prefixed
-   *
-   * @return {Object} containing `value` and `bonus` as `BigNumber`s
-   */
-  async participant (address) {
-    const [ value, bonus ] = await this.methods.participants(address);
-
-    return { value, bonus };
-  }
-
   async update () {
     return super.update()
       .then(() => {

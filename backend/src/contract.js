@@ -174,9 +174,6 @@ class Contract {
       if (type === 'function') {
         const method = new Method(iface);
 
-        this._methods.set(name, method);
-        this._methods.set(method.id, method);
-
         // Constants are methods of the contract that
         // takes no inputs, and has one output, for example
         // the contract public storage

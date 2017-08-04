@@ -4,10 +4,11 @@
 'use strict';
 
 const config = require('config');
+const EthereumTx = require('ethereumjs-tx');
+
+const Sale = require('./contracts/sale');
 const store = require('./store');
 const ParityConnector = require('./parity');
-const Contract = require('./contract');
-const EthereumTx = require('ethereumjs-tx');
 const { buf2hex } = require('./utils');
 
 class QueueConsumer {
@@ -16,37 +17,20 @@ class QueueConsumer {
   }
 
   constructor (wsUrl, contractAddress) {
+    this._updateLock = false;
     this._connector = new ParityConnector(wsUrl);
-    this._contract = new Contract(this._connector.transport, contractAddress);
-    this._connector.on('block', () => this.update());
+    this._sale = new Sale(this._connector.transport, contractAddress);
 
-    this._contract.event(
-      'Buyin',
-      {
-        indexed: true,
-        label: 'who',
-        type: 'address'
-      },
-      {
-        label: 'accepted',
-        type: 'uint256'
-      },
-      {
-        label: 'refund',
-        type: 'uint256'
-      },
-      {
-        label: 'price',
-        type: 'uint256'
-      },
-      {
-        label: 'bonus',
-        type: 'uint256'
-      }
-    );
+    this._connector.on('block', () => this.update());
   }
 
   async update () {
+    if (this._updateLock) {
+      return;
+    }
+
+    this._updateLock = true;
+
     console.log('New block, checking queue...');
 
     const connector = this._connector;
@@ -64,12 +48,17 @@ class QueueConsumer {
       const txObj = new EthereumTx(txBuf);
       const nonce = txObj.nonce.length ? buf2hex(txObj.nonce) : '0x0';
 
-      console.log('send', address, nonce);
-
       try {
         const hash = await connector.sendTx(tx);
         const { logs } = await connector.transactionReceipt(hash);
-        const { accepted } = this._contract.findEvent('Buyin', logs);
+
+        const buyinLog = this._sale.parse(logs).find((log) => log.event === 'Buyin');
+
+        if (!buyinLog) {
+          throw new Error(`Could not find Buyin() event log in ${hash}`);
+        }
+
+        const { accepted } = buyinLog.params;
 
         await store.confirmTx(address, nonce, hash, accepted);
       } catch (err) {
@@ -78,6 +67,8 @@ class QueueConsumer {
 
       sent += 1;
     });
+
+    this._updateLock = false;
 
     console.log(`Sent ${sent} transactions from the queue`);
   }
