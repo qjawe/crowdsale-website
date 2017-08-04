@@ -166,6 +166,7 @@ class Contract {
 
     this.methods = {};
     this.events = {};
+    this.values = {};
 
     abi.forEach((iface) => {
       const { constant, name, type } = iface;
@@ -261,7 +262,7 @@ class Contract {
     }
 
     methodNames = methodNames.filter((name) => {
-      return !this._statics.includes(name) || this[name] === undefined;
+      return !this._statics.includes(name) || this.values[name] === undefined;
     });
 
     const promises = methodNames.map((name) => {
@@ -271,7 +272,7 @@ class Contract {
     return Promise.all(promises)
       .then((results) => {
         methodNames.forEach((name, index) => {
-          this[name] = results[index][0];
+          this.values[name] = results[index][0];
         });
       });
   }

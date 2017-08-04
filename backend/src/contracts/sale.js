@@ -5,7 +5,7 @@
 
 const { SecondPriceAuction } = require('../abis');
 const Contract = require('../contract');
-const { hex2big, hex2int } = require('../utils');
+const { hex2int } = require('../utils');
 
 const STATICS = [
   'ERA_PERIOD',
@@ -15,7 +15,14 @@ const STATICS = [
   'BONUS_SIZE',
   'BONUS_DURATION',
   'USDWEI',
-  'DIVISOR'
+  'DIVISOR',
+
+  'admin',
+  'beginTime',
+  'certifier',
+  'tokenCap',
+  'tokenContract',
+  'treasury'
 ];
 
 class Sale extends Contract {
@@ -31,48 +38,28 @@ class Sale extends Contract {
 
     this._connector = connector;
     this._transport = connector.transport;
-
-    this.update()
-      .catch((error) => {
-        console.error(error);
-      });
   }
 
   /**
-   * Get the amount of DOTs and received bonus held by the address
+   * Get the amount of ETH accounted and the bonus held by the address
    *
    * @param {String} address `0x` prefixed
    *
    * @return {Object} containing `value` and `bonus` as `BigNumber`s
    */
   async participant (address) {
-    const rawParticipant = await this._contract.participants(address);
-    const cleanParticipant = rawParticipant.replace(/^0x/, '');
-    const [ value, bonus ] = [
-      hex2big('0x' + cleanParticipant.slice(0, 64)),
-      hex2big('0x' + cleanParticipant.slice(64))
-    ];
+    const [ value, bonus ] = await this.methods.participants(address);
 
     return { value, bonus };
-  }
-
-  /**
-   * Check whether or not the address is certified
-   *
-   * @param {String} address `0x` prefixed
-   *
-   * @return {Boolean}
-   */
-  async isCertified (address) {
-    const certifier = await this._certifier;
-
-    return await certifier.certified(address).then(hex2int) === 1;
   }
 
   async update () {
     return super.update()
       .then(() => {
-        console.log(`Price is ${this.currentPrice.toFormat()} wei`);
+        console.log(`Price is ${this.values.currentPrice.toFormat()} wei`);
+      })
+      .catch((error) => {
+        console.error(error);
       });
   }
 }
