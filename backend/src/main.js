@@ -142,6 +142,7 @@ async function main () {
     if (!txObj.verifySignature()) {
       ctx.status = 400;
       ctx.body = 'Invalid transaction';
+      return;
     }
 
     const from = buf2hex(txObj.from);
@@ -149,13 +150,23 @@ async function main () {
     const gasPrice = buf2big(txObj.gasPrice);
     const gasLimit = buf2big(txObj.gasLimit);
 
+    const [ certified ] = await certifier.methods.certified(from).get();
+
+    if (!certified) {
+      ctx.status = 400;
+      ctx.body = `${from} is not certified`;
+      return;
+    }
+
     const requiredEth = value.add(gasPrice.mul(gasLimit));
     const balance = await connector.balance(from);
 
     if (balance.cmp(requiredEth) < 0) {
+      const hash = buf2hex(txObj.hash(true));
+
       await store.addToQueue(from, tx, requiredEth);
 
-      ctx.body = { hash: '0x', requiredEth: big2hex(requiredEth.sub(balance)) };
+      ctx.body = { hash, requiredEth: big2hex(requiredEth.sub(balance)) };
       return;
     }
 
