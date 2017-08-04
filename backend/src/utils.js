@@ -16,6 +16,10 @@ function int2date (int) {
   return new Date(int * 1000);
 }
 
+function hex2date (hex) {
+  return int2date(hex2int(hex));
+}
+
 function hex2bool (hex) {
   validateHex(hex);
 
@@ -106,6 +110,7 @@ module.exports = {
   buf2hex,
   ejs2val,
   hex2bool,
+  hex2date,
   hex2int,
   hex2big,
   hex2buf,

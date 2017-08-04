@@ -18,7 +18,7 @@ const Recaptcha = require('./recaptcha');
 const Sale = require('./contracts/sale');
 
 const store = require('./store');
-const { buf2hex, buf2big, big2hex } = require('./utils');
+const { buf2hex, buf2big, big2hex, int2date } = require('./utils');
 
 const app = new Koa();
 const router = new Router();
@@ -181,7 +181,7 @@ async function main () {
       BONUS_SIZE,
       DIVISOR,
       STATEMENT_HASH,
-      beginTime,
+      beginTime: int2date(beginTime),
       tokenCap
     };
   });
@@ -203,7 +203,7 @@ async function main () {
 
     ctx.body = Object.assign({}, extras, {
       currentPrice,
-      endTime,
+      endTime: int2date(endTime),
       tokensAvailable,
       totalAccounted,
       totalReceived

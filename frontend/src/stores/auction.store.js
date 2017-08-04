@@ -40,13 +40,13 @@ class AuctionStore {
       tokenCap
     } = await backend.sale();
 
-    this.beginTime = new Date(beginTime);
     this.BONUS_DURATION = new BigNumber(BONUS_DURATION);
     this.BONUS_SIZE = new BigNumber(BONUS_SIZE);
     this.DIVISOR = new BigNumber(DIVISOR);
-    this.tokenCap = new BigNumber(tokenCap);
-
     this.STATEMENT_HASH = STATEMENT_HASH;
+
+    this.beginTime = new Date(beginTime);
+    this.tokenCap = new BigNumber(tokenCap);
   }
 
   bonus (value) {
