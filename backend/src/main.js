@@ -7,6 +7,7 @@ const config = require('config');
 const EthereumTx = require('ethereumjs-tx');
 const Koa = require('koa');
 const bodyParser = require('koa-bodyparser');
+const etag = require('koa-etag');
 const Router = require('koa-router');
 const cors = require('kcors');
 
@@ -116,6 +117,7 @@ async function main () {
   app
     .use(bodyParser())
     .use(cors())
+    .use(etag())
     .use(router.routes())
     .use(router.allowedMethods())
     .listen(4000);
