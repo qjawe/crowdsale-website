@@ -42,8 +42,8 @@ export default class Sale extends Component {
   renderBuy () {
     return (
       <div>
-        <AccountManager />
         <Terms />
+        <AccountManager />
         <Buy />
       </div>
     );

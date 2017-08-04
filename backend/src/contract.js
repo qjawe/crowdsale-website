@@ -154,10 +154,11 @@ class Contract {
    * @param {Array}        statics    The names of constant storage values
    *                                  (ie. that won't change)
    */
-  constructor (transport, address, abi, statics = []) {
+  constructor (connector, address, abi, statics = []) {
     this._abi = abi;
     this._address = address;
-    this._transport = transport;
+    this._connector = connector;
+    this._transport = connector.transport;
     this._statics = statics;
 
     this._constants = new Map();
@@ -215,6 +216,14 @@ class Contract {
 
   get address () {
     return this._address;
+  }
+
+  get connector () {
+    return this._connector;
+  }
+
+  get transport () {
+    return this._transport;
   }
 
   /**

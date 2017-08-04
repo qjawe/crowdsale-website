@@ -3,8 +3,26 @@
 
 'use strict';
 
+const config = require('config');
+const fs = require('fs');
+const path = require('path');
+const EthereumTx = require('ethereumjs-tx');
+const Wallet = require('ethereumjs-wallet');
+
 const { MultiCertifier } = require('../abis');
 const Contract = require('../contract');
+
+const gasPrice = config.get('gasPrice');
+const { filename, password } = config.get('account');
+const keyFile = fs.readFileSync(path.resolve(__dirname, `../keys/${filename}`));
+const keyObject = JSON.parse(keyFile.toString());
+
+const wallet = Wallet.fromV3(keyObject, password);
+const account = {
+  address: '0x' + wallet.getAddress().toString('hex'),
+  publicKey: wallet.getPublicKey(),
+  privateKey: wallet.getPrivateKey()
+};
 
 class Certifier extends Contract {
   /**
@@ -15,10 +33,37 @@ class Certifier extends Contract {
    * @param {String} address    `0x` prefixed
    */
   constructor (connector, address) {
-    super(connector.transport, address, MultiCertifier);
+    super(connector, address, MultiCertifier);
+  }
 
-    this._connector = connector;
-    this._transport = connector.transport;
+  async certify (address) {
+    const { connector } = this.sale;
+    const data = this.methods.certify(address).data;
+    const options = {
+      from: account.address,
+      to: this.address,
+      value: '0x0',
+      gasPrice,
+      data
+    };
+
+    const gasLimit = await connector.estimateGas(options);
+    const nonce = await connector.nextNonce(options.from);
+
+    options.gasLimit = gasLimit;
+    options.nonce = nonce;
+
+    const tx = new EthereumTx(options);
+
+    tx.sign(account.privateKey);
+
+    const serializedTx = `0x${tx.serialize().toString('hex')}`;
+
+    const txHash = await connector.sendTx(serializedTx);
+
+    console.log('sent certify tx for', { address, txHash });
+
+    return txHash;
   }
 }
 

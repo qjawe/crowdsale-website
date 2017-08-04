@@ -37,10 +37,7 @@ class Sale extends Contract {
    * @param {String} address    `0x` prefixed
    */
   constructor (connector, address) {
-    super(connector.transport, address, SecondPriceAuction, STATICS);
-
-    this._connector = connector;
-    this._transport = connector.transport;
+    super(connector, address, SecondPriceAuction, STATICS);
   }
 
   async update () {
@@ -84,10 +81,6 @@ class Sale extends Contract {
           time: log.timestamp
         };
       });
-  }
-
-  get connector () {
-    return this._connector;
   }
 }
 
