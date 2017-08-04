@@ -1,8 +1,11 @@
 import { action, observable } from 'mobx';
 import Onfido from 'onfido-sdk-ui';
+import store from 'store';
 
 import accountStore from './account.store';
 import backend from '../backend';
+
+const LS_KEY = '__crowdsale::certifier';
 
 class CertifierStore {
   @observable error = null;
@@ -13,6 +16,26 @@ class CertifierStore {
   @observable open = false;
   @observable pending = false;
   @observable stoken = null;
+
+  constructor () {
+    this.load();
+  }
+
+  @action
+  load () {
+    const data = store.get(LS_KEY) || {};
+
+    Object.keys(data).forEach((key) => {
+      this[key] = data[key];
+    });
+  }
+
+  save (data = {}) {
+    const prevData = store.get(LS_KEY);
+    const nextData = { ...prevData, ...data };
+
+    store.set(LS_KEY, nextData);
+  }
 
   async createApplicant () {
     this.setLoading(true);
@@ -41,7 +64,7 @@ class CertifierStore {
     this.setOpen(false);
 
     try {
-      const check = await backend.checkApplicant(this.onfido.applicantId);
+      const check = await backend.checkApplicant(this.onfido.applicantId, accountStore.address);
 
       this.setOnfido({ checkId: check.id });
       this.pollCheckStatus();
@@ -77,8 +100,7 @@ class CertifierStore {
 
   async pollCheckStatus () {
     const { applicantId, checkId } = this.onfido;
-    const { address } = accountStore;
-    const result = await backend.checkStatus({ applicantId, checkId, address });
+    const result = await backend.checkStatus({ applicantId, checkId });
 
     console.warn('check status', result);
     clearTimeout(this.checkStatusTimeoutId);
@@ -147,6 +169,8 @@ class CertifierStore {
       ...(this.onfido || {}),
       ...onfido
     };
+
+    this.save({ onfido: this.onfido });
   }
 
   @action

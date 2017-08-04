@@ -27,17 +27,17 @@ class Backend {
     return await get(this.url('/chart-data'));
   }
 
-  async checkApplicant (applicantId) {
+  async checkApplicant (applicantId, address) {
     return await post(this.url('/check-applicant'), {
-      applicantId
+      applicantId,
+      address
     });
   }
 
-  async checkStatus ({ applicantId, checkId, address }) {
+  async checkStatus ({ applicantId, checkId }) {
     return await post(this.url('/check-status'), {
       applicantId,
-      checkId,
-      address
+      checkId
     });
   }
 

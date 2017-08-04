@@ -39,7 +39,7 @@ async function main () {
   });
 
   router.post('/check-status', async (ctx, next) => {
-    const { applicantId, checkId, address } = ctx.request.body;
+    const { applicantId, checkId } = ctx.request.body;
 
     try {
       const { pending, valid } = await Onfido.checkStatus(applicantId, checkId);
@@ -49,6 +49,14 @@ async function main () {
         return;
       }
 
+      const { tags } = await Onfido.getCheck(applicantId, checkId);
+      const addressTag = tags.find((tag) => /address/.test(tag));
+
+      if (!addressTag) {
+        throw new Error(`Could not find an address for this applicant check (${applicantId}/${checkId})`);
+      }
+
+      const address = addressTag.replace(/^address:/, '');
       const tx = await certifier.certify(address);
 
       ctx.body = { valid, tx };
@@ -60,10 +68,10 @@ async function main () {
   });
 
   router.post('/check-applicant', async (ctx, next) => {
-    const { applicantId } = ctx.request.body;
+    const { applicantId, address } = ctx.request.body;
 
     try {
-      const result = await Onfido.checkApplicant(applicantId);
+      const result = await Onfido.checkApplicant(applicantId, address);
 
       ctx.body = result;
     } catch (error) {

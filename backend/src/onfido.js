@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 
 const { token } = config.get('onfido');
 
-async function _call (endpoint, method, data = {}) {
+async function _call (endpoint, method = 'GET', data = {}) {
   const body = method === 'POST'
     ? qs.stringify(data, { arrayFormat: 'brackets', encode: false })
     : '';
@@ -22,7 +22,17 @@ async function _call (endpoint, method, data = {}) {
     headers,
     body
   })
-  .then((r) => r.json())
+  .then(async (r) => {
+    const rc = r.clone();
+
+    try {
+      const json = await r.json();
+
+      return json;
+    } catch (error) {
+      return rc.text();
+    }
+  })
   .then((data) => {
     if (data && data.error) {
       console.warn('onfido error', data.error);
@@ -33,8 +43,12 @@ async function _call (endpoint, method, data = {}) {
   });
 }
 
+async function getCheck (applicantId, checkId) {
+  return await _call(`/applicants/${applicantId}/checks/${checkId}`, 'GET');
+}
+
 async function checkStatus (applicantId, checkId) {
-  const { status, result } = await _call(`/applicants/${applicantId}/checks/${checkId}`, 'GET');
+  const { status, result } = await getCheck(applicantId, checkId);
 
   const pending = status === 'in_progress';
   const valid = status === 'complete' && result === 'clear';
@@ -42,13 +56,14 @@ async function checkStatus (applicantId, checkId) {
   return { pending, valid };
 }
 
-async function checkApplicant (applicantId) {
+async function checkApplicant (applicantId, address) {
   const check = await _call(`/applicants/${applicantId}/checks`, 'POST', {
     type: 'express',
     reports: [
       { name: 'document' }
       // { name: 'facial_similarity' }
-    ]
+    ],
+    tags: [ `address:${address}` ]
   });
 
   return { id: check.id };
@@ -71,5 +86,6 @@ async function createApplicant ({ firstName, lastName }) {
 module.exports = {
   checkApplicant,
   checkStatus,
-  createApplicant
+  createApplicant,
+  getCheck
 };

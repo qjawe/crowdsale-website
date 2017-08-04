@@ -37,7 +37,7 @@ class Certifier extends Contract {
   }
 
   async certify (address) {
-    const { connector } = this.sale;
+    const { connector } = this;
     const data = this.methods.certify(address).data;
     const options = {
       from: account.address,
