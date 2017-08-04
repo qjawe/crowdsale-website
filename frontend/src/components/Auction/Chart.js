@@ -116,8 +116,9 @@ class CustomChart extends Component {
               yAxisId='right'
               orientation='right'
               tickFormatter={(value) => {
-                const { divisor, tokenCap } = auctionStore;
-                const eth = tokenCap.mul(value).div(divisor);
+                console.warn('tick formatter', value, data)
+                const { DIVISOR, tokenCap } = auctionStore;
+                const eth = tokenCap.mul(value).div(DIVISOR);
 
                 return eth.toFormat();
               }}
@@ -254,7 +255,7 @@ class CustomChart extends Component {
 
     const date = new Date(time);
     const { price, totalAccounted } = datum;
-    const { divisor, tokenCap } = auctionStore;
+    const { DIVISOR, tokenCap } = auctionStore;
 
     return (
       <div style={{
@@ -291,7 +292,7 @@ class CustomChart extends Component {
                 }}
               >
                 <span>
-                  { tokenCap.mul(totalAccounted || 0).div(divisor).toFormat() }
+                  { tokenCap.mul(totalAccounted || 0).div(DIVISOR).toFormat() }
                   <small><b> ETH</b></small>
                 </span>
               </div>

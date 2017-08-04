@@ -61,12 +61,26 @@ function pause (time) {
   });
 }
 
-function padLeft (input, length) {
-  if (input.length >= length) {
-    return input;
+function ejs2val (value, type) {
+  if (Array.isArray(value)) {
+    const subtype = /^(.+)\[.*\]$/.exec(type)[1];
+
+    return value.map((val) => ejs2val(val, subtype));
   }
 
-  return padLeft('0' + input, length);
+  if (/(int|fixed)/.test(type)) {
+    return new BigNumber('0x' + value.toString('hex'));
+  }
+
+  if (/bytes/.test(type)) {
+    return '0x' + value.toString('hex');
+  }
+
+  if (/address/.test(type)) {
+    return '0x' + value.toString('hex');
+  }
+
+  return value;
 }
 
 function toChecksumAddress (_address) {
@@ -87,16 +101,16 @@ function toChecksumAddress (_address) {
 }
 
 module.exports = {
-  int2date,
+  big2hex,
+  buf2big,
+  buf2hex,
+  ejs2val,
   hex2bool,
   hex2int,
-  int2hex,
-  hex2buf,
-  buf2hex,
   hex2big,
-  buf2big,
-  big2hex,
-  padLeft,
+  hex2buf,
+  int2date,
+  int2hex,
   pause,
   toChecksumAddress
 };

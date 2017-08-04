@@ -9,16 +9,15 @@ const REFRESH_DELAY = 2000;
 class AuctionStore {
   @observable beginTime = new Date();
   @observable block = {};
-  @observable bonusDuration = new BigNumber(0);
-  @observable bonusSize = new BigNumber(0);
-  @observable buyinId = '0x';
+  @observable BONUS_DURATION = new BigNumber(0);
+  @observable BONUS_SIZE = new BigNumber(0);
   @observable chart = {};
   @observable connected = 'disconnected'
   @observable contractAddress = '0x';
   @observable currentPrice = new BigNumber(0);
-  @observable divisor = new BigNumber(1);
+  @observable DIVISOR = new BigNumber(1);
   @observable endTime = new Date();
-  @observable statementHash = '0x';
+  @observable STATEMENT_HASH = '0x';
   @observable tokensAvailable = new BigNumber(0);
   @observable tokenCap = new BigNumber(0);
   @observable totalAccounted = new BigNumber(0);
@@ -35,7 +34,7 @@ class AuctionStore {
       return new BigNumber(0);
     }
 
-    return value.mul(this.bonusSize).div(100);
+    return value.mul(this.BONUS_SIZE).div(100);
   }
 
   getPrice (_time) {
@@ -45,20 +44,20 @@ class AuctionStore {
 
     const time = new BigNumber(Math.round(_time.getTime() / 1000));
     const beginTime = new BigNumber(Math.round(this.beginTime.getTime() / 1000));
-    const { divisor, USDWEI } = this;
+    const { DIVISOR, USDWEI } = this;
 
     return USDWEI
       .mul(new BigNumber(18432000).div(time.sub(beginTime).add(5760)).sub(5))
-      .div(divisor)
+      .div(DIVISOR)
       .round();
   }
 
   getTime (price) {
     const beginTime = new BigNumber(Math.round(this.beginTime.getTime() / 1000));
-    const { divisor, USDWEI } = this;
+    const { DIVISOR, USDWEI } = this;
 
     const f1 = price
-      .mul(divisor)
+      .mul(DIVISOR)
       .div(USDWEI)
       .add(5);
 
@@ -122,7 +121,7 @@ class AuctionStore {
 
   @computed
   get inBonus () {
-    const bonusEndTime = new Date(this.beginTime.getTime() + this.bonusDuration * 1000);
+    const bonusEndTime = new Date(this.beginTime.getTime() + this.BONUS_DURATION * 1000);
 
     return this.now < bonusEndTime;
   }
@@ -143,11 +142,13 @@ class AuctionStore {
 
   async refresh () {
     try {
-      const status = await backend.status();
+      const block = await backend.block();
 
       // Same block, no updates
-      if (this.block.hash !== status.block.hash) {
-        this.update(status);
+      if (this.block.hash !== block.hash) {
+        const status = await backend.status();
+
+        this.update({ ...status, block });
       }
     } catch (error) {
       console.error(error);
@@ -166,17 +167,18 @@ class AuctionStore {
   @action
   update (status) {
     const {
-      beginTime,
       block,
-      bonusDuration,
-      bonusSize,
-      buyinId,
       connected,
       contractAddress,
+
+      BONUS_DURATION,
+      BONUS_SIZE,
+      DIVISOR,
+      STATEMENT_HASH,
+
+      beginTime,
       currentPrice,
-      divisor,
       endTime,
-      statementHash,
       tokensAvailable,
       tokenCap,
       totalAccounted,
@@ -188,10 +190,10 @@ class AuctionStore {
     const update = !nextTotalAccounted.eq(this.totalAccounted);
 
     this.beginTime = new Date(beginTime);
-    this.bonusDuration = new BigNumber(bonusDuration);
-    this.bonusSize = new BigNumber(bonusSize);
+    this.BONUS_DURATION = new BigNumber(BONUS_DURATION);
+    this.BONUS_SIZE = new BigNumber(BONUS_SIZE);
     this.currentPrice = new BigNumber(currentPrice);
-    this.divisor = new BigNumber(divisor);
+    this.DIVISOR = new BigNumber(DIVISOR);
     this.endTime = new Date(endTime);
     this.tokensAvailable = new BigNumber(tokensAvailable);
     this.tokenCap = new BigNumber(tokenCap);
@@ -199,10 +201,9 @@ class AuctionStore {
     this.totalReceived = new BigNumber(totalReceived);
 
     this.block = block;
-    this.buyinId = buyinId;
     this.connected = connected;
     this.contractAddress = contractAddress;
-    this.statementHash = statementHash;
+    this.STATEMENT_HASH = STATEMENT_HASH;
 
     if (update) {
       this.updateChartData();
@@ -218,7 +219,7 @@ class AuctionStore {
   }
 
   formatPrice (price) {
-    return fromWei(price.mul(this.divisor));
+    return fromWei(price.mul(this.DIVISOR));
   }
 
   formatChartData (data) {

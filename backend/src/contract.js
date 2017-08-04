@@ -3,146 +3,334 @@
 
 'use strict';
 
-const BigNumber = require('bignumber.js');
-const keccak = require('keccak');
-const { buf2hex, padLeft, toChecksumAddress } = require('./utils');
+const EthereumAbi = require('ethereumjs-abi');
 
-class Method {
-  constructor (name, types) {
-    const sig = keccak('keccak256')
-                .update(Buffer.from(`${name}(${types.join(',')})`))
-                .digest();
+const { buf2hex, ejs2val, hex2buf } = require('./utils');
+
+class Event {
+  /**
+   * Abstraction over a contract event
+   *
+   * @param {Object}  iface  The event interface (from the ABI)
+   */
+  constructor (iface) {
+    const { inputs, name } = iface;
+
+    const types = inputs.map((input) => input.type);
+    const id = EthereumAbi.eventID(name, types);
+
+    this._topic = buf2hex(id);
 
     this._name = name;
-    this._id = buf2hex(sig.slice(0, 4));
-    this._types = types;
+    this._inputs = inputs;
   }
 
-  get id () {
-    return this._id;
+  /**
+   * Event topic
+   *
+   * @return {String} `0x` prefixed hex-encoded 32 bytes
+   */
+  get topic () {
+    return this._topic;
   }
 
-  data (params) {
-    // TODO: convert params to hex string and append to id
-    const encodedData = this._types
-      .map((type, index) => {
-        const param = params[index];
+  encode (filters = []) {
+    const inputs = this._inputs
+      .filter((input) => input.indexed);
 
-        if (type === 'address') {
-          return padLeft(param.replace(/^0x/, ''), 64);
-        }
+    const topics = [ this.topic ];
 
-        return '';
-      })
-      .join('');
+    filters
+      .forEach((filter, index) => {
+        const input = inputs[index];
 
-    return this._id + encodedData;
+        topics[index + 1] = this.encodeFitler(filter, input.type);
+      });
+
+    return topics;
+  }
+
+  encodeFitler (filter, type) {
+    if (filter === null) {
+      return null;
+    }
+
+    if (Array.isArray(filter)) {
+      return filter.map((f) => this.encodeFitler(f, type));
+    }
+
+    return '0x' + EthereumAbi.rawEncode([ type ], [ filter ]).toString('hex');
+  }
+
+  decode (logs) {
+    return logs.map((log) => {
+      log.event = this._name;
+      log.params = {};
+
+      this._inputs
+        .filter((input) => input.indexed)
+        .map((input, index) => {
+          const rawValue = log.topics[index + 1];
+          const value = EthereumAbi.rawDecode([ input.type ], hex2buf(rawValue))[0];
+
+          log.params[input.name] = ejs2val(value, input.type);
+        });
+      const dataInputs = this._inputs.filter((input) => !input.indexed);
+      const dataTypes = dataInputs.map((input) => input.type);
+      const values = EthereumAbi.rawDecode(dataTypes, hex2buf(log.data));
+
+      values.forEach((value, index) => {
+        const input = dataInputs[index];
+
+        log.params[input.name] = ejs2val(value, input.type);
+      });
+
+      return log;
+    });
   }
 }
 
-class Event {
-  constructor (name, types) {
-    const sig = keccak('keccak256')
-      .update(Buffer.from(`${name}(${types.join(',')})`))
-      .digest();
+class Method {
+  /**
+   * Abstraction over a contract function
+   *
+   * @param {Object}  iface  The function interface (from the ABI)
+   */
+  constructor (iface) {
+    const { inputs, outputs, name } = iface;
+
+    const types = inputs.map((input) => input.type);
+    const id = EthereumAbi.methodID(name, types);
+
+    this._id = buf2hex(id.slice(0, 4));
+    this._types = types;
 
     this._name = name;
-    this._id = buf2hex(sig);
-    this._types = types || [];
+    this._inputs = inputs;
+    this._outputs = outputs;
   }
 
+  /**
+   * Function id
+   *
+   * @return {String} `0x` prefixed hex-encoded 4 bytes
+   */
   get id () {
     return this._id;
   }
 
-  parse (log) {
-    const data = log.topics
-      .slice(1)
-      .concat(log.data.replace(/^0x/, '').match(/(.{64})/g));
+  encode (args = []) {
+    const params = [].concat(args);
+    const types = this._types;
 
-    log.params = this._types.map((type, index) => {
-      const value = data[index];
+    if (params.length !== types.length) {
+      throw new Error(`Expected ${types.length} params for "${this._name}" ; ${params.length} given`);
+    }
 
-      if (/uint/.test(type)) {
-        return new BigNumber('0x' + value);
-      }
+    const encoded = EthereumAbi.rawEncode(types, params);
 
-      if (type === 'address') {
-        const address = '0x' + value.slice(-40);
+    return this.id + encoded.toString('hex');
+  }
 
-        return toChecksumAddress(address);
-      }
+  decode (data) {
+    const types = this._outputs.map((output) => output.type);
+    const decoded = EthereumAbi.rawDecode(types, hex2buf(data));
 
-      return value;
+    return decoded.map((value, index) => {
+      const type = types[index];
+
+      return ejs2val(value, type);
     });
-
-    return log;
   }
 }
 
 class Contract {
-  constructor (transport, address) {
+  /**
+   * Abstraction over an Ethereum contract
+   *
+   * @param {RpcTransport} transport
+   * @param {String}       address    `0x` prefixed contract address
+   * @param {Array}        abi        The contract ABI
+   * @param {Array}        statics    The names of constant storage values
+   *                                  (ie. that won't change)
+   */
+  constructor (transport, address, abi, statics = []) {
+    this._abi = abi;
     this._address = address;
     this._transport = transport;
+    this._statics = statics;
 
+    this._constants = new Map();
     this._methods = new Map();
     this._events = new Map();
 
+    this.methods = {};
     this.events = {};
-  }
+    this.values = {};
 
-  register (name, ...types) {
-    const method = new Method(name, types);
+    abi.forEach((iface) => {
+      const { constant, name, type } = iface;
 
-    this._methods.set(name, method);
-    this[name] = (...params) => this._call(name, params);
-    this[name].getCallData = (...params) => method.data(params);
-    this[name].id = method.id;
+      if (type === 'function') {
+        const method = new Method(iface);
 
-    return this;
-  }
+        // Constants are methods of the contract that
+        // takes no inputs, and has one output, for example
+        // the contract public storage
+        if (constant && iface.inputs.length === 0 && iface.outputs.length === 1) {
+          this._constants.set(name, method);
+        }
 
-  registerEvent (name, ...types) {
-    const event = new Event(name, types);
+        this.methods[name] = (...params) => {
+          const data = method.encode(params);
 
-    this._events.set(name, event);
-    this.events[name] = { id: event.id };
-    this.events[event.id] = name;
+          if (constant) {
+            return {
+              get: () => this._call(method, data),
+              data
+            };
+          }
 
-    return this;
-  }
+          return {
+            post: (options) => this._post(method, data, options),
+            data
+          };
+        };
+      } else if (type === 'event') {
+        const event = new Event(iface);
 
-  parseLogs (logs) {
-    return logs.map((log) => {
-      const eventId = log.topics[0];
-      const eventName = this.events[eventId];
-      const event = this._events.get(eventName);
+        this._events.set(name, event);
+        this._events.set(event.topic, event);
 
-      if (!event) {
-        console.warn(`could not find an event matching ${eventId}`);
-        return null;
+        this.events[name] = (...filters) => {
+          const topics = event.encode(filters);
+
+          return {
+            get: (options) => this._logs(topics, options)
+          };
+        };
       }
-
-      const parsedLog = event.parse(log);
-
-      parsedLog.name = eventName;
-      return parsedLog;
     });
-  }
-
-  _call (name, params) {
-    const method = this._methods.get(name);
-
-    return this
-      ._transport
-      .request('eth_call', {
-        to: this._address,
-        data: method.data(params)
-      });
   }
 
   get address () {
     return this._address;
+  }
+
+  /**
+   * Parse the given logs for the contract events
+   *
+   * @param {Array}  logs array of log objects as returned from Parity
+   *
+   * @return {Array} logs enhanced with the `event` and `params` fields
+   */
+  parse (logs) {
+    return logs.map((log) => {
+      const topic = log.topics[0];
+      const event = this._events.get(topic);
+
+      if (!event) {
+        console.warn('could not find an event for this log', log.topics);
+        return log;
+      }
+
+      return event.decode([ log ])[0];
+    });
+  }
+
+  /**
+   * Get all the event logs for the specified events
+   *
+   * @param  {[String]}  eventNames
+   * @param  {Object}    options     - The options to pass the eth_getLogs
+   * @return {Promise<Array>}
+   */
+  async logs (eventNames, options) {
+    const events = eventNames.map((eventName) => {
+      if (!this._events.has(eventName)) {
+        throw new Error(`Unkown event ${eventName}`);
+      }
+
+      return this._events.get(eventName);
+    });
+
+    const topics = [ events.map((event) => event.topic) ];
+
+    return this._logs(topics, options);
+  }
+
+  /**
+   * Update the contract constants and attach the
+   * new value to the contract
+   *
+   * @param  {String} methodName  The update can be filtered by method name
+   * @return {Promise}
+   */
+  async update (methodName) {
+    let methodNames = [];
+
+    if (methodName) {
+      if (!this._methods.has(methodName)) {
+        throw new Error(`The contract has no method ${methodName}`);
+      }
+
+      methodNames = [methodName];
+    } else {
+      for (const name of this._constants.keys()) {
+        methodNames.push(name);
+      }
+    }
+
+    methodNames = methodNames.filter((name) => {
+      return !this._statics.includes(name) || this.values[name] === undefined;
+    });
+
+    const promises = methodNames.map((name) => {
+      return this.methods[name]().get();
+    });
+
+    return Promise.all(promises)
+      .then((results) => {
+        methodNames.forEach((name, index) => {
+          this.values[name] = results[index][0];
+        });
+      });
+  }
+
+  /**
+   * Call into a registered contract function
+   *
+   * @param  {Object}  method of the function
+   * @param  {String}  data - Hex encoded data
+   *
+   * @return {Promise<Array>} decoded result of `eth_call`
+   */
+  _call (method, data) {
+    return this
+      ._transport
+      .request('eth_call', {
+        to: this._address,
+        data
+      })
+      .then((data) => {
+        return method.decode(data);
+      });
+  }
+
+  _logs (topics, options) {
+    return this
+      ._transport
+      .request('eth_getLogs', Object.assign({}, {
+        fromBlock: '0x0',
+        toBlock: 'latest',
+        address: this.address,
+        topics
+      }, options))
+      .then((logs) => this.parse(logs));
+  }
+
+  _post (method, args = [], options = {}) {
+    throw new Error('Not Implemented');
   }
 }
 

@@ -11,6 +11,10 @@ class Backend {
     return `${this._url}${path}`;
   }
 
+  block () {
+    return get(this.url('/block'));
+  }
+
   status () {
     return get(this.url('/'));
   }

@@ -50,7 +50,7 @@ class BuyStore {
 
   async purchase () {
     const { address, privateKey } = accountStore;
-    const { buyinId, contractAddress, statementHash } = auctionStore;
+    const { buyinId, contractAddress, STATEMENT_HASH } = auctionStore;
 
     if (!address || !privateKey) {
       return;
@@ -59,7 +59,7 @@ class BuyStore {
     this.updateTx({ sending: true, mining: false });
 
     const nonce = await backend.nonce(address);
-    const { v, r, s } = ecsign(hex2buf(statementHash), privateKey);
+    const { v, r, s } = ecsign(hex2buf(STATEMENT_HASH), privateKey);
     const data = buildABIData(buyinId, v, r, s);
 
     const tx = new EthereumTx({

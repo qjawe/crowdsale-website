@@ -1,8 +1,6 @@
 import React, { Component } from 'react';
 import { Button, Container } from 'semantic-ui-react';
 
-import Chart from './Chart';
-
 const style = {
   backgroundColor: '#f3f3f3'
 };
@@ -56,7 +54,6 @@ export default class Info extends Component {
               Read more about the auction
             </Button>
           </div>
-          <Chart />
         </Container>
       </div>
     );

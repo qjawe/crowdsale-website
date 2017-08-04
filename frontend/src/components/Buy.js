@@ -56,7 +56,7 @@ export default class Buy extends Component {
   }
 
   renderForm () {
-    const { divisor } = auctionStore;
+    const { DIVISOR } = auctionStore;
     const { spend, spendBond } = buyStore;
     const { tokens } = buyStore.theDeal;
 
@@ -79,7 +79,7 @@ export default class Buy extends Component {
           <span>By spending </span>
           <b>{fromWei(spend).toFormat()} ETH</b>
           <span> you will receive at least </span>
-          <b>{tokens.div(divisor).toFormat()} DOTs</b>
+          <b>{tokens.div(DIVISOR).toFormat()} DOTs</b>
           {this.renderRefund()}
         </div>
 

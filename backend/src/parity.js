@@ -4,7 +4,7 @@
 'use strict';
 
 const RpcTransport = require('./transport');
-const { hex2int, hex2big } = require('./utils');
+const { hex2big } = require('./utils');
 const EventEmitter = require('events');
 
 class ParityConnector extends EventEmitter {
@@ -20,10 +20,9 @@ class ParityConnector extends EventEmitter {
     this
       ._transport
       .subscribe('eth_getBlockByNumber', 'latest', false)
-      .forEach((result) => {
-        result.timestamp = hex2int(result.timestamp);
-        result.number = hex2int(result.number);
-        this.emit('block', result);
+      .forEach((block) => {
+        this.block = block;
+        this.emit('block', block);
       });
   }
 
@@ -78,6 +77,55 @@ class ParityConnector extends EventEmitter {
   }
 
   /**
+   * Get a transaction receipt by hash.
+   *
+   * Note: This will await till the transaction has been mined.
+   *
+   * @param  {String} hash `0x` prefixed tx hash
+   *
+   * @return {Promise<Object>} tx receipt: https://github.com/paritytech/parity/wiki/JSONRPC-eth-module#returns-20
+   */
+  transactionReceipt (hash) {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+
+      const attempt = () => {
+        attempts += 1;
+
+        this
+          ._transport
+          .request('eth_getTransactionReceipt', hash)
+          .then((receipt) => {
+            console.log('receipt.blockNumber', receipt.blockNumber);
+
+            if (receipt.blockNumber) {
+              return resolve(receipt);
+            }
+
+            if (attempts >= 60) {
+              reject(new Error('Exceeded allowed attempts'));
+            } else {
+              // Try again next block
+              this.once('block', attempt);
+            }
+          })
+          .catch((err) => {
+            if (attempts >= 10) {
+              reject(err);
+            } else {
+              console.error('Error while getting receipt, will retry:', err.message);
+
+              // Try again next block
+              this.once('block', attempt);
+            }
+          });
+      };
+
+      attempt();
+    });
+  }
+
+  /**
    * Get the balance for address
    *
    * @param  {String} address
@@ -91,7 +139,7 @@ class ParityConnector extends EventEmitter {
       .then(hex2big);
   }
 
-  getLogs (options) {
+  logs (options) {
     return this
       ._transport
       .request('eth_getLogs', options);
@@ -102,9 +150,6 @@ class ParityConnector extends EventEmitter {
    * Get next nonce for address
    *
    * @return {RpcTransport}
-   * @param  {String} address
-   *
-   * @return {Promise<Number>} nonce
    */
   get transport () {
     return this._transport;

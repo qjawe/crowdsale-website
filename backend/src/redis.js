@@ -8,4 +8,7 @@ client.on('error', function (err) {
   console.error('Redis error', err);
 });
 
-module.exports = client;
+// Promisfy & export required Redis commands
+for (const func of ['get', 'set', 'hget', 'hset', 'hdel', 'hscan']) {
+  exports[func] = promisify(client[func].bind(client));
+}
