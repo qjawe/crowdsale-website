@@ -162,17 +162,52 @@ async function main () {
     }
   });
 
-  router.get('/block', (ctx) => {
-    ctx.body = connector.block;
+  router.get('/block-hash', (ctx) => {
+    ctx.body = { hash: connector.block.hash };
+  });
+
+  router.get('/sale', (ctx) => {
+    const {
+      BONUS_DURATION,
+      BONUS_SIZE,
+      DIVISOR,
+      STATEMENT_HASH,
+      beginTime,
+      tokenCap
+    } = sale.values;
+
+    ctx.body = {
+      BONUS_DURATION,
+      BONUS_SIZE,
+      DIVISOR,
+      STATEMENT_HASH,
+      beginTime,
+      tokenCap
+    };
   });
 
   router.get('/', (ctx) => {
     const extras = {
+      block: connector.block,
       connected: connector.status,
-      contractAddress: sale.address,
+      contractAddress: sale.address
     };
 
-    ctx.body = Object.assign({}, sale.values, extras);
+    const {
+      currentPrice,
+      endTime,
+      tokensAvailable,
+      totalAccounted,
+      totalReceived
+    } = sale.values;
+
+    ctx.body = Object.assign({}, extras, {
+      currentPrice,
+      endTime,
+      tokensAvailable,
+      totalAccounted,
+      totalReceived
+    });
   });
 
   app

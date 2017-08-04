@@ -26,7 +26,27 @@ class AuctionStore {
   USDWEI = new BigNumber(10).pow(18).div(200);
 
   constructor () {
-    this.refresh();
+    this.init()
+      .then(() => this.refresh());
+  }
+
+  async init () {
+    const {
+      BONUS_DURATION,
+      BONUS_SIZE,
+      DIVISOR,
+      STATEMENT_HASH,
+      beginTime,
+      tokenCap
+    } = await backend.sale();
+
+    this.beginTime = new Date(beginTime);
+    this.BONUS_DURATION = new BigNumber(BONUS_DURATION);
+    this.BONUS_SIZE = new BigNumber(BONUS_SIZE);
+    this.DIVISOR = new BigNumber(DIVISOR);
+    this.tokenCap = new BigNumber(tokenCap);
+
+    this.STATEMENT_HASH = STATEMENT_HASH;
   }
 
   bonus (value) {
@@ -142,13 +162,13 @@ class AuctionStore {
 
   async refresh () {
     try {
-      const block = await backend.block();
+      const { hash } = await backend.blockHash();
 
       // Same block, no updates
-      if (this.block.hash !== block.hash) {
+      if (this.block.hash !== hash) {
         const status = await backend.status();
 
-        this.update({ ...status, block });
+        this.update(status);
       }
     } catch (error) {
       console.error(error);
@@ -171,16 +191,9 @@ class AuctionStore {
       connected,
       contractAddress,
 
-      BONUS_DURATION,
-      BONUS_SIZE,
-      DIVISOR,
-      STATEMENT_HASH,
-
-      beginTime,
       currentPrice,
       endTime,
       tokensAvailable,
-      tokenCap,
       totalAccounted,
       totalReceived
     } = status;
@@ -189,21 +202,15 @@ class AuctionStore {
     const nextTotalAccounted = new BigNumber(totalAccounted);
     const update = !nextTotalAccounted.eq(this.totalAccounted);
 
-    this.beginTime = new Date(beginTime);
-    this.BONUS_DURATION = new BigNumber(BONUS_DURATION);
-    this.BONUS_SIZE = new BigNumber(BONUS_SIZE);
     this.currentPrice = new BigNumber(currentPrice);
-    this.DIVISOR = new BigNumber(DIVISOR);
     this.endTime = new Date(endTime);
     this.tokensAvailable = new BigNumber(tokensAvailable);
-    this.tokenCap = new BigNumber(tokenCap);
     this.totalAccounted = new BigNumber(totalAccounted);
     this.totalReceived = new BigNumber(totalReceived);
 
     this.block = block;
     this.connected = connected;
     this.contractAddress = contractAddress;
-    this.STATEMENT_HASH = STATEMENT_HASH;
 
     if (update) {
       this.updateChartData();

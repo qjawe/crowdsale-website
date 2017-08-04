@@ -11,8 +11,12 @@ class Backend {
     return `${this._url}${path}`;
   }
 
-  block () {
-    return get(this.url('/block'));
+  blockHash () {
+    return get(this.url('/block-hash'));
+  }
+
+  sale () {
+    return get(this.url('/sale'));
   }
 
   status () {
