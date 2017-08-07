@@ -2,32 +2,51 @@ import BigNumber from 'bignumber.js';
 import { action, computed, observable } from 'mobx';
 
 import backend from '../backend';
+import { fromWei } from '../utils';
 
 const REFRESH_DELAY = 2000;
 
 class AuctionStore {
-  @observable available = new BigNumber(0);
-  @observable begin = 0;
-  @observable block = 0;
-  @observable bonusDuration = 0;
-  @observable bonusSize = new BigNumber(0);
-  @observable buyinId = '0x';
-  @observable cap = new BigNumber(0);
+  @observable beginTime = new Date();
+  @observable block = {};
+  @observable BONUS_DURATION = new BigNumber(0);
+  @observable BONUS_SIZE = new BigNumber(0);
+  @observable chart = {};
   @observable connected = 'disconnected'
   @observable contractAddress = '0x';
-  @observable currentTime = 0;
-  @observable end = 0;
-  @observable price = new BigNumber(0);
-  @observable statementHash = '0x';
-  @observable timeLeft = 0;
+  @observable currentPrice = new BigNumber(0);
+  @observable DIVISOR = new BigNumber(1);
+  @observable endTime = new Date();
+  @observable STATEMENT_HASH = '0x';
+  @observable tokensAvailable = new BigNumber(0);
+  @observable tokenCap = new BigNumber(0);
+  @observable totalAccounted = new BigNumber(0);
   @observable totalReceived = new BigNumber(0);
 
-  constructor () {
-    this.refresh();
+  USDWEI = new BigNumber(10).pow(18).div(200);
 
-    setInterval(() => {
-      this.refresh();
-    }, REFRESH_DELAY);
+  constructor () {
+    this.init()
+      .then(() => this.refresh());
+  }
+
+  async init () {
+    const {
+      BONUS_DURATION,
+      BONUS_SIZE,
+      DIVISOR,
+      STATEMENT_HASH,
+      beginTime,
+      tokenCap
+    } = await backend.sale();
+
+    this.BONUS_DURATION = new BigNumber(BONUS_DURATION);
+    this.BONUS_SIZE = new BigNumber(BONUS_SIZE);
+    this.DIVISOR = new BigNumber(DIVISOR);
+    this.STATEMENT_HASH = STATEMENT_HASH;
+
+    this.beginTime = new Date(beginTime);
+    this.tokenCap = new BigNumber(tokenCap);
   }
 
   bonus (value) {
@@ -35,11 +54,44 @@ class AuctionStore {
       return new BigNumber(0);
     }
 
-    return value.mul(this.bonusSize).div(100);
+    return value.mul(this.BONUS_SIZE).div(100);
+  }
+
+  getPrice (_time) {
+    if (!this.isActive()) {
+      return new BigNumber(0);
+    }
+
+    const time = new BigNumber(Math.round(_time.getTime() / 1000));
+    const beginTime = new BigNumber(Math.round(this.beginTime.getTime() / 1000));
+    const { DIVISOR, USDWEI } = this;
+
+    return USDWEI
+      .mul(new BigNumber(18432000).div(time.sub(beginTime).add(5760)).sub(5))
+      .div(DIVISOR)
+      .round();
+  }
+
+  getTime (price) {
+    const beginTime = new BigNumber(Math.round(this.beginTime.getTime() / 1000));
+    const { DIVISOR, USDWEI } = this;
+
+    const f1 = price
+      .mul(DIVISOR)
+      .div(USDWEI)
+      .add(5);
+
+    const time = new BigNumber(18432000)
+      .div(f1)
+      .sub(5760)
+      .add(beginTime)
+      .round();
+
+    return new Date(time.mul(1000).toNumber());
   }
 
   isActive () {
-    return this.now >= this.begin && this.now < this.end;
+    return this.now >= this.beginTime && this.now < this.endTime;
   }
 
   theDeal (value) {
@@ -47,7 +99,7 @@ class AuctionStore {
     let refund = new BigNumber(0);
 
     const bonus = this.bonus(value);
-    const price = this.price;
+    const price = this.currentPrice;
 
     if (!this.isActive()) {
       return {
@@ -62,8 +114,8 @@ class AuctionStore {
 
     let tokens = accepted.div(price);
 
-    if (tokens.gt(this.available)) {
-      accepted = this.available.mul(price);
+    if (tokens.gt(this.tokensAvailable)) {
+      accepted = this.tokensAvailable.mul(price);
       if (value.gt(accepted)) {
         refund = value.sub(accepted);
       }
@@ -78,68 +130,202 @@ class AuctionStore {
   }
 
   @computed
+  get beginPrice () {
+    return this.getPrice(this.beginTime);
+  }
+
+  @computed
+  get endPrice () {
+    return this.getPrice(this.endTime);
+  }
+
+  @computed
   get inBonus () {
-    return this.now < this.begin + this.bonusDuration;
+    const bonusEndTime = new Date(this.beginTime.getTime() + this.BONUS_DURATION * 1000);
+
+    return this.now < bonusEndTime;
   }
 
   @computed
   get maxSpend () {
-    return this.price.mul(this.available);
+    return this.currentPrice.mul(this.tokensAvailable);
   }
 
   @computed
   get now () {
     if (!this.block || !this.block.timestamp) {
-      return 0;
+      return new Date(0);
     }
 
-    return this.block.timestamp;
+    return new Date(this.block.timestamp);
   }
 
   async refresh () {
-    const status = await backend.status();
-    const { block, end } = status;
+    try {
+      const { hash } = await backend.blockHash();
 
-    status.timeLeft = Math.max(0, end - block.timestamp);
-    this.update(status);
+      // Same block, no updates
+      if (this.block.hash !== hash) {
+        const status = await backend.status();
+
+        this.update(status);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+
+    setTimeout(() => {
+      this.refresh();
+    }, REFRESH_DELAY);
+  }
+
+  @action
+  setChart (chart) {
+    this.chart = chart;
   }
 
   @action
   update (status) {
     const {
-      available,
-      begin,
       block,
-      bonusDuration,
-      bonusSize,
-      buyinId,
-      cap,
       connected,
       contractAddress,
-      currentTime,
-      end,
-      price,
-      statementHash,
-      timeLeft,
+
+      currentPrice,
+      endTime,
+      tokensAvailable,
+      totalAccounted,
       totalReceived
     } = status;
 
-    this.available = new BigNumber(available);
-    this.bonusSize = new BigNumber(bonusSize);
-    this.cap = new BigNumber(cap);
-    this.price = new BigNumber(price);
+    // Only update the chart when the price updates
+    const nextTotalAccounted = new BigNumber(totalAccounted);
+    const update = !nextTotalAccounted.eq(this.totalAccounted);
+
+    this.currentPrice = new BigNumber(currentPrice);
+    this.endTime = new Date(endTime);
+    this.tokensAvailable = new BigNumber(tokensAvailable);
+    this.totalAccounted = new BigNumber(totalAccounted);
     this.totalReceived = new BigNumber(totalReceived);
 
-    this.begin = begin;
     this.block = block;
-    this.bonusDuration = bonusDuration;
-    this.buyinId = buyinId;
     this.connected = connected;
     this.contractAddress = contractAddress;
-    this.currentTime = currentTime;
-    this.end = end;
-    this.statementHash = statementHash;
-    this.timeLeft = timeLeft;
+
+    if (update) {
+      this.updateChartData();
+    }
+  }
+
+  formatChartPrice (price) {
+    if (price === undefined) {
+      return undefined;
+    }
+
+    return this.formatPrice(price).toNumber();
+  }
+
+  formatPrice (price) {
+    return fromWei(price.mul(this.DIVISOR));
+  }
+
+  formatChartData (data) {
+    const { expectedTotalAccounted, price, time, totalAccounted } = data;
+
+    return {
+      expectedTotalAccounted: this.formatChartPrice(expectedTotalAccounted),
+      totalAccounted: this.formatChartPrice(totalAccounted),
+      price: this.formatChartPrice(price),
+      time: time.getTime()
+    };
+  }
+
+  async updateChartData () {
+    const { beginTime, beginPrice, currentPrice, tokenCap, endTime, endPrice, now } = this;
+    const totalAccountedRawData = await backend.chartData();
+
+    const totalAccountedData = totalAccountedRawData
+      .map((datum) => {
+        const { time, totalAccounted } = datum;
+        const value = new BigNumber(totalAccounted).div(tokenCap);
+
+        return { value, time: new Date(time) };
+      });
+
+    const NUM_TICKS = 200;
+    const data = [];
+
+    const priceInteval = beginPrice.sub(endPrice).div(NUM_TICKS);
+
+    for (let i = 0; i <= NUM_TICKS; i++) {
+      // The price decreases with time
+      const price = beginPrice.sub(priceInteval.mul(i));
+      const time = this.getTime(price);
+
+      data.push({ price, time });
+    }
+
+    const dateInterval = (endTime - beginTime) / NUM_TICKS;
+
+    for (let i = 0; i <= NUM_TICKS; i++) {
+      const time = new Date(beginTime.getTime() + dateInterval * i);
+      const price = this.getPrice(time);
+
+      data.push({ price, time });
+    }
+
+    const paddingTime = (endTime - beginTime) * 0.5;
+    const lastTAD = totalAccountedData[totalAccountedData.length - 1];
+
+    data.push({
+      time: new Date(beginTime.getTime() - paddingTime),
+      price: beginPrice,
+      totalAccounted: new BigNumber(0)
+    });
+
+    data.push({
+      time: new Date(endTime.getTime() + paddingTime),
+      price: endPrice,
+      expectedTotalAccounted: lastTAD.value
+    });
+
+    data.push({
+      time: now,
+      price: currentPrice,
+      totalAccounted: lastTAD.value
+    });
+
+    data.forEach((datum) => {
+      const { time } = datum;
+
+      if (time >= now) {
+        datum.expectedTotalAccounted = lastTAD.value;
+        return;
+      }
+
+      if (time >= lastTAD.time && time < now) {
+        datum.totalAccounted = lastTAD.value;
+        return;
+      }
+
+      const index = totalAccountedData.findIndex((d) => d.time > time);
+
+      if (index === 0) {
+        datum.totalAccounted = new BigNumber(0);
+        return;
+      }
+
+      if (index >= 1) {
+        datum.totalAccounted = totalAccountedData[index - 1].value;
+        return;
+      }
+    });
+
+    this.setChart({
+      data: data
+        .sort((ptA, ptB) => ptB.time - ptA.time)
+        .map((datum) => this.formatChartData(datum))
+    });
   }
 }
 

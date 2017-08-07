@@ -7,7 +7,7 @@ import auctionStore from '../../stores/auction.store';
 @observer
 export default class Bonus extends Component {
   render () {
-    const { bonusSize, inBonus } = auctionStore;
+    const { BONUS_SIZE, inBonus } = auctionStore;
 
     return (
       <Statistic>
@@ -15,7 +15,7 @@ export default class Bonus extends Component {
         <Statistic.Value>
           {
             inBonus
-            ? `${bonusSize.toNumber()}%`
+            ? `${BONUS_SIZE.toNumber()}%`
             : '0%'
           }
         </Statistic.Value>

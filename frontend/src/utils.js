@@ -1,3 +1,10 @@
+import BigNumber from 'bignumber.js';
+
+const WEI = new BigNumber(10).pow(18);
+
+export function fromWei (value) {
+  return new BigNumber(value).div(WEI);
+}
 
 export async function get (url) {
   let response = await fetch(url);
@@ -13,6 +20,12 @@ export async function post (url, body) {
       'Content-Type': 'application/json'
     }
   });
+
+  if (!response.ok) {
+    const text = await response.text();
+
+    throw new Error(text);
+  }
 
   return response.json();
 }

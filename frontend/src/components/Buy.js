@@ -1,13 +1,14 @@
 import { observer } from 'mobx-react';
 import { InlineBalance, BalanceBond } from 'parity-reactive-ui';
 import React, { Component } from 'react';
-import { Button, Checkbox, Container, Dimmer, Loader, Message, Segment } from 'semantic-ui-react';
+import { Button, Container, Dimmer, Loader, Message, Segment } from 'semantic-ui-react';
 
-import Terms from '../terms.md';
+import Certifier from './Certifier';
 
+import auctionStore from '../stores/auction.store';
 import accountStore from '../stores/account.store';
 import buyStore from '../stores/buy.store';
-import { hex2int } from '../utils';
+import { fromWei, hex2int } from '../utils';
 
 const spendTextStyle = {
   fontSize: '1.3em',
@@ -25,7 +26,13 @@ export default class Buy extends Component {
       return null;
     }
 
-    const { mining, sending, termsAccepted, txHash } = buyStore;
+    const { notFromJapan, termsAccepted } = buyStore;
+
+    if (!termsAccepted || !notFromJapan) {
+      return null;
+    }
+
+    const { mining, sending } = buyStore;
 
     return (
       <Segment basic>
@@ -44,42 +51,39 @@ export default class Buy extends Component {
 
         {this.renderTransaction()}
         {this.renderForm()}
-        <Segment>
-          <Terms />
-        </Segment>
-        <div>
-          <Checkbox
-            label={`
-              I agree to have these Terms and Conditions
-              signed my behalf using my private key.
-            `}
-            checked={termsAccepted}
-            onChange={this.handleTermsChecked}
-          />
-        </div>
-        {this.renderPurchase()}
       </Segment>
     );
   }
 
   renderForm () {
-    const { spendBond } = buyStore;
+    const { DIVISOR } = auctionStore;
+    const { spend, spendBond } = buyStore;
     const { tokens } = buyStore.theDeal;
 
     return (
       <Container textAlign='center'>
         <div>
-          <span style={spendTextStyle}>I would like to spend </span>
+          <span style={spendTextStyle}>
+            How much ETH would you like to spend?
+          </span>
           <BalanceBond
             bond={spendBond}
             valid
           />
         </div>
-        <div style={spendTextStyle}>
-          <span>for which I will receive </span>
-          <b>at least {tokens.toFormat()} DOTs</b>
+        <div style={{
+          ...spendTextStyle,
+          fontSize: '1.1em',
+          margin: '1em 0 2em'
+        }}>
+          <span>By spending </span>
+          <b>{fromWei(spend).toFormat()} ETH</b>
+          <span> you will receive at least </span>
+          <b>{tokens.div(DIVISOR).toFormat()} DOTs</b>
           {this.renderRefund()}
         </div>
+
+        {this.renderSubmitButton()}
       </Container>
     );
   }
@@ -92,25 +96,31 @@ export default class Buy extends Component {
     }
 
     return (
-      <span>
-        <span> and be refunded </span>
-        <b>at least <InlineBalance value={refund} /></b>
+      <span style={{ marginTop: '0.5em' }}>
+        <br />
+        <span> and be refunded at least </span>
+        <b>{fromWei(refund).toFormat(3)} ETH</b>
       </span>
     );
   }
 
-  renderPurchase () {
-    const { spend, termsAccepted } = buyStore;
+  renderSubmitButton () {
+    const { certified } = accountStore;
+    const { spend } = buyStore;
+
+    if (!certified) {
+      return (
+        <Certifier disabled={!spend.gt(0)} />
+      );
+    }
 
     return (
-      <Container textAlign='right'>
-        <Button
-          content='Purchase DOTs'
-          disabled={!termsAccepted || !spend.gt(0)}
-          onClick={this.handlePurchase}
-          primary
-        />
-      </Container>
+      <Button
+        content='Purchase DOTs'
+        disabled={!spend.gt(0)}
+        onClick={this.handlePurchase}
+        primary
+      />
     );
   }
 

@@ -1,53 +1,55 @@
-import humanizeDuration from 'humanize-duration';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import { Container, Divider, Label, Statistic } from 'semantic-ui-react';
+import { Statistic } from 'semantic-ui-react';
 
 import Bonus from './Bonus';
+import MinPrice from './MinPrice';
 import Price from './Price';
+import Progress from './Progress';
 import Raised from './Raised';
 import Spendable from './Spendable';
 import TokensAvailable from './TokensAvailable';
 
 import auctionStore from '../../stores/auction.store';
 
+const statGroupStyle = {
+  justifyContent: 'center'
+};
+
 @observer
 export default class Info extends Component {
   render () {
-    const { end, inBonus, timeLeft } = auctionStore;
+    const { inBonus } = auctionStore;
 
     return (
       <div>
         <Statistic.Group
+          style={statGroupStyle}
           widths={inBonus ? 'two' : 'one'}
-          size='mini'
         >
           { inBonus ? (<Bonus />) : null }
-          <TokensAvailable />
         </Statistic.Group>
         <br />
         <Statistic.Group
+          style={statGroupStyle}
+          size='small'
           widths='three'
-          size='mini'
         >
           <Price />
+          <TokensAvailable />
           <Spendable />
-          <Raised />
         </Statistic.Group>
 
-        <Divider />
+        <Progress />
 
-        <Container textAlign='center'>
-          <p>Depending on how many more people buy in, the sale will end before</p>
-          <p>
-            <Label
-              size='large'
-              title={new Date(end * 1000)}
-            >
-              {humanizeDuration(timeLeft * 1000)}
-            </Label>
-          </p>
-        </Container>
+        <Statistic.Group
+          style={statGroupStyle}
+          size='small'
+          widths='two'
+        >
+          <Raised />
+          <MinPrice />
+        </Statistic.Group>
       </div>
     );
   }

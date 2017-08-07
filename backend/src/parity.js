@@ -4,7 +4,7 @@
 'use strict';
 
 const RpcTransport = require('./transport');
-const { hex2big } = require('./utils');
+const { hex2big, hex2date } = require('./utils');
 const EventEmitter = require('events');
 
 class ParityConnector extends EventEmitter {
@@ -21,9 +21,23 @@ class ParityConnector extends EventEmitter {
       ._transport
       .subscribe('eth_getBlockByNumber', 'latest', false)
       .forEach((block) => {
+        block.timestamp = hex2date(block.timestamp);
+
         this.block = block;
         this.emit('block', block);
       });
+  }
+
+  estimateGas (options) {
+    return this
+      ._transport
+      .request('eth_estimateGas', options);
+  }
+
+  getBlock (blockNumber) {
+    return this
+      ._transport
+      .request('eth_getBlockByNumber', blockNumber, false);
   }
 
   /**
@@ -125,6 +139,12 @@ class ParityConnector extends EventEmitter {
       ._transport
       .request('eth_getBalance', address)
       .then(hex2big);
+  }
+
+  logs (options) {
+    return this
+      ._transport
+      .request('eth_getLogs', options);
   }
 
   /**

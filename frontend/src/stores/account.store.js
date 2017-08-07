@@ -1,26 +1,34 @@
 import Util from 'ethereumjs-util';
 import Wallet from 'ethereumjs-wallet';
 import { action, observable } from 'mobx';
+import store from 'store';
 
 import backend from '../backend';
 
-const BALANCES_REFRESH_TIMER = 2500;
+const WALLET_LS_KEY = '__crowdsale::wallet';
+const ACCOUNT_INFO_REFRESH_TIMER = 2500;
+
+let accountInfoTimeoutId = null;
 
 class AccountStore {
   @observable address = '';
   @observable balances = {};
+  @observable certified = null;
   @observable error = null;
   @observable unlocked = false;
   @observable publicKey = null;
   @observable privateKey = null;
   @observable wallet = null;
 
+  constructor () {
+    this.loadWallet();
+  }
+
   load (file) {
     this.setError(null);
 
     return this.read(file)
       .then((wallet) => {
-        this.setAccountInfo({ address: wallet.address });
         this.setWallet(wallet);
       })
       .catch((error) => {
@@ -28,12 +36,23 @@ class AccountStore {
       });
   }
 
-  pollBalances () {
-    this.updateBalances();
+  loadWallet () {
+    const wallet = store.get(WALLET_LS_KEY);
 
-    setInterval(() => {
-      this.updateBalances();
-    }, BALANCES_REFRESH_TIMER);
+    if (wallet) {
+      wallet.fromLS = true;
+
+      this.setWallet(wallet);
+    }
+  }
+
+  async pollAccountInfo () {
+    await this.updateAccountInfo();
+
+    clearTimeout(accountInfoTimeoutId);
+    accountInfoTimeoutId = setTimeout(() => {
+      this.pollAccountInfo();
+    }, ACCOUNT_INFO_REFRESH_TIMER);
   }
 
   read (file) {
@@ -58,6 +77,10 @@ class AccountStore {
     });
   }
 
+  saveWallet () {
+    store.set(WALLET_LS_KEY, this.wallet || {});
+  }
+
   @action
   setAccountInfo ({ address, publicKey, privateKey }) {
     const cleanAddress = Util.toChecksumAddress('0x' + address.replace(/^0x/, ''));
@@ -73,6 +96,11 @@ class AccountStore {
   }
 
   @action
+  setCertified (certified) {
+    this.certified = certified;
+  }
+
+  @action
   setError (error) {
     this.error = error;
   }
@@ -82,17 +110,20 @@ class AccountStore {
     this.unlocked = unlocked;
 
     if (unlocked) {
-      this.pollBalances();
+      this.pollAccountInfo();
     }
   }
 
   @action
   setWallet (wallet) {
+    if (wallet) {
+      this.setAccountInfo({ address: wallet.address });
+    }
+
     this.wallet = wallet;
-    console.warn('wallet', wallet);
   }
 
-  unlock (password) {
+  unlock (password, rememberWallet = false) {
     this.setError(null);
 
     return new Promise((resolve) => {
@@ -105,6 +136,10 @@ class AccountStore {
         } catch (_) {
           this.setError('Invalid password');
           return resolve();
+        }
+
+        if (rememberWallet) {
+          this.saveWallet();
         }
 
         const address = '0x' + wallet.getAddress().toString('hex');
@@ -123,10 +158,11 @@ class AccountStore {
     });
   }
 
-  async updateBalances () {
-    const { eth, dot } = await backend.getBalances(this.address);
+  async updateAccountInfo () {
+    const { eth, accounted, certified } = await backend.getAddressInfo(this.address);
 
-    this.setBalances({ eth, dot });
+    this.setBalances({ eth, accounted });
+    this.setCertified(certified);
   }
 }
 

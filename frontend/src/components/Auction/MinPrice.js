@@ -3,21 +3,20 @@ import React, { Component } from 'react';
 import { Icon, Popup, Statistic } from 'semantic-ui-react';
 
 import auctionStore from '../../stores/auction.store';
-import { fromWei } from '../../utils';
 
 const hSpaceStyle = {
   width: '0.5em'
 };
 
 @observer
-export default class Spendable extends Component {
+export default class Price extends Component {
   render () {
-    const { maxSpend } = auctionStore;
+    const { endPrice } = auctionStore;
 
     return (
       <Statistic>
         <Statistic.Label>
-          Maximum spend
+          The final price will be at least
           <span style={hSpaceStyle}>&nbsp;</span>
           <Popup
             content={`
@@ -32,8 +31,8 @@ export default class Spendable extends Component {
           />
         </Statistic.Label>
         <Statistic.Value>
-          <span>{fromWei(maxSpend).toFormat(0)}</span>
-          <small> ETH</small>
+          <span>{auctionStore.formatPrice(endPrice).toFormat(5)}</span>
+          <small> ETH/DOT</small>
         </Statistic.Value>
       </Statistic>
     );

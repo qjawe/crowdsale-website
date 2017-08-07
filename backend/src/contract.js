@@ -154,10 +154,11 @@ class Contract {
    * @param {Array}        statics    The names of constant storage values
    *                                  (ie. that won't change)
    */
-  constructor (transport, address, abi, statics = []) {
+  constructor (connector, address, abi, statics = []) {
     this._abi = abi;
     this._address = address;
-    this._transport = transport;
+    this._connector = connector;
+    this._transport = connector.transport;
     this._statics = statics;
 
     this._constants = new Map();
@@ -203,8 +204,10 @@ class Contract {
         this._events.set(event.topic, event);
 
         this.events[name] = (...filters) => {
+          const topics = event.encode(filters);
+
           return {
-            get: (options) => this._getEvents(event, filters, options)
+            get: (options) => this._logs(topics, options)
           };
         };
       }
@@ -213,6 +216,14 @@ class Contract {
 
   get address () {
     return this._address;
+  }
+
+  get connector () {
+    return this._connector;
+  }
+
+  get transport () {
+    return this._transport;
   }
 
   /**
@@ -234,6 +245,27 @@ class Contract {
 
       return event.decode([ log ])[0];
     });
+  }
+
+  /**
+   * Get all the event logs for the specified events
+   *
+   * @param  {[String]}  eventNames
+   * @param  {Object}    options     - The options to pass the eth_getLogs
+   * @return {Promise<Array>}
+   */
+  async logs (eventNames, options) {
+    const events = eventNames.map((eventName) => {
+      if (!this._events.has(eventName)) {
+        throw new Error(`Unkown event ${eventName}`);
+      }
+
+      return this._events.get(eventName);
+    });
+
+    const topics = [ events.map((event) => event.topic) ];
+
+    return this._logs(topics, options);
   }
 
   /**
@@ -294,9 +326,7 @@ class Contract {
       });
   }
 
-  _getEvents (event, filters, options) {
-    const topics = event.encode(filters);
-
+  _logs (topics, options) {
     return this
       ._transport
       .request('eth_getLogs', Object.assign({}, {
@@ -305,9 +335,7 @@ class Contract {
         address: this.address,
         topics
       }, options))
-      .then((logs) => {
-        return event.decode(logs);
-      });
+      .then((logs) => this.parse(logs));
   }
 
   _post (method, args = [], options = {}) {

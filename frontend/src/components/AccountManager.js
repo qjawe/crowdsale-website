@@ -2,14 +2,19 @@ import keycode from 'keycode';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
-import { AccountIcon, InlineBalance } from 'parity-reactive-ui';
-import { Button, Container, Dimmer, Icon, Input, Label, Loader, Message, Segment } from 'semantic-ui-react';
+import { AccountIcon } from 'parity-reactive-ui';
+import { Button, Container, Checkbox, Dimmer, Icon, Input, Label, Loader, Message, Popup, Segment } from 'semantic-ui-react';
 
 import accountStore from '../stores/account.store';
+import auctionStore from '../stores/auction.store';
+
+const hSpaceStyle = {
+  width: '0.5em'
+};
 
 const dropzoneStyle = {
   cursor: 'pointer',
-  width: '100%',
+  width: 400,
   height: 200,
   borderWidth: 2,
   borderColor: '#666',
@@ -18,7 +23,8 @@ const dropzoneStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  flexDirection: 'column'
+  flexDirection: 'column',
+  margin: '0.5em auto'
 };
 
 const innerDropzoneStyle = {
@@ -29,7 +35,8 @@ const innerDropzoneStyle = {
 @observer
 export default class AccountManager extends Component {
   state = {
-    loading: false
+    loading: false,
+    rememberWallet: false
   };
 
   password = '';
@@ -64,22 +71,64 @@ export default class AccountManager extends Component {
   }
 
   renderAccountInfo (address) {
+    const { certified } = accountStore;
+    let color = 'yellow';
+
+    if (certified !== null) {
+      color = certified
+        ? 'green'
+        : 'red';
+    }
+
+    const certifiedIcon = certified !== false
+      ? null
+      : (
+        <span>
+          <span style={hSpaceStyle}>&nbsp;</span>
+          <Popup
+            content={`
+              Lorem ipsum dolor sit amet,
+              consectetur adipiscing elit.
+              Pellentesque urna erat, lacinia
+              vitae mollis finibus, consequat in
+              tortor. Sed nec elementum tortor.
+            `}
+            size='small'
+            trigger={<Icon name='info circle' />}
+          />
+        </span>
+      );
+
     return (
-      <Label image>
+      <div style={{
+        alignItems: 'center',
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'center'
+      }}>
         <AccountIcon
           address={address}
+          style={{ height: 32 }}
         />
-        <strong>
+        <Label
+          color={color}
+          size='large'
+          style={{
+            marginLeft: '0.5em'
+          }}
+        >
           {address}
-        </strong>
-      </Label>
+        </Label>
+        {certifiedIcon}
+      </div>
     );
   }
 
   renderBalances () {
     const { balances } = accountStore;
+    const { currentPrice } = auctionStore;
 
-    if (!balances.eth && !balances.dot) {
+    if (!balances.eth && !balances.accounted) {
       return null;
     }
 
@@ -92,7 +141,7 @@ export default class AccountManager extends Component {
           </Label.Detail>
         </Label>
         <Label>
-          {balances.dot.toFormat(0)}
+          >= {balances.accounted.div(currentPrice).toFormat(3)}
           <Label.Detail>
             DOT
           </Label.Detail>
@@ -103,6 +152,7 @@ export default class AccountManager extends Component {
 
   renderContent () {
     const { address, wallet } = accountStore;
+    const { rememberWallet } = this.state;
 
     if (!wallet) {
       return (
@@ -124,15 +174,29 @@ export default class AccountManager extends Component {
 
     return (
       <Container textAlign='center'>
-        <div>Unlocking account</div>
         <div>{ this.renderAccountInfo(address) }</div>
         <br />
-        <p>Please type in your password:</p>
+
+        {
+          !wallet.fromLS
+          ? (
+            <div>
+              <Checkbox
+                checked={rememberWallet}
+                label='Remember my password-encrypted wallet'
+                onChange={this.handleRememberWalletChange}
+                style={{ marginBottom: '1em' }}
+              />
+            </div>
+          )
+          : null
+        }
+
         <Input
           autoFocus
           label={
             <Button
-              content='Unlock'
+              content='Unlock your wallet'
               onClick={this.handleUnlockAccount}
               primary
             />
@@ -185,10 +249,18 @@ export default class AccountManager extends Component {
     }
   };
 
+  handleRememberWalletChange = (_, element) => {
+    const { checked } = element;
+
+    this.setState({ rememberWallet: checked });
+  };
+
   handleUnlockAccount = () => {
+    const { rememberWallet } = this.state;
+
     this.setState({ loading: true });
 
-    return accountStore.unlock(this.password)
+    return accountStore.unlock(this.password, rememberWallet)
       .then(() => {
         this.password = '';
         this.setState({ loading: false });

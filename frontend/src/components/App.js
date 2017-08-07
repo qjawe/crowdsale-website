@@ -1,32 +1,33 @@
 import React, { Component } from 'react';
-import { Container, Divider, Header, Icon } from 'semantic-ui-react';
+import { Container, Divider, Header } from 'semantic-ui-react';
+import 'parity-reactive-ui';
 
-import AccountManager from './AccountManager';
 import Auction from './Auction';
-import Buy from './Buy';
+import Sale from './Sale';
 
 const style = {
+  marginBottom: '2em',
   padding: '1em 0'
 };
 
 export default class App extends Component {
   render () {
     return (
-      <Container text style={style}>
-        <Header
-          as='h2'
-          icon
-          textAlign='center'
-        >
-          <Icon name='shop' circular />
-          Sale
-        </Header>
-        <Divider />
-        <Auction.Info />
-        <Divider />
-        <AccountManager />
-        <Buy />
-      </Container>
+      <div>
+        <Container style={style}>
+          <Header
+            as='h3'
+            textAlign='center'
+          >
+            AUCTION
+          </Header>
+          <br />
+          <Auction.Info />
+          <Divider />
+          <Sale />
+        </Container>
+        <Auction.Details />
+      </div>
     );
   }
 }

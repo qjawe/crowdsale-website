@@ -12,13 +12,17 @@ const Router = require('koa-router');
 const cors = require('kcors');
 
 const Certifier = require('./contracts/certifier');
-const Sale = require('./contracts/sale');
+const Onfido = require('./onfido');
 const ParityConnector = require('./parity');
+const Recaptcha = require('./recaptcha');
+const Sale = require('./contracts/sale');
+
 const store = require('./store');
-const { buf2hex, buf2big, big2hex } = require('./utils');
+const { buf2hex, buf2big, big2hex, int2date } = require('./utils');
 
 const app = new Koa();
 const router = new Router();
+
 const connector = new ParityConnector(config.get('nodeWs'));
 
 main();
@@ -32,6 +36,70 @@ async function main () {
 
   connector.on('block', () => {
     sale.update();
+  });
+
+  router.post('/check-status', async (ctx, next) => {
+    const { applicantId, checkId } = ctx.request.body;
+
+    try {
+      const { pending, valid } = await Onfido.checkStatus(applicantId, checkId);
+
+      if (pending || !valid) {
+        ctx.body = { pending, valid };
+        return;
+      }
+
+      const { tags } = await Onfido.getCheck(applicantId, checkId);
+      const addressTag = tags.find((tag) => /address/.test(tag));
+
+      if (!addressTag) {
+        throw new Error(`Could not find an address for this applicant check (${applicantId}/${checkId})`);
+      }
+
+      const address = addressTag.replace(/^address:/, '');
+      const tx = await certifier.certify(address);
+
+      ctx.body = { valid, tx };
+    } catch (error) {
+      ctx.status = 400;
+      ctx.body = error.message;
+      ctx.app.emit('error', error, ctx);
+    }
+  });
+
+  router.post('/check-applicant', async (ctx, next) => {
+    const { applicantId, address } = ctx.request.body;
+
+    try {
+      const result = await Onfido.checkApplicant(applicantId, address);
+
+      ctx.body = result;
+    } catch (error) {
+      ctx.status = 400;
+      ctx.body = error.message;
+      ctx.app.emit('error', error, ctx);
+    }
+  });
+
+  router.post('/create-applicant', async (ctx, next) => {
+    const { firstName, lastName, stoken } = ctx.request.body;
+
+    try {
+      await Recaptcha.validate(stoken);
+      const { applicantId, sdkToken } = await Onfido.createApplicant({ firstName, lastName });
+
+      ctx.body = { applicantId, sdkToken };
+    } catch (error) {
+      ctx.status = 400;
+      ctx.body = error.message;
+      ctx.app.emit('error', error, ctx);
+    }
+  });
+
+  router.get('/chart-data', async (ctx, next) => {
+    const data = await sale.getChartData();
+
+    ctx.body = data;
   });
 
   router.get('/address/:address', async (ctx, next) => {
@@ -74,22 +142,31 @@ async function main () {
     if (!txObj.verifySignature()) {
       ctx.status = 400;
       ctx.body = 'Invalid transaction';
+      return;
     }
 
-    // const to = buf2hex(txObj.to);
     const from = buf2hex(txObj.from);
     const value = buf2big(txObj.value);
-    // const data = buf2hex(txObj.data);
     const gasPrice = buf2big(txObj.gasPrice);
     const gasLimit = buf2big(txObj.gasLimit);
+
+    const [ certified ] = await certifier.methods.certified(from).get();
+
+    if (!certified) {
+      ctx.status = 400;
+      ctx.body = `${from} is not certified`;
+      return;
+    }
 
     const requiredEth = value.add(gasPrice.mul(gasLimit));
     const balance = await connector.balance(from);
 
     if (balance.cmp(requiredEth) < 0) {
+      const hash = buf2hex(txObj.hash(true));
+
       await store.addToQueue(from, tx, requiredEth);
 
-      ctx.body = { hash: '0x', requiredEth: big2hex(requiredEth.sub(balance)) };
+      ctx.body = { hash, requiredEth: big2hex(requiredEth.sub(balance)) };
       return;
     }
 
@@ -104,14 +181,52 @@ async function main () {
     }
   });
 
-  router.get('/block', (ctx) => {
-    ctx.body = connector.block;
+  router.get('/block-hash', (ctx) => {
+    ctx.body = { hash: connector.block.hash };
+  });
+
+  router.get('/sale', (ctx) => {
+    const {
+      BONUS_DURATION,
+      BONUS_SIZE,
+      DIVISOR,
+      STATEMENT_HASH,
+      beginTime,
+      tokenCap
+    } = sale.values;
+
+    ctx.body = {
+      BONUS_DURATION,
+      BONUS_SIZE,
+      DIVISOR,
+      STATEMENT_HASH,
+      beginTime: int2date(beginTime),
+      tokenCap
+    };
   });
 
   router.get('/', (ctx) => {
-    const extras = {};
+    const extras = {
+      block: connector.block,
+      connected: connector.status,
+      contractAddress: sale.address
+    };
 
-    ctx.body = Object.assign({}, sale.values, extras);
+    const {
+      currentPrice,
+      endTime,
+      tokensAvailable,
+      totalAccounted,
+      totalReceived
+    } = sale.values;
+
+    ctx.body = Object.assign({}, extras, {
+      currentPrice,
+      endTime: int2date(endTime),
+      tokensAvailable,
+      totalAccounted,
+      totalReceived
+    });
   });
 
   app

@@ -11,16 +11,51 @@ class Backend {
     return `${this._url}${path}`;
   }
 
+  blockHash () {
+    return get(this.url('/block-hash'));
+  }
+
+  sale () {
+    return get(this.url('/sale'));
+  }
+
   status () {
     return get(this.url('/'));
   }
 
-  async getBalances (address) {
-    const { eth, dot } = await get(this.url(`/address/${address}`));
+  async chartData () {
+    return await get(this.url('/chart-data'));
+  }
+
+  async checkApplicant (applicantId, address) {
+    return await post(this.url('/check-applicant'), {
+      applicantId,
+      address
+    });
+  }
+
+  async checkStatus ({ applicantId, checkId }) {
+    return await post(this.url('/check-status'), {
+      applicantId,
+      checkId
+    });
+  }
+
+  async createApplicant ({ firstName, lastName, stoken }) {
+    return await post(this.url('/create-applicant'), {
+      firstName,
+      lastName,
+      stoken
+    });
+  }
+
+  async getAddressInfo (address) {
+    const { eth, accounted, certified } = await get(this.url(`/address/${address}`));
 
     return {
       eth: new BigNumber(eth),
-      dot: new BigNumber(dot)
+      accounted: new BigNumber(accounted),
+      certified
     };
   }
 
