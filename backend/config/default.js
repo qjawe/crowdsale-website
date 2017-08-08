@@ -1,4 +1,8 @@
 module.exports = {
+  http: {
+    hostname: '127.0.0.1',
+    port: 4000
+  },
   nodeWs: 'ws://127.0.0.1:8546/',
   saleContract: '0x778E173cA5822777Aa7c37c83ee598ef38D774A3',
   onfido: {

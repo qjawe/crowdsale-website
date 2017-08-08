@@ -229,11 +229,13 @@ async function main () {
     });
   });
 
+  const { port, hostname } = config.get('http');
+
   app
     .use(bodyParser())
     .use(cors())
     .use(etag())
     .use(router.routes())
     .use(router.allowedMethods())
-    .listen(4000);
+    .listen(port, hostname);
 }
