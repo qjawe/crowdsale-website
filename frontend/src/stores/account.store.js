@@ -46,6 +46,15 @@ class AccountStore {
     }
   }
 
+  async create (secret) {
+    const wallet = Wallet.fromPrivateKey(Buffer.from(secret.slice(2), 'hex'));
+
+    // TODO: wallet.toV3(password)
+
+    console.log('wallet', wallet);
+    console.log('address', '0x' + wallet.getAddress().toString('hex'));
+  }
+
   async pollAccountInfo () {
     await this.updateAccountInfo();
 
