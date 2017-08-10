@@ -1,12 +1,11 @@
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import { Container, Button, Header } from 'semantic-ui-react';
-import { phraseToWallet } from '@parity/ethkey.js';
-import { randomPhrase } from '@parity/wordlist';
 
 import AccountManager from './AccountManager';
 import Buy from './Buy';
 import Terms from './Terms';
+import WalletCreator from './WalletCreator';
 
 import accountStore from '../stores/account.store';
 
@@ -19,9 +18,7 @@ const STEPS = {
 @observer
 export default class Sale extends Component {
   state = {
-    step: STEPS.HOME,
-    phrase: null,
-    address: null
+    step: STEPS.HOME
   };
 
   render () {
@@ -99,26 +96,10 @@ export default class Sale extends Component {
   }
 
   renderCreateWallet () {
-    if (this.state.phrase == null) {
-      const phrase = randomPhrase(12);
-
-      phraseToWallet(phrase)
-        .then(({ address, secret }) => {
-          accountStore.create(secret);
-
-          this.setState({ phrase, address });
-        });
-
-      return null;
-    }
-
-    const { phrase, address } = this.state;
-
     return (
-      <div>
-        <div>Address: {address}</div>
-        <div>Phrase: {phrase}</div>
-      </div>
+      <Container>
+        <WalletCreator />
+      </Container>
     );
   }
 
