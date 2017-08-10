@@ -8,36 +8,27 @@ import Terms from './Terms';
 import WalletCreator from './WalletCreator';
 
 import accountStore from '../stores/account.store';
-
-const STEPS = {
-  HOME: Symbol(),
-  LOAD_WALLET: Symbol(),
-  CREATE_WALLET: Symbol()
-};
+import appStore, { STEPS } from '../stores/app.store';
 
 @observer
 export default class Sale extends Component {
-  state = {
-    step: STEPS.HOME
-  };
-
   render () {
     const { unlocked, wallet } = accountStore;
-    const { step } = this.state;
+    const { step } = appStore;
 
     if (unlocked) {
       return this.renderBuy();
     }
 
-    if (wallet || step === STEPS.LOAD_WALLET) {
+    if (wallet || step === STEPS['load-wallet']) {
       return this.renderLoadWallet();
     }
 
-    if (step === STEPS.CREATE_WALLET) {
+    if (step === STEPS['create-wallet']) {
       return this.renderCreateWallet();
     }
 
-    if (step === STEPS.HOME) {
+    if (step === STEPS['home']) {
       return this.renderHome();
     }
 
@@ -77,7 +68,7 @@ export default class Sale extends Component {
           <Button
             onClick={this.handleNoWallet}
           >
-            I don&quot;t have a wallet
+            I don't have a wallet
           </Button>
         </div>
       </Container>
@@ -104,10 +95,10 @@ export default class Sale extends Component {
   }
 
   handleLoadWallet = () => {
-    this.setState({ step: STEPS.LOAD_WALLET });
+    appStore.goto('load-wallet');
   };
 
   handleNoWallet = () => {
-    this.setState({ step: STEPS.CREATE_WALLET });
+    appStore.goto('create-wallet');
   };
 }

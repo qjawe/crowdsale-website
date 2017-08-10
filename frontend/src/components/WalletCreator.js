@@ -1,5 +1,6 @@
 import FileSaver from 'file-saver';
 import { observer } from 'mobx-react';
+import PropTypes from 'proptypes';
 import React, { Component } from 'react';
 import { Button, Form, Grid, Header, Input, Segment, TextArea } from 'semantic-ui-react';
 import { phraseToWallet } from '@parity/ethkey.js';
@@ -8,6 +9,7 @@ import { randomPhrase } from '@parity/wordlist';
 import AccountInfo from './AccountInfo';
 
 import accountStore from '../stores/account.store';
+import appStore from '../stores/app.store';
 
 const PHRASE_ACK_CONTENT = 'I confirm I have written down my recovery phrase';
 
@@ -49,10 +51,18 @@ const Step = (props) => {
   );
 };
 
+Step.propTypes = {
+  num: PropTypes.number.isRequired,
+  title: PropTypes.string.isRequired,
+  description: PropTypes.node.isRequired,
+  children: PropTypes.node.isRequired
+};
+
 @observer
 export default class WalletCreator extends Component {
   state = {
     address: null,
+    downloaded: false,
     password: '',
     passwordRepeat: '',
     phrase: null,
@@ -251,7 +261,7 @@ export default class WalletCreator extends Component {
   }
 
   renderDownload () {
-    const { address } = this.state;
+    const { address, downloaded } = this.state;
 
     return (
       <Step
@@ -292,6 +302,7 @@ export default class WalletCreator extends Component {
           </Button>
 
           <Button
+            disabled={!downloaded}
             onClick={this.handleParticipate}
           >
             Participate in the auction
@@ -386,9 +397,11 @@ export default class WalletCreator extends Component {
     const blob = new Blob([JSON.stringify(wallet)], { type: 'text/json;charset=utf-8' });
 
     FileSaver.saveAs(blob, `${wallet.id}.json`);
+
+    this.setState({ downloaded: true });
   };
 
   handleParticipate = () => {
-    console.warn('participate');
+    appStore.goto('load-wallet');
   };
 }
