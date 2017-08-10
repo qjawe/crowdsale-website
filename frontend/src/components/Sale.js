@@ -68,7 +68,7 @@ export default class Sale extends Component {
           <Button
             onClick={this.handleNoWallet}
           >
-            I don't have a wallet
+            I don&apos;t have a wallet
           </Button>
         </div>
       </Container>
