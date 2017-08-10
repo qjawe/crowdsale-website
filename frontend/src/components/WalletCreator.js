@@ -1,6 +1,7 @@
+import FileSaver from 'file-saver';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import { Button, Form, Grid, Header, Input, Message, Segment, TextArea } from 'semantic-ui-react';
+import { Button, Form, Grid, Header, Input, Segment, TextArea } from 'semantic-ui-react';
 import { phraseToWallet } from '@parity/ethkey.js';
 import { randomPhrase } from '@parity/wordlist';
 
@@ -129,9 +130,6 @@ export default class WalletCreator extends Component {
             type='password'
             value={passwordRepeat}
           />
-          <Message error>
-            Password does not match
-          </Message>
           <Button
             disabled={error}
             type='submit'
@@ -178,19 +176,21 @@ export default class WalletCreator extends Component {
           <Segment>
             {phrase}
           </Segment>
-          <Grid>
-            <Grid.Column width={1}>
+
+          <Grid style={{ margin: 0 }}>
+            <Grid.Column width={7}>
               <Input
                 fluid
                 onChange={this.handlePhraseAckChange}
                 value={phraseAck}
               />
             </Grid.Column>
-            <Grid.Column width={2}>
+            <Grid.Column width={9}>
               Please type “<b>I confirm I have written down my
               recovery phrase</b>” into the box to the left.
             </Grid.Column>
           </Grid>
+
           <Button
             disabled={error}
             type='submit'
@@ -235,8 +235,8 @@ export default class WalletCreator extends Component {
             Your recovery phrase
           </Header>
           <TextArea
-            fluid
             onChange={this.handlePhraseRepeatChange}
+            style={{ marginBottom: '1em' }}
             value={phraseRepeat}
           />
           <Button
@@ -278,20 +278,50 @@ export default class WalletCreator extends Component {
             Your ethereum address
           </Header>
 
-          <AccountInfo
-            address={address}
-          />
+          <Segment basic>
+            <AccountInfo
+              address={address}
+            />
+          </Segment>
 
-          <Button primary>
+          <Button
+            onClick={this.handleDownloadWallet}
+            primary
+          >
             Download your wallet
           </Button>
 
-          <Button>
+          <Button
+            onClick={this.handleParticipate}
+          >
             Participate in the auction
           </Button>
         </div>
       </Step>
     );
+  }
+
+  async createWallet () {
+    const { password } = this.state;
+
+    this.setState({ loading: true });
+
+    try {
+      const phrase = randomPhrase(12);
+      const { address, secret } = await phraseToWallet(phrase);
+      const wallet = await accountStore.create(secret, password);
+
+      this.setState({
+        address,
+        phrase,
+        wallet,
+        loading: false,
+        step: STEPS.WRITE_RECOVERY
+      });
+    } catch (error) {
+      console.error(error);
+      this.setState({ loading: false });
+    }
   }
 
   handlePasswordChange = (_, data) => {
@@ -319,49 +349,46 @@ export default class WalletCreator extends Component {
   };
 
   handlePasswordSet = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+
     if (this.state.passwordRepeat !== this.state.password || !this.state.password) {
       return null;
     }
 
-    this.setState({ loading: true });
-
-    event.stopPropagation();
-    event.preventDefault();
-
-    const phrase = randomPhrase(12);
-
-    phraseToWallet(phrase)
-      .then(({ address, secret }) => {
-        accountStore.create(secret);
-
-        this.setState({
-          address,
-          phrase,
-          loading: false,
-          step: STEPS.WRITE_RECOVERY
-        });
-      });
+    this.createWallet();
   };
 
   handlePhraseAck = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+
     if (this.state.phraseAck !== PHRASE_ACK_CONTENT) {
       return null;
     }
-
-    event.stopPropagation();
-    event.preventDefault();
 
     this.setState({ step: STEPS.REPEAT_RECOVERY });
   };
 
   handlePhraseRepeat = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+
     if (this.state.phraseRepeat !== this.state.phrase) {
       return null;
     }
 
-    event.stopPropagation();
-    event.preventDefault();
-
     this.setState({ step: STEPS.DOWNLOAD });
-  }
+  };
+
+  handleDownloadWallet = () => {
+    const { wallet } = this.state;
+    const blob = new Blob([JSON.stringify(wallet)], { type: 'text/json;charset=utf-8' });
+
+    FileSaver.saveAs(blob, `${wallet.id}.json`);
+  };
+
+  handleParticipate = () => {
+    console.warn('participate');
+  };
 }

@@ -46,13 +46,18 @@ class AccountStore {
     }
   }
 
-  async create (secret) {
-    const wallet = Wallet.fromPrivateKey(Buffer.from(secret.slice(2), 'hex'));
+  async create (secret, password) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const wallet = Wallet.fromPrivateKey(Buffer.from(secret.slice(2), 'hex'));
+        const v3Wallet = wallet.toV3(password, {
+          c: 65536,
+          kdf: 'pbkdf2'
+        });
 
-    // TODO: wallet.toV3(password)
-
-    console.log('wallet', wallet);
-    console.log('address', '0x' + wallet.getAddress().toString('hex'));
+        return resolve(v3Wallet);
+      }, 50);
+    });
   }
 
   async pollAccountInfo () {
@@ -163,7 +168,7 @@ class AccountStore {
 
         this.setUnlocked(true);
         return resolve();
-      }, 0);
+      }, 50);
     });
   }
 
