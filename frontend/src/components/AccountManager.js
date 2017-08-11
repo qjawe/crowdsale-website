@@ -5,6 +5,8 @@ import Dropzone from 'react-dropzone';
 import { AccountIcon } from 'parity-reactive-ui';
 import { Button, Container, Checkbox, Dimmer, Icon, Input, Label, Loader, Message, Popup, Segment } from 'semantic-ui-react';
 
+import AccountInfo from './AccountInfo';
+
 import accountStore from '../stores/account.store';
 import auctionStore from '../stores/auction.store';
 
@@ -72,55 +74,12 @@ export default class AccountManager extends Component {
 
   renderAccountInfo (address) {
     const { certified } = accountStore;
-    let color = 'yellow';
-
-    if (certified !== null) {
-      color = certified
-        ? 'green'
-        : 'red';
-    }
-
-    const certifiedIcon = certified !== false
-      ? null
-      : (
-        <span>
-          <span style={hSpaceStyle}>&nbsp;</span>
-          <Popup
-            content={`
-              Lorem ipsum dolor sit amet,
-              consectetur adipiscing elit.
-              Pellentesque urna erat, lacinia
-              vitae mollis finibus, consequat in
-              tortor. Sed nec elementum tortor.
-            `}
-            size='small'
-            trigger={<Icon name='info circle' />}
-          />
-        </span>
-      );
 
     return (
-      <div style={{
-        alignItems: 'center',
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'center'
-      }}>
-        <AccountIcon
-          address={address}
-          style={{ height: 32 }}
-        />
-        <Label
-          color={color}
-          size='large'
-          style={{
-            marginLeft: '0.5em'
-          }}
-        >
-          {address}
-        </Label>
-        {certifiedIcon}
-      </div>
+      <AccountInfo
+        address={address}
+        certified={certified}
+      />
     );
   }
 

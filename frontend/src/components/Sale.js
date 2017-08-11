@@ -1,46 +1,34 @@
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import { Container, Button, Header } from 'semantic-ui-react';
-import { phraseToWallet } from '@parity/ethkey.js';
-import { randomPhrase } from '@parity/wordlist';
 
 import AccountManager from './AccountManager';
 import Buy from './Buy';
 import Terms from './Terms';
+import WalletCreator from './WalletCreator';
 
 import accountStore from '../stores/account.store';
-
-const STEPS = {
-  HOME: Symbol(),
-  LOAD_WALLET: Symbol(),
-  CREATE_WALLET: Symbol()
-};
+import appStore, { STEPS } from '../stores/app.store';
 
 @observer
 export default class Sale extends Component {
-  state = {
-    step: STEPS.HOME,
-    phrase: null,
-    address: null
-  };
-
   render () {
     const { unlocked, wallet } = accountStore;
-    const { step } = this.state;
+    const { step } = appStore;
 
     if (unlocked) {
       return this.renderBuy();
     }
 
-    if (wallet || step === STEPS.LOAD_WALLET) {
+    if (wallet || step === STEPS['load-wallet']) {
       return this.renderLoadWallet();
     }
 
-    if (step === STEPS.CREATE_WALLET) {
+    if (step === STEPS['create-wallet']) {
       return this.renderCreateWallet();
     }
 
-    if (step === STEPS.HOME) {
+    if (step === STEPS['home']) {
       return this.renderHome();
     }
 
@@ -80,7 +68,7 @@ export default class Sale extends Component {
           <Button
             onClick={this.handleNoWallet}
           >
-            I don&quot;t have a wallet
+            I don&apos;t have a wallet
           </Button>
         </div>
       </Container>
@@ -99,34 +87,18 @@ export default class Sale extends Component {
   }
 
   renderCreateWallet () {
-    if (this.state.phrase == null) {
-      const phrase = randomPhrase(12);
-
-      phraseToWallet(phrase)
-        .then(({ address, secret }) => {
-          accountStore.create(secret);
-
-          this.setState({ phrase, address });
-        });
-
-      return null;
-    }
-
-    const { phrase, address } = this.state;
-
     return (
-      <div>
-        <div>Address: {address}</div>
-        <div>Phrase: {phrase}</div>
-      </div>
+      <Container>
+        <WalletCreator />
+      </Container>
     );
   }
 
   handleLoadWallet = () => {
-    this.setState({ step: STEPS.LOAD_WALLET });
+    appStore.goto('load-wallet');
   };
 
   handleNoWallet = () => {
-    this.setState({ step: STEPS.CREATE_WALLET });
+    appStore.goto('create-wallet');
   };
 }

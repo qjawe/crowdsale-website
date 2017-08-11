@@ -15,6 +15,7 @@
     "ethereumjs-util": "^5.1.2",
     "ethereumjs-wallet": "^0.6.0",
     "ethkey.js": "github:paritytech/ethkey-js",
+    "file-saver": "^1.3.3",
     "humanize-duration": "^3.10.0",
     "keycode": "^2.1.9",
     "mobx": "^3.2.1",
