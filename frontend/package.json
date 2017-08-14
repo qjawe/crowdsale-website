@@ -9,7 +9,7 @@
     "start": "node webpack.dev.js"
   },
   "dependencies": {
-    "@parity/ethkey.js": "^0.2.1",
+    "@parity/ethkey.js": "^0.2.2",
     "@parity/wordlist": "^1.1.0",
     "ethereumjs-tx": "^1.3.3",
     "ethereumjs-util": "^5.1.2",

@@ -1,23 +1,27 @@
 [
   {
     "constant": true,
-    "inputs": [
-      {
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "participants",
+    "inputs": [],
+    "name": "launchImminent",
     "outputs": [
       {
-        "name": "value",
-        "type": "uint128"
-      },
-      {
-        "name": "bonus",
-        "type": "uint128"
+        "name": "",
+        "type": "bool"
       }
     ],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_imminent",
+        "type": "bool"
+      }
+    ],
+    "name": "setLaunchImminent",
+    "outputs": [],
     "payable": false,
     "type": "function"
   },
@@ -28,6 +32,36 @@
     "outputs": [
       {
         "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_value",
+        "type": "uint256"
+      },
+      {
+        "name": "_isDeposit",
+        "type": "bool"
+      }
+    ],
+    "name": "theDeal",
+    "outputs": [
+      {
+        "name": "accounted",
+        "type": "uint256"
+      },
+      {
+        "name": "refund",
+        "type": "bool"
+      },
+      {
+        "name": "price",
         "type": "uint256"
       }
     ],
@@ -144,10 +178,24 @@
     "type": "function"
   },
   {
-    "constant": false,
-    "inputs": [],
-    "name": "kill",
-    "outputs": [],
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "buyins",
+    "outputs": [
+      {
+        "name": "accounted",
+        "type": "uint128"
+      },
+      {
+        "name": "received",
+        "type": "uint128"
+      }
+    ],
     "payable": false,
     "type": "function"
   },
@@ -256,9 +304,64 @@
     "type": "function"
   },
   {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "v",
+        "type": "uint8"
+      },
+      {
+        "name": "r",
+        "type": "bytes32"
+      },
+      {
+        "name": "s",
+        "type": "bytes32"
+      }
+    ],
+    "name": "deposit",
+    "outputs": [],
+    "payable": true,
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [],
+    "name": "returnDeposit",
+    "outputs": [],
+    "payable": false,
+    "type": "function"
+  },
+  {
     "constant": true,
     "inputs": [],
     "name": "beginTime",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_who",
+        "type": "address"
+      }
+    ],
+    "name": "executeDeposit",
+    "outputs": [],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "DEPOSIT_HIT",
     "outputs": [
       {
         "name": "",
@@ -342,36 +445,6 @@
     "type": "function"
   },
   {
-    "constant": true,
-    "inputs": [
-      {
-        "name": "_value",
-        "type": "uint256"
-      }
-    ],
-    "name": "theDeal",
-    "outputs": [
-      {
-        "name": "accepted",
-        "type": "uint256"
-      },
-      {
-        "name": "refund",
-        "type": "uint256"
-      },
-      {
-        "name": "price",
-        "type": "uint256"
-      },
-      {
-        "name": "bonus",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "type": "function"
-  },
-  {
     "constant": false,
     "inputs": [
       {
@@ -434,7 +507,7 @@
         "type": "address"
       },
       {
-        "name": "_spent",
+        "name": "_received",
         "type": "uint128"
       }
     ],
@@ -530,6 +603,28 @@
     "type": "function"
   },
   {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "deposits",
+    "outputs": [
+      {
+        "name": "accounted",
+        "type": "uint128"
+      },
+      {
+        "name": "received",
+        "type": "uint128"
+      }
+    ],
+    "payable": false,
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "name": "_tokenContract",
@@ -565,22 +660,17 @@
       },
       {
         "indexed": false,
-        "name": "accepted",
+        "name": "accounted",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "name": "refund",
+        "name": "received",
         "type": "uint256"
       },
       {
         "indexed": false,
         "name": "price",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "name": "bonus",
         "type": "uint256"
       }
     ],
@@ -597,12 +687,78 @@
       },
       {
         "indexed": false,
-        "name": "accepted",
+        "name": "accounted",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "name": "bonus",
+        "name": "received",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "price",
+        "type": "uint256"
+      }
+    ],
+    "name": "Deposited",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "who",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "DepositReturned",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "who",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "accounted",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "received",
+        "type": "uint256"
+      }
+    ],
+    "name": "DepositUsed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "who",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "accounted",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "received",
         "type": "uint256"
       }
     ],
@@ -619,17 +775,17 @@
       },
       {
         "indexed": false,
-        "name": "accepted",
+        "name": "accounted",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "received",
         "type": "uint256"
       },
       {
         "indexed": false,
         "name": "price",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "name": "bonus",
         "type": "uint256"
       }
     ],

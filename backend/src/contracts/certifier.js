@@ -10,6 +10,7 @@ const EthereumTx = require('ethereumjs-tx');
 const Wallet = require('ethereumjs-wallet');
 
 const { MultiCertifier } = require('../abis');
+const { hex2buf } = require('../utils');
 const Contract = require('../contract');
 
 const gasPrice = config.get('gasPrice');
@@ -64,6 +65,23 @@ class Certifier extends Contract {
     console.log('sent certify tx for', { address, txHash });
 
     return txHash;
+  }
+
+  /**
+   * Get country code for address, or null if the address is not verified
+   *
+   * @param {String} address `0x` prefixed
+   *
+   * @return {String|null} two-character code or null ('US'|'UK'|'JP'|...|null)
+   */
+  async getCountryCode (address) {
+    const [code] = await this.methods.getCountryCode(address).get();
+
+    if (code === '0x0000') {
+      return null;
+    }
+
+    return hex2buf(code).toString('utf8');
   }
 }
 

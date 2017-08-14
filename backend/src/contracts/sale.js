@@ -72,9 +72,9 @@ class Sale extends Contract {
     return logs
       .sort((logA, logB) => logA.timestamp - logB.timestamp)
       .map((log) => {
-        const { accepted } = log.params;
+        const { accounted } = log.params;
 
-        totalAccounted = totalAccounted.add(accepted);
+        totalAccounted = totalAccounted.add(accounted);
 
         return {
           totalAccounted: '0x' + totalAccounted.toString(16),

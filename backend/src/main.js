@@ -104,16 +104,18 @@ async function main () {
 
   router.get('/address/:address', async (ctx, next) => {
     const { address } = ctx.params;
-    const [ eth, [ value ], [ certified ] ] = await Promise.all([
+    const [ eth, [ buyin ], [ deposit ], countryCode ] = await Promise.all([
       connector.balance(address),
-      sale.methods.participants(address).get(),
-      certifier.methods.certified(address).get()
+      sale.methods.buyins(address).get(),
+      sale.methods.deposits(address).get(),
+      certifier.getCountryCode(address)
     ]);
 
     ctx.body = {
-      certified,
+      countryCode,
       eth: '0x' + eth.toString(16),
-      accounted: '0x' + value.toString(16)
+      buyin: '0x' + buyin.toString(16),
+      deposit: '0x' + deposit.toString(16)
     };
   });
 
