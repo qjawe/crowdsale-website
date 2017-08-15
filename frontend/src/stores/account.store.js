@@ -3,6 +3,7 @@ import Wallet from 'ethereumjs-wallet';
 import { action, observable } from 'mobx';
 import store from 'store';
 
+import appStore from './app.store';
 import backend from '../backend';
 
 const WALLET_LS_KEY = '__crowdsale::wallet';
@@ -39,11 +40,27 @@ class AccountStore {
   loadWallet () {
     const wallet = store.get(WALLET_LS_KEY);
 
-    if (wallet) {
+    if (wallet && wallet.crypto) {
       wallet.fromLS = true;
 
       this.setWallet(wallet);
     }
+  }
+
+  @action
+  logout () {
+    appStore.goto('home');
+
+    this.address = '';
+    this.balances = {};
+    this.certified = null;
+    this.error = null;
+    this.unlocked = false;
+    this.publicKey = null;
+    this.privateKey = null;
+    this.wallet = null;
+
+    this.saveWallet();
   }
 
   async create (secret, password) {
@@ -61,9 +78,13 @@ class AccountStore {
   }
 
   async pollAccountInfo () {
-    await this.updateAccountInfo();
+    if (!this.address) {
+      return;
+    }
 
     clearTimeout(accountInfoTimeoutId);
+    await this.updateAccountInfo();
+
     accountInfoTimeoutId = setTimeout(() => {
       this.pollAccountInfo();
     }, ACCOUNT_INFO_REFRESH_TIMER);

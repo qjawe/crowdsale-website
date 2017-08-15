@@ -79,6 +79,7 @@ export default class AccountManager extends Component {
       <AccountInfo
         address={address}
         certified={certified}
+        onLogout={this.handleLogout}
       />
     );
   }
@@ -99,6 +100,7 @@ export default class AccountManager extends Component {
             ETH
           </Label.Detail>
         </Label>
+
         <Label>
           >= {balances.accounted.div(currentPrice).toFormat(3)}
           <Label.Detail>
@@ -192,6 +194,10 @@ export default class AccountManager extends Component {
     }
 
     return accountStore.load(file);
+  };
+
+  handleLogout = () => {
+    accountStore.logout();
   };
 
   handlePasswordChange = (event) => {
