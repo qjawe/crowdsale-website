@@ -125,24 +125,7 @@ export default class Certifier extends Component {
 
   renderVerifyKraken () {
     return (
-      <Modal
-        basic
-        closeIcon='close'
-        open
-        onClose={this.handleClose}
-      >
-        <Modal.Content>
-          Verifying with Kraken
-        </Modal.Content>
-        <Modal.Actions>
-          <Button
-            onClick={this.handleClose}
-            inverted
-          >
-            Done
-          </Button>
-        </Modal.Actions>
-      </Modal>
+      <Certifiers.Kraken onClose={this.handleClose} />
     );
   }
 
