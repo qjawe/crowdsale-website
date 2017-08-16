@@ -36,6 +36,13 @@ class Certifier extends Contract {
     super(connector, address, MultiCertifier);
   }
 
+  /**
+   * Certify an address using a trusted account
+   *
+   * @param {String} address to certify, `0x` prefixed
+   *
+   * @return {Promise<String>} promise of a TX hash
+   */
   async certify (address) {
     const { connector } = this;
     const data = this.methods.certify(address).data;

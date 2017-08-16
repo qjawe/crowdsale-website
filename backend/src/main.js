@@ -16,6 +16,7 @@ const Onfido = require('./onfido');
 const ParityConnector = require('./parity');
 const Recaptcha = require('./recaptcha');
 const Sale = require('./contracts/sale');
+const redis = require('./redis');
 
 const store = require('./store');
 const { buf2hex, buf2big, big2hex, int2date } = require('./utils');
@@ -27,6 +28,11 @@ const connector = new ParityConnector(config.get('nodeWs'));
 
 main();
 
+function error (ctx, code = 400, body = 'Invalid request') {
+  ctx.status = code;
+  ctx.body = body;
+}
+
 async function main () {
   const sale = new Sale(connector, config.get('saleContract'));
 
@@ -36,6 +42,26 @@ async function main () {
 
   connector.on('block', () => {
     sale.update();
+  });
+
+  router.post('/onfido-webhook', async (ctx, next) => {
+    const { payload } = ctx.request.body;
+
+    if (!payload) {
+      return error(ctx);
+    }
+
+    const { resource_type: type, action, object } = payload;
+
+    if (!type || !action || !object) {
+      return error(ctx);
+    }
+
+    const res = await redis.publish('webhook', JSON.stringify(payload));
+
+    console.log(res, typeof res);
+
+    ctx.body = 'OK';
   });
 
   router.post('/check-status', async (ctx, next) => {
