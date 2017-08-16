@@ -1,4 +1,4 @@
-import { action, observable } from 'mobx';
+import { action, observe, observable } from 'mobx';
 import Onfido from 'onfido-sdk-ui';
 import store from 'store';
 
@@ -6,8 +6,10 @@ import accountStore from './account.store';
 import backend from '../backend';
 
 const LS_KEY = '__crowdsale::certifier';
+const CHECK_STATUS_INTERVAL = 2000;
 
 class CertifierStore {
+  @observable country = '';
   @observable error = null;
   @observable firstName = '';
   @observable lastName = '';
@@ -18,21 +20,62 @@ class CertifierStore {
   @observable stoken = null;
 
   constructor () {
-    this.load();
+    if (accountStore.unlocked) {
+      this.load();
+    }
+
+    // Reload data when account unlocked
+    observe(accountStore, 'unlocked', (changes) => {
+      if (changes.oldValue !== false || changes.newValue !== true) {
+        return;
+      }
+
+      this.load();
+    });
   }
 
   @action
   load () {
-    const data = store.get(LS_KEY) || {};
+    const { address } = accountStore;
 
-    Object.keys(data).forEach((key) => {
+    // Don't load anything if no account unlocked
+    if (!address) {
+      return;
+    }
+
+    const data = (store.get(LS_KEY) || {})[address] || {};
+
+    Object.keys(data || {}).forEach((key) => {
       this[key] = data[key];
     });
+
+    if (this.onfido && this.onfido.checkId) {
+      this.pollCheckStatus();
+    }
   }
 
-  save (data = {}) {
-    const prevData = store.get(LS_KEY);
-    const nextData = { ...prevData, ...data };
+  save (data = {}, clear = false) {
+    const { address } = accountStore;
+
+    // Don't save anything if no account unlocked
+    if (!address) {
+      return;
+    }
+
+    const prevData = store.get(LS_KEY) || {};
+    const nextData = { ...prevData };
+
+    if (clear) {
+      delete nextData[address];
+    } else {
+      const prevAddressData = prevData[address] || {};
+      const nextAddressData = {
+        ...prevAddressData,
+        ...data
+      };
+
+      nextData[address] = nextAddressData;
+    }
 
     store.set(LS_KEY, nextData);
   }
@@ -40,10 +83,11 @@ class CertifierStore {
   async createApplicant () {
     this.setLoading(true);
 
-    const { firstName, lastName, stoken } = this;
+    const { country, firstName, lastName, stoken } = this;
 
     try {
       const { applicantId, sdkToken } = await backend.createApplicant({
+        country,
         firstName,
         lastName,
         stoken
@@ -59,18 +103,17 @@ class CertifierStore {
   }
 
   async handleOnfidoComplete () {
-    this.unmountOnfido();
-    this.setPending(true);
-    this.setOpen(false);
-
     try {
-      const check = await backend.checkApplicant(this.onfido.applicantId, accountStore.address);
+      const check = await backend.createCheck(this.onfido.applicantId, accountStore.address);
 
       this.setOnfido({ checkId: check.id });
       this.pollCheckStatus();
     } catch (error) {
       this.setError(error);
     }
+
+    this.unmountOnfido();
+    this.setOpen(false);
   }
 
   mountOnfido () {
@@ -99,51 +142,54 @@ class CertifierStore {
   }
 
   async pollCheckStatus () {
+    if (!this.pending) {
+      this.setPending(true);
+    }
+
     const { applicantId, checkId } = this.onfido;
     const result = await backend.checkStatus({ applicantId, checkId });
 
-    console.warn('check status', result);
-    clearTimeout(this.checkStatusTimeoutId);
-
     if (result.pending) {
+      clearTimeout(this.checkStatusTimeoutId);
       this.checkStatusTimeoutId = setTimeout(() => {
         this.pollCheckStatus();
-      }, 2000);
+      }, CHECK_STATUS_INTERVAL);
       return;
     }
 
-    if (result.valid && result.tx) {
-      return this.pollCertificationTransaction(result.tx);
+    if (result.valid) {
+      await accountStore.updateAccountInfo();
+      this.reset(false);
+      return;
     }
 
     this.setError(new Error('Something went wrong with your verification. Please try again.'));
   }
 
-  async pollCertificationTransaction (txHash) {
-    const tx = await backend.getTx(txHash);
-
-    clearTimeout(this.certificationTxTimeoutId);
-
-    if (!tx.blockHash || tx.blockHash === '0x') {
-      this.certificationTxTimeoutId = setTimeout(() => {
-        this.pollCertificationTransaction(txHash);
-      }, 2000);
-      return;
-    }
-
-    this.setPending(false);
-  }
-
-  reset () {
+  reset (soft = false) {
     this.error = null;
     this.firstName = '';
     this.lastName = '';
     this.loading = false;
     this.stoken = null;
+
+    if (!soft) {
+      this.onfido = null;
+      this.pending = false;
+
+      this.save(null, true);
+    }
+  }
+
+  @action
+  setCountry (country) {
+    this.country = country;
   }
 
   @action
   setError (error) {
+    console.error(error);
+
     this.error = error;
     this.pending = false;
   }
@@ -170,7 +216,9 @@ class CertifierStore {
       ...onfido
     };
 
-    this.save({ onfido: this.onfido });
+    const { applicantId, checkId } = this.onfido;
+
+    this.save({ onfido: { applicantId, checkId } });
   }
 
   @action
@@ -179,7 +227,7 @@ class CertifierStore {
 
     // closing certifier, reset
     if (!open) {
-      this.reset();
+      this.reset(true);
     }
   }
 

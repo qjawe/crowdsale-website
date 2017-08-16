@@ -72,6 +72,12 @@ class AuctionStore {
       .round();
   }
 
+  getTarget (time) {
+    const price = this.getPrice(time);
+
+    return price.mul(this.DIVISOR).mul(this.tokenCap);
+  }
+
   getTime (price) {
     const beginTime = new BigNumber(Math.round(this.beginTime.getTime() / 1000));
     const { DIVISOR, USDWEI } = this;
@@ -88,6 +94,12 @@ class AuctionStore {
       .round();
 
     return new Date(time.mul(1000).toNumber());
+  }
+
+  getTimeFromTarget (target) {
+    const price = target.div(this.DIVISOR).div(this.tokenCap);
+
+    return this.getTime(price);
   }
 
   isActive () {
@@ -230,101 +242,73 @@ class AuctionStore {
   }
 
   formatChartData (data) {
-    const { expectedTotalAccounted, price, time, totalAccounted } = data;
+    const { target, raised, time } = data;
 
     return {
-      expectedTotalAccounted: this.formatChartPrice(expectedTotalAccounted),
-      totalAccounted: this.formatChartPrice(totalAccounted),
-      price: this.formatChartPrice(price),
+      target: fromWei(target).round().toNumber(),
+      raised: fromWei(raised).toNumber(),
       time: time.getTime()
     };
   }
 
   async updateChartData () {
-    const { beginTime, beginPrice, currentPrice, tokenCap, endTime, endPrice, now } = this;
-    const totalAccountedRawData = await backend.chartData();
+    const { beginTime, now } = this;
+    const raisedRawData = await backend.chartData();
 
-    const totalAccountedData = totalAccountedRawData
+    const raisedData = raisedRawData
       .map((datum) => {
         const { time, totalAccounted } = datum;
-        const value = new BigNumber(totalAccounted).div(tokenCap);
+        const value = new BigNumber(totalAccounted);
 
         return { value, time: new Date(time) };
-      });
+      })
+      .sort((rA, rB) => rB.time - rA.time);
 
     const NUM_TICKS = 200;
     const data = [];
 
-    const priceInteval = beginPrice.sub(endPrice).div(NUM_TICKS);
+    const beginTarget = this.getTarget(beginTime);
+    const nowTarget = this.getTarget(now);
+
+    const targetInteval = beginTarget.sub(nowTarget).div(NUM_TICKS);
 
     for (let i = 0; i <= NUM_TICKS; i++) {
-      // The price decreases with time
-      const price = beginPrice.sub(priceInteval.mul(i));
-      const time = this.getTime(price);
+      // The target decreases with time
+      const target = beginTarget.sub(targetInteval.mul(i));
+      const time = this.getTimeFromTarget(target);
+      const raisedIndex = raisedData.findIndex((d) => d.time <= time);
+      const raised = raisedIndex === -1
+        ? new BigNumber(0)
+        : raisedData[raisedIndex].value;
 
-      data.push({ price, time });
+      data.push({ target, time, raised });
     }
 
-    const dateInterval = (endTime - beginTime) / NUM_TICKS;
+    const dateInterval = (now - beginTime) / NUM_TICKS;
 
     for (let i = 0; i <= NUM_TICKS; i++) {
       const time = new Date(beginTime.getTime() + dateInterval * i);
-      const price = this.getPrice(time);
+      const target = this.getTarget(time);
+      const raisedIndex = raisedData.findIndex((d) => d.time <= time);
+      const raised = raisedIndex === -1
+        ? new BigNumber(0)
+        : raisedData[raisedIndex].value;
 
-      data.push({ price, time });
+      data.push({ target, time, raised });
     }
 
-    const paddingTime = (endTime - beginTime) * 0.5;
-    const lastTAD = totalAccountedData[totalAccountedData.length - 1];
-
     data.push({
-      time: new Date(beginTime.getTime() - paddingTime),
-      price: beginPrice,
-      totalAccounted: new BigNumber(0)
+      time: new Date(now.getTime() + dateInterval),
+      raised: raisedData[0].value,
+      target: nowTarget
     });
 
-    data.push({
-      time: new Date(endTime.getTime() + paddingTime),
-      price: endPrice,
-      expectedTotalAccounted: lastTAD.value
-    });
-
-    data.push({
-      time: now,
-      price: currentPrice,
-      totalAccounted: lastTAD.value
-    });
-
-    data.forEach((datum) => {
-      const { time } = datum;
-
-      if (time >= now) {
-        datum.expectedTotalAccounted = lastTAD.value;
-        return;
-      }
-
-      if (time >= lastTAD.time && time < now) {
-        datum.totalAccounted = lastTAD.value;
-        return;
-      }
-
-      const index = totalAccountedData.findIndex((d) => d.time > time);
-
-      if (index === 0) {
-        datum.totalAccounted = new BigNumber(0);
-        return;
-      }
-
-      if (index >= 1) {
-        datum.totalAccounted = totalAccountedData[index - 1].value;
-        return;
-      }
-    });
+    const formattedData = data
+      .sort((ptA, ptB) => ptA.time - ptB.time)
+      .map((datum) => this.formatChartData(datum));
 
     this.setChart({
-      data: data
-        .sort((ptA, ptB) => ptB.time - ptA.time)
-        .map((datum) => this.formatChartData(datum))
+      data: formattedData
     });
   }
 }

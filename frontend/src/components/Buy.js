@@ -50,9 +50,23 @@ export default class Buy extends Component {
         </Dimmer>
 
         {this.renderTransaction()}
-        {this.renderForm()}
+        {this.renderContent()}
       </Segment>
     );
+  }
+
+  renderContent () {
+    const { certified } = accountStore;
+
+    if (!certified) {
+      return (
+        <Container textAlign='center'>
+          <Certifier />
+        </Container>
+      );
+    }
+
+    return this.renderForm();
   }
 
   renderForm () {
@@ -83,7 +97,12 @@ export default class Buy extends Component {
           {this.renderRefund()}
         </div>
 
-        {this.renderSubmitButton()}
+        <Button
+          content='Purchase DOTs'
+          disabled={!spend.gt(0)}
+          onClick={this.handlePurchase}
+          primary
+        />
       </Container>
     );
   }
@@ -103,27 +122,6 @@ export default class Buy extends Component {
       </span>
     );
   }
-
-  renderSubmitButton () {
-    const { certified } = accountStore;
-    const { spend } = buyStore;
-
-    if (!certified) {
-      return (
-        <Certifier disabled={!spend.gt(0)} />
-      );
-    }
-
-    return (
-      <Button
-        content='Purchase DOTs'
-        disabled={!spend.gt(0)}
-        onClick={this.handlePurchase}
-        primary
-      />
-    );
-  }
-
   renderTransaction () {
     const { mining, requiredEth, sending, txHash } = buyStore;
 

@@ -64,28 +64,25 @@ async function main () {
     ctx.body = 'OK';
   });
 
-  router.post('/check-status', async (ctx, next) => {
-    const { applicantId, checkId } = ctx.request.body;
+  router.get('/onfido/:applicantId/check/:checkId', async (ctx, next) => {
+    const { applicantId, checkId } = ctx.params;
 
     try {
       const { pending, valid } = await Onfido.checkStatus(applicantId, checkId);
 
-      if (pending || !valid) {
-        ctx.body = { pending, valid };
-        return;
-      }
+      ctx.body = { pending, valid };
 
-      const { tags } = await Onfido.getCheck(applicantId, checkId);
-      const addressTag = tags.find((tag) => /address/.test(tag));
+      // const { tags } = await Onfido.getCheck(applicantId, checkId);
+      // const addressTag = tags.find((tag) => /address/.test(tag));
 
-      if (!addressTag) {
-        throw new Error(`Could not find an address for this applicant check (${applicantId}/${checkId})`);
-      }
+      // if (!addressTag) {
+      //   throw new Error(`Could not find an address for this applicant check (${applicantId}/${checkId})`);
+      // }
 
-      const address = addressTag.replace(/^address:/, '');
-      const tx = await certifier.certify(address);
+      // const address = addressTag.replace(/^address:/, '');
+      // const tx = await certifier.certify(address);
 
-      ctx.body = { valid, tx };
+      // ctx.body = { valid, tx };
     } catch (error) {
       ctx.status = 400;
       ctx.body = error.message;
@@ -93,11 +90,12 @@ async function main () {
     }
   });
 
-  router.post('/check-applicant', async (ctx, next) => {
-    const { applicantId, address } = ctx.request.body;
+  router.post('/onfido/:applicantId/check', async (ctx, next) => {
+    const { applicantId } = ctx.params;
+    const { address } = ctx.request.body;
 
     try {
-      const result = await Onfido.checkApplicant(applicantId, address);
+      const result = await Onfido.createCheck(applicantId, address);
 
       ctx.body = result;
     } catch (error) {
@@ -107,12 +105,12 @@ async function main () {
     }
   });
 
-  router.post('/create-applicant', async (ctx, next) => {
-    const { firstName, lastName, stoken } = ctx.request.body;
+  router.post('/onfido', async (ctx, next) => {
+    const { country, firstName, lastName, stoken } = ctx.request.body;
 
     try {
       await Recaptcha.validate(stoken);
-      const { applicantId, sdkToken } = await Onfido.createApplicant({ firstName, lastName });
+      const { applicantId, sdkToken } = await Onfido.createApplicant({ country, firstName, lastName });
 
       ctx.body = { applicantId, sdkToken };
     } catch (error) {
@@ -208,6 +206,14 @@ async function main () {
   });
 
   router.get('/block-hash', (ctx) => {
+    if (!connector.block) {
+      const error = new Error('Could not fetch latest block');
+
+      ctx.status = 500;
+      ctx.body = error.message;
+      return ctx.app.emit('error', error, ctx);
+    }
+
     ctx.body = { hash: connector.block.hash };
   });
 

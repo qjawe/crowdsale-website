@@ -27,22 +27,19 @@ class Backend {
     return await get(this.url('/chart-data'));
   }
 
-  async checkApplicant (applicantId, address) {
-    return await post(this.url('/check-applicant'), {
-      applicantId,
+  async createCheck (applicantId, address) {
+    return await post(this.url(`/onfido/${applicantId}/check`), {
       address
     });
   }
 
   async checkStatus ({ applicantId, checkId }) {
-    return await post(this.url('/check-status'), {
-      applicantId,
-      checkId
-    });
+    return await get(this.url(`/onfido/${applicantId}/check/${checkId}`));
   }
 
-  async createApplicant ({ firstName, lastName, stoken }) {
-    return await post(this.url('/create-applicant'), {
+  async createApplicant ({ country, firstName, lastName, stoken }) {
+    return await post(this.url('/onfido'), {
+      country,
       firstName,
       lastName,
       stoken

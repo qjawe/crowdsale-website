@@ -2,7 +2,7 @@ import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import PropTypes from 'proptypes';
 import { AccountIcon } from 'parity-reactive-ui';
-import { Icon, Label, Popup } from 'semantic-ui-react';
+import { Button, Icon, Label, Popup } from 'semantic-ui-react';
 
 const hSpaceStyle = {
   width: '0.5em'
@@ -12,7 +12,8 @@ const hSpaceStyle = {
 export default class AccountInfo extends Component {
   static propTypes = {
     address: PropTypes.string.isRequired,
-    certified: PropTypes.bool
+    certified: PropTypes.bool,
+    onLogout: PropTypes.func
   };
 
   static defaultProps = {
@@ -20,7 +21,7 @@ export default class AccountInfo extends Component {
   };
 
   render () {
-    const { address, certified } = this.props;
+    const { address, certified, onLogout } = this.props;
     let color = 'yellow';
 
     if (certified !== null) {
@@ -48,6 +49,17 @@ export default class AccountInfo extends Component {
         </span>
       );
 
+    const logoutButton = onLogout
+      ? (
+        <Button
+          size='tiny'
+          color='orange'
+          icon='log out'
+          onClick={onLogout}
+        />
+      )
+      : null;
+
     return (
       <div style={{
         alignItems: 'center',
@@ -59,6 +71,7 @@ export default class AccountInfo extends Component {
           address={address}
           style={{ height: 32 }}
         />
+
         <Label
           color={color}
           size='large'
@@ -68,6 +81,7 @@ export default class AccountInfo extends Component {
         >
           {address}
         </Label>
+        {logoutButton}
         {certifiedIcon}
       </div>
     );
