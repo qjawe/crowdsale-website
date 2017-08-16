@@ -8,7 +8,7 @@ export default class Info extends Component {
     return (
       <Container>
         <Header as='h2'>About the Auction</Header>
-        <Grid columns={2}>
+        <Grid doubling columns={2}>
           <Grid.Column>
             <p>
               In this Auction, 5 million of the total available 10 million tokens

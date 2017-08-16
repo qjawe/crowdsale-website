@@ -26,6 +26,10 @@ export default class Certifier extends Component {
 
   state = Certifier.initialState;
 
+  componentWillUnmount () {
+    this.reset();
+  }
+
   render () {
     const { pending } = certifierStore;
     const { disabled } = this.props;
@@ -81,6 +85,7 @@ export default class Certifier extends Component {
         closeIcon='close'
         open
         onClose={this.handleClose}
+        closeOnDimmerClick={false}
       >
         <Header content='VERIFYING YOUR IDENTITY' />
         <Modal.Content>
@@ -131,7 +136,9 @@ export default class Certifier extends Component {
 
   renderVerifyParity () {
     return (
-      <Certifiers.Parity />
+      <Certifiers.Parity
+        onClose={this.handleClose}
+      />
     );
   }
 
@@ -140,8 +147,8 @@ export default class Certifier extends Component {
   };
 
   handleClose = () => {
+    this.reset();
     certifierStore.setOpen(false);
-    this.setState(Certifier.initialState);
   };
 
   handleRecaptcha = (stoken) => {
@@ -154,5 +161,11 @@ export default class Certifier extends Component {
 
   handleVerifyParity = () => {
     this.setState({ step: STEPS.VERIFY_WITH_PARITY });
+  };
+
+  reset = () => {
+    this.setState(Certifier.initialState, () => {
+      certifierStore.reset(true);
+    });
   };
 }

@@ -47,6 +47,10 @@ async function getCheck (applicantId, checkId) {
   return await _call(`/applicants/${applicantId}/checks/${checkId}`, 'GET');
 }
 
+// async function getReports (checkId) {
+//   return await _call(`/checks/${checkId}/reports`, 'GET');
+// }
+
 async function checkStatus (applicantId, checkId) {
   const { status, result } = await getCheck(applicantId, checkId);
 
@@ -56,7 +60,7 @@ async function checkStatus (applicantId, checkId) {
   return { pending, valid };
 }
 
-async function checkApplicant (applicantId, address) {
+async function createCheck (applicantId, address) {
   const check = await _call(`/applicants/${applicantId}/checks`, 'POST', {
     type: 'express',
     reports: [
@@ -69,8 +73,9 @@ async function checkApplicant (applicantId, address) {
   return { id: check.id };
 }
 
-async function createApplicant ({ firstName, lastName }) {
+async function createApplicant ({ country, firstName, lastName }) {
   const applicant = await _call('/applicants', 'POST', {
+    country,
     first_name: firstName,
     last_name: lastName
   });
@@ -84,8 +89,8 @@ async function createApplicant ({ firstName, lastName }) {
 }
 
 module.exports = {
-  checkApplicant,
   checkStatus,
   createApplicant,
+  createCheck,
   getCheck
 };

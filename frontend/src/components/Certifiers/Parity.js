@@ -1,17 +1,67 @@
+import { countries } from 'country-data';
+import { uniq } from 'lodash';
 import { observer } from 'mobx-react';
+import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import { Button, Form, Header, Message, Modal } from 'semantic-ui-react';
 
 import certifierStore from '../../stores/certifier.store';
 
+const COUNTRIES_BLACKLIST = [
+  'JPN'
+];
+
+const countryCodes = countries.all
+  .filter((c) => c.status === 'assigned')
+  .filter((c) => !COUNTRIES_BLACKLIST.includes(c.alpha3))
+  .map((c) => c.alpha3);
+
+const countryOptions = uniq(countryCodes)
+  .map((code) => {
+    const country = countries[code];
+
+    return {
+      key: country.alpha2,
+      text: country.name,
+      value: country.alpha3,
+      flag: country.alpha2.toLowerCase()
+    };
+  })
+  .sort((cA, cB) => cA.text.localeCompare(cB.text));
+
+const CountryDropdown = (props) => {
+  return (
+    <Form.Dropdown
+      label='Country'
+      placeholder='Select Country'
+      fluid
+      search
+      selection
+      options={countryOptions}
+      onChange={props.onChange}
+      value={props.value}
+    />
+  );
+};
+
+CountryDropdown.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.string.isRequired
+};
+
 @observer
 export default class ParityCertifier extends Component {
+  static propTypes = {
+    onClose: PropTypes.func.isRequired
+  };
+
   componentWillUnmount () {
     certifierStore.unmountOnfido();
   }
 
   render () {
-    const { error, firstName, lastName, loading, onfido } = certifierStore;
+    const { country, error, firstName, lastName, loading, onfido } = certifierStore;
+    const { onClose } = this.props;
 
     if (onfido) {
       return this.renderOnfidoForm();
@@ -22,7 +72,8 @@ export default class ParityCertifier extends Component {
         basic
         closeIcon='close'
         open
-        onClose={this.handleClose}
+        onClose={onClose}
+        closeOnDimmerClick={false}
       >
         <Header content='VERIFYING WITH PARITY' />
         <Modal.Content>
@@ -31,6 +82,13 @@ export default class ParityCertifier extends Component {
             inverted
           >
             {this.renderError()}
+            <Form.Field>
+              <CountryDropdown
+                onChange={this.handleCountryChange}
+                value={country}
+              />
+            </Form.Field>
+
             <Form.Field>
               <Form.Input
                 label='First Name'
@@ -51,7 +109,7 @@ export default class ParityCertifier extends Component {
         </Modal.Content>
         <Modal.Actions>
           <Button
-            disabled={!firstName || !lastName || loading}
+            disabled={!firstName || !lastName || !country || loading}
             loading={loading}
             onClick={this.handleNext}
             inverted
@@ -84,14 +142,14 @@ export default class ParityCertifier extends Component {
   }
 
   renderOnfidoForm () {
-    const { onfido } = certifierStore;
+    const { onClose } = this.props;
 
     return (
       <Modal
         basic
         closeIcon='close'
         open
-        onClose={this.handleClose}
+        onClose={onClose}
       >
         <Modal.Content>
           {this.renderError()}
@@ -101,8 +159,10 @@ export default class ParityCertifier extends Component {
     );
   }
 
-  handleClose = () => {
-    certifierStore.setOpen(false);
+  handleCountryChange = (_, data) => {
+    const { value } = data;
+
+    certifierStore.setCountry(value);
   };
 
   handleFirstNameChange = (event) => {

@@ -413,8 +413,9 @@ class CustomChart extends Component {
     const { margins } = chart;
 
     const maxTime = xScale.invert(xScale(now) - 10);
+    const minTime = xScale.invert(xScale(now) + 10);
 
-    if (xScale.domain()[1] < maxTime) {
+    if (xScale.domain()[1] < maxTime || xScale.domain()[0] > minTime) {
       return null;
     }
 

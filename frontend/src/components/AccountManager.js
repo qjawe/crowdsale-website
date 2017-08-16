@@ -2,17 +2,12 @@ import keycode from 'keycode';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
-import { AccountIcon } from 'parity-reactive-ui';
-import { Button, Container, Checkbox, Dimmer, Icon, Input, Label, Loader, Message, Popup, Segment } from 'semantic-ui-react';
+import { Button, Container, Checkbox, Dimmer, Icon, Input, Label, Loader, Message, Segment } from 'semantic-ui-react';
 
 import AccountInfo from './AccountInfo';
 
 import accountStore from '../stores/account.store';
 import auctionStore from '../stores/auction.store';
-
-const hSpaceStyle = {
-  width: '0.5em'
-};
 
 const dropzoneStyle = {
   cursor: 'pointer',
@@ -163,7 +158,7 @@ export default class AccountManager extends Component {
             />
           }
           labelPosition='right'
-          onChange={this.handlePasswordChange} // TODO: Enter should unlock.
+          onChange={this.handlePasswordChange}
           onKeyUp={this.handlePasswordKeyUp}
           type='password'
         />

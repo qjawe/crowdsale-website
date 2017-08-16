@@ -13,8 +13,9 @@ export default class KrakenCertifier extends Component {
     return (
       <Modal
         basic
-        open
+        closeOnDimmerClick={false}
         onClose={this.handleClose}
+        open
       >
         <Header content='VERIFYING WITH KRAKEN' />
         <Modal.Content>
