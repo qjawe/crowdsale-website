@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Container, Divider, Header } from 'semantic-ui-react';
+import { Container, Header } from 'semantic-ui-react';
 import 'parity-reactive-ui';
 
 import Auction from './Auction';
@@ -23,7 +23,6 @@ export default class App extends Component {
           </Header>
           <br />
           <Auction.Info />
-          <Divider />
           <Sale />
         </Container>
         <Auction.Details />

@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import { Container, Button, Header } from 'semantic-ui-react';
+import { Container, Button, Divider, Header } from 'semantic-ui-react';
 
 import AccountManager from './AccountManager';
 import Buy from './Buy';
@@ -49,7 +49,9 @@ export default class Sale extends Component {
     return (
       <Container textAlign='center'>
         <Header as='h3'>
-          GET STARTED
+          <Divider horizontal>
+            GET STARTED
+          </Divider>
         </Header>
         <p>
           Please note we require participants in the auction to verify
@@ -79,7 +81,9 @@ export default class Sale extends Component {
     return (
       <Container textAlign='center'>
         <Header as='h3'>
-          GET STARTED
+          <Divider horizontal>
+            GET STARTED
+          </Divider>
         </Header>
         <AccountManager />
       </Container>
