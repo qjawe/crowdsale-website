@@ -57,9 +57,9 @@ async function main () {
       return error(ctx);
     }
 
-    const res = await redis.publish('webhook', JSON.stringify(payload));
-
-    console.log(res, typeof res);
+    if (action === 'check.completed') {
+      await store.verifyOnfidoCheck(object.href);
+    }
 
     ctx.body = 'OK';
   });

@@ -93,9 +93,22 @@ async function rejectTx (address, nonce, reason) {
   }));
 }
 
+/**
+ * Push a href to onfido check API to redis and trigger a publish event,
+ * so that the certifier server can process the check and trigger the
+ * transaction to the certifier contract.
+ *
+ * @param {String} href in format: https://api.onfido.com/v2/applicants/<applicant-id>/checks/<check-id>
+ */
+async function verifyOnfidoCheck (href) {
+  await redis.sadd('onfido:checks', href);
+  await redis.publish('onfido:check', href);
+}
+
 module.exports = {
   addToQueue,
   withQueue,
   confirmTx,
-  rejectTx
+  rejectTx,
+  verifyOnfidoCheck
 };
