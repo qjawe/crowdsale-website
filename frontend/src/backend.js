@@ -75,4 +75,4 @@ class Backend {
   }
 }
 
-export default new Backend('http://localhost:4000');
+export default new Backend(`http://${window.location.hostname}:4000`);
