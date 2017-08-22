@@ -8,7 +8,8 @@ const redis = require('./redis');
 const { big2hex, hex2big } = require('./utils');
 
 const QUEUE_NAME = 'queue';
-const ONFIDO_CHECKS_CHANNEL = 'onfido-checks';
+const ONFIDO_CHECKS = 'onfido-checks';
+const ONFIDO_CHECKS_CHANNEL = 'onfido-checks-channel';
 
 /**
  * Add transaction to the queue
@@ -115,49 +116,85 @@ async function rejectTx (address, nonce, reason) {
   }));
 }
 
-/**
- * Push a href to onfido check API to redis and trigger a publish event,
- * so that the certifier server can process the check and trigger the
- * transaction to the certifier contract.
- *
- * @param {String} href in format: https://api.onfido.com/v2/applicants/<applicant-id>/checks/<check-id>
- */
-async function verifyOnfidoCheck (href) {
-  await redis.sadd(ONFIDO_CHECKS_CHANNEL, href);
-  await redis.publish(ONFIDO_CHECKS_CHANNEL, href);
-}
+const onfido = {
+  /**
+   * Get the data for the given address.
+   *
+   * @param  {String} address `0x` prefixed address
+   *
+   * @return {Promise<Object|null>}
+   */
+  get: async (address) => {
+    const data = redis.hget(ONFIDO_CHECKS, address);
 
-/**
- * Removes  a href from the Redis Onfido Check Set.
- *
- * @param {String} href
- */
-async function removeOnfidoCheck (href) {
-  await redis.srem(ONFIDO_CHECKS_CHANNEL, href);
-}
-
-/**
- * Subscribe to the Onfido check completions
- *
- * @param  {Function} cb   Callbacked function called on new
- *                         check completion
- */
-async function subscribeOnfidoCheck (cb) {
-  const client = redis.client.duplicate();
-  const hrefs = await redis.smembers(ONFIDO_CHECKS_CHANNEL);
-
-  hrefs.forEach((href) => cb(href));
-
-  client.on('message', (channel, message) => {
-    if (channel !== ONFIDO_CHECKS_CHANNEL) {
-      return;
+    if (!data) {
+      return null;
     }
 
-    cb(message);
-  });
+    try {
+      return JSON.parse(data);
+    } catch (error) {
+      console.error(`could not parse JSON data: ${data}`);
+      return null;
+    }
+  },
 
-  client.subscribe(ONFIDO_CHECKS_CHANNEL);
-}
+  /**
+   * Set the given data for the given address.
+   *
+   * @param  {String} address `0x` prefixed address
+   * @param  {Object} data    Javascript Object to set
+   *
+   * @return {Promise}
+   */
+  set: async (address, data) => {
+    return redis.hset(ONFIDO_CHECKS, address, JSON.stringify(data));
+  },
+
+  /**
+   * Subscribe to the Onfido check completions
+   *
+   * @param  {Function} cb   Callback function called on new
+   *                         check completion
+   */
+  subscribe: async (cb) => {
+    const client = redis.client.duplicate();
+    const hrefs = await redis.smembers(ONFIDO_CHECKS_CHANNEL);
+
+    hrefs.forEach((href) => cb(href));
+
+    client.on('message', (channel, message) => {
+      if (channel !== ONFIDO_CHECKS_CHANNEL) {
+        return;
+      }
+
+      cb(message);
+    });
+
+    client.subscribe(ONFIDO_CHECKS_CHANNEL);
+  },
+
+  /**
+   * Push a href to onfido check API to redis and trigger a publish event,
+   * so that the certifier server can process the check and trigger the
+   * transaction to the certifier contract.
+   *
+   * @param {String} href in format: https://api.onfido.com/v2/applicants/<applicant-id>/checks/<check-id>
+   */
+  verify: async (href) => {
+    await redis.sadd(ONFIDO_CHECKS_CHANNEL, href);
+    await redis.publish(ONFIDO_CHECKS_CHANNEL, href);
+  },
+
+  /**
+   * Removes  a href from the Redis Onfido Check Set.
+   *
+   * @param {String} href
+   */
+  remove: async (href) => {
+    await redis.srem(ONFIDO_CHECKS_CHANNEL, href);
+  }
+};
 
 module.exports = {
   addToQueue,
@@ -165,7 +202,6 @@ module.exports = {
   withQueue,
   confirmTx,
   rejectTx,
-  removeOnfidoCheck,
-  subscribeOnfidoCheck,
-  verifyOnfidoCheck
+
+  onfido
 };

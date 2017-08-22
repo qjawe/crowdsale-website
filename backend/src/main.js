@@ -69,20 +69,20 @@ async function main () {
     }
 
     if (action === 'check.completed') {
-      console.warn('check completed', object.href);
-      await store.verifyOnfidoCheck(object.href);
+      console.warn('check completed', type, object);
+      await store.onfido.verify(object.href);
     }
 
     ctx.body = 'OK';
   });
 
-  router.get('/onfido/:applicantId/check/:checkId', async (ctx, next) => {
-    const { applicantId, checkId } = ctx.params;
+  router.get('/onfido/:address', async (ctx, next) => {
+    const { address } = ctx.params;
 
     try {
-      const { pending, valid } = await Onfido.checkStatus(applicantId, checkId);
+      const { pending, success } = await store.onfido.get(address);
 
-      ctx.body = { pending, valid };
+      ctx.body = { pending, success };
     } catch (error) {
       ctx.status = 400;
       ctx.body = error.message;

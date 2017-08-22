@@ -31,16 +31,21 @@ class QueueConsumer {
     this._certifier = new Certifier(this._connector, this._sale.values.certifier);
 
     store.subscribeOnfidoCheck((href) => this.verify(href));
+    console.warn('Started consumer !');
   }
 
   async verify (href) {
     try {
-      const address = await onfido.verify(href);
+      const { address, valid } = await onfido.verify(href);
 
-      console.warn('certifying', address);
-      const tx = await this._certifier.certify(address);
+      if (valid) {
+        console.warn('certifying', address);
+        const tx = await this._certifier.certify(address);
 
-      await this._connector.transactionReceipt(tx);
+        await this._connector.transactionReceipt(tx);
+      }
+
+      store.onfido.set(address, { pending: false, success: valid });
     } catch (error) {
       console.error(error);
     } finally {
@@ -54,8 +59,6 @@ class QueueConsumer {
     }
 
     this._updateLock = true;
-
-    console.log('New block, checking queue...');
 
     const connector = this._connector;
 
@@ -95,7 +98,9 @@ class QueueConsumer {
 
     this._updateLock = false;
 
-    console.log(`Sent ${sent} transactions from the queue`);
+    if (sent > 0) {
+      console.log(`Sent ${sent} transactions from the queue`);
+    }
   }
 }
 

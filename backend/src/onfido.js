@@ -117,7 +117,7 @@ async function verify (href) {
 
   const address = addressTag.replace(/^address:/, '');
 
-  return address;
+  return { address, valid: status.valid };
 }
 
 module.exports = {
