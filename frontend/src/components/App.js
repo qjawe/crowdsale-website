@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { Container, Header } from 'semantic-ui-react';
-import 'parity-reactive-ui';
 
 import Auction from './Auction';
 import Sale from './Sale';

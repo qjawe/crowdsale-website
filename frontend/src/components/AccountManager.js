@@ -81,7 +81,7 @@ export default class AccountManager extends Component {
 
   renderBalances () {
     const { balances } = accountStore;
-    const { currentPrice } = auctionStore;
+    const { currentPrice, DIVISOR } = auctionStore;
 
     if (!balances.eth && !balances.accounted) {
       return null;
@@ -97,7 +97,7 @@ export default class AccountManager extends Component {
         </Label>
 
         <Label>
-          >= {balances.accounted.div(currentPrice).toFormat(3)}
+          >= {balances.accounted.div(currentPrice).div(DIVISOR).toFormat(3)}
           <Label.Detail>
             DOT
           </Label.Detail>

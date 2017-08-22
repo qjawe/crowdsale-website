@@ -4,11 +4,14 @@ import { Button, Container, Dimmer, Divider, Header, Icon, Loader, Segment } fro
 
 import AccountManager from './AccountManager';
 import Buy from './Buy';
+import CurrentTx from './CurrentTx';
+import PendingTx from './PendingTx';
 import Terms from './Terms';
 import WalletCreator from './WalletCreator';
 
 import accountStore from '../stores/account.store';
 import appStore, { STEPS } from '../stores/app.store';
+import buyStore from '../stores/buy.store';
 import certifierStore from '../stores/certifier.store';
 
 @observer
@@ -37,11 +40,12 @@ export default class Sale extends Component {
   }
 
   renderBuy () {
+    const { currentTx, pendingTx } = buyStore;
     const { error, pending } = certifierStore;
 
     return (
       <Segment basic>
-        <Dimmer active={pending || !!error} inverted>
+        <Dimmer active={!!currentTx || !!pendingTx || pending || !!error} inverted>
           {this.renderDimmerContent()}
         </Dimmer>
 
@@ -53,6 +57,20 @@ export default class Sale extends Component {
   }
 
   renderDimmerContent () {
+    const { currentTx, pendingTx } = buyStore;
+
+    if (pendingTx) {
+      return (
+        <PendingTx />
+      );
+    }
+
+    if (currentTx) {
+      return (
+        <CurrentTx />
+      );
+    }
+
     const { error, onfido, pending } = certifierStore;
 
     if (pending) {

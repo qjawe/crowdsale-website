@@ -1,9 +1,17 @@
 import { observer } from 'mobx-react';
-import PropTypes from 'proptypes';
+import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import Moment from 'react-moment';
 import styled, { keyframes } from 'styled-components';
-import * as d3 from 'd3';
+import {
+  curveLinear as d3CurveLinear,
+  line as d3Line,
+  scalePow as d3ScalePow,
+  scaleTime as d3ScaleTime,
+  select as d3Select,
+  zoomTransform as d3ZoomTransform,
+  zoom as d3Zoom
+} from 'd3/index';
 
 import auctionStore from '../../stores/auction.store';
 
@@ -182,10 +190,10 @@ DotPair.defaultProps = {
 
 const Line = (props) => {
   const { color, dashed, from, to, scales, width } = props;
-  const line = d3.line()
+  const line = d3Line()
     .x((datum) => scales[0](datum.x))
     .y((datum) => scales[1](datum.y))
-    .curve(d3.curveLinear);
+    .curve(d3CurveLinear);
 
   return (
     <path
@@ -253,8 +261,8 @@ class CustomChart extends Component {
       return null;
     }
 
-    const { width } = this.containerRef.getBoundingClientRect();
-    const height = width * 0.75;
+    const width = this.containerRef.getBoundingClientRect().width - 100;
+    const height = width * 0.85;
 
     this.setState({ size: { width, height } }, () => {
       this.computeScales();
@@ -286,11 +294,11 @@ class CustomChart extends Component {
     const chartWidth = width - margins.left - margins.right;
     const chartHeight = height - margins.top - margins.bottom;
 
-    let xScale = d3.scaleTime()
+    let xScale = d3ScaleTime()
       .domain(xDomain)
       .range([ 0, chartWidth ]);
 
-    const yScale = d3.scalePow()
+    const yScale = d3ScalePow()
       .exponent(0.15)
       .domain(yDomain)
       .range([ 0, chartHeight ]);
@@ -314,15 +322,15 @@ class CustomChart extends Component {
 
     const { width, height, margins } = chart;
 
-    const targetLine = d3.line()
+    const targetLine = d3Line()
       .x((datum) => xScale(datum.time))
       .y((datum) => yScale(datum.raised))
-      .curve(d3.curveLinear);
+      .curve(d3CurveLinear);
 
-    const raisedLine = d3.line()
+    const raisedLine = d3Line()
       .x((datum) => xScale(datum.time))
       .y((datum) => yScale(datum.target))
-      .curve(d3.curveLinear);
+      .curve(d3CurveLinear);
 
     return (
       <div ref={this.setContainerRef}>
@@ -505,7 +513,7 @@ class CustomChart extends Component {
           left
         }}>
           <PointedLabel>
-            <Moment format='L LT'>{datum.time}</Moment>
+            <Moment format='MMM D LT'>{datum.time}</Moment>
           </PointedLabel>
         </PointedLabelContainer>
 
@@ -581,22 +589,21 @@ class CustomChart extends Component {
   setSVGRef = (svgRef) => {
     const { width, height } = this.state.chart;
 
-    const zoom = d3
-      .zoom()
+    const zoom = d3Zoom()
       .scaleExtent([ 1, Infinity ])
       .translateExtent([[0, 0], [width, height]])
       .extent([[0, 0], [width, height]])
       .on('zoom', this.zoomed);
 
     this.svgRef = svgRef;
-    this.d3SvgRef = d3.select(this.svgRef);
+    this.d3SvgRef = d3Select(this.svgRef);
 
     this.d3SvgRef
       .call(zoom);
   };
 
   zoomed = () => {
-    const transform = d3.zoomTransform(this.d3SvgRef.node());
+    const transform = d3ZoomTransform(this.d3SvgRef.node());
 
     this.setState({ transform }, () => {
       this.computeScales();

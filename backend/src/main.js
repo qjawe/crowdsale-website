@@ -5,6 +5,7 @@
 
 const config = require('config');
 const EthereumTx = require('ethereumjs-tx');
+const EthereumUtil = require('ethereumjs-util');
 const Koa = require('koa');
 const bodyParser = require('koa-bodyparser');
 const etag = require('koa-etag');
@@ -19,12 +20,22 @@ const Sale = require('./contracts/sale');
 const redis = require('./redis');
 
 const store = require('./store');
-const { buf2hex, buf2big, big2hex, int2date } = require('./utils');
+const { buf2add, buf2hex, buf2big, big2hex, int2date } = require('./utils');
 
 const app = new Koa();
 const router = new Router();
 
 const connector = new ParityConnector(config.get('nodeWs'));
+
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    ctx.status = err.status || 500;
+    ctx.body = err.message;
+    ctx.app.emit('error', err, ctx);
+  }
+});
 
 main();
 
@@ -126,6 +137,42 @@ async function main () {
     ctx.body = data;
   });
 
+  router.get('/address/:address/pending', async (ctx, next) => {
+    const address = ctx.params.address.toLowerCase();
+    const pending = await store.getFromQueue(address);
+
+    ctx.body = { pending };
+  });
+
+  // Signature should be the signature of the hash of the following
+  // message : `delete_tx_:txHash`, eg. `delete_tx_0x123...789`
+  router.delete('/address/:address/pending/:signature', async (ctx, next) => {
+    const { v, r, s } = EthereumUtil.fromRpcSig(ctx.params.signature);
+    const address = ctx.params.address.toLowerCase();
+    const pending = await store.getFromQueue(address);
+
+    if (!pending || !pending.hash) {
+      return;
+    }
+
+    if (!EthereumUtil.isValidSignature(v, r, s)) {
+      throw new Error('invalid signature');
+    }
+
+    const message = Buffer.from(`delete_tx_${pending.hash}`);
+    const msgHash = EthereumUtil.hashPersonalMessage(message);
+    const publicKey = EthereumUtil.ecrecover(msgHash, v, r, s);
+    const signAddress = buf2add(EthereumUtil.pubToAddress(publicKey)).toLowerCase();
+
+    if (signAddress !== address) {
+      throw new Error('wrong message signature');
+    }
+
+    await store.rejectTx(address, '-1', 'cancelled by user');
+
+    ctx.body = { result: 'ok' };
+  });
+
   router.get('/address/:address', async (ctx, next) => {
     const { address } = ctx.params;
     const [ eth, [ value ], [ certified ] ] = await Promise.all([
@@ -188,7 +235,7 @@ async function main () {
     if (balance.cmp(requiredEth) < 0) {
       const hash = buf2hex(txObj.hash(true));
 
-      await store.addToQueue(from, tx, requiredEth);
+      await store.addToQueue(from, tx, hash, requiredEth);
 
       ctx.body = { hash, requiredEth: big2hex(requiredEth.sub(balance)) };
       return;
