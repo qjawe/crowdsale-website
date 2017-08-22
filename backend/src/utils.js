@@ -42,6 +42,12 @@ function hex2buf (hex) {
   return Buffer.from(hex.substring(2), 'hex');
 }
 
+function buf2add (value) {
+  const hex = '0x' + value.toString('hex').padStart(40, 0);
+
+  return toChecksumAddress(hex);
+}
+
 function buf2hex (buf) {
   return `0x${buf.toString('hex')}`;
 }
@@ -81,7 +87,7 @@ function ejs2val (value, type) {
   }
 
   if (/address/.test(type)) {
-    return '0x' + value.toString('hex');
+    return buf2add(value);
   }
 
   return value;
@@ -89,6 +95,10 @@ function ejs2val (value, type) {
 
 function toChecksumAddress (_address) {
   const address = (_address || '').toLowerCase();
+
+  if (address.length !== 42) {
+    throw new Error('address must be 20 bytes long');
+  }
 
   const hashBuffer = keccak('keccak256')
               .update(Buffer.from(address.slice(-40)))
@@ -98,13 +108,16 @@ function toChecksumAddress (_address) {
   let result = '0x';
 
   for (let n = 0; n < 40; n++) {
-    result = `${result}${parseInt(hash[n], 16) > 7 ? address[n + 2].toUpperCase() : address[n + 2]}`;
+    result += parseInt(hash[n], 16) > 7
+      ? address[n + 2].toUpperCase()
+      : address[n + 2];
   }
 
   return result;
 }
 
 module.exports = {
+  buf2add,
   big2hex,
   buf2big,
   buf2hex,

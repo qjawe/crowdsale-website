@@ -12,6 +12,24 @@ export async function get (url) {
   return response.json();
 }
 
+export async function del (url, body) {
+  let response = await fetch(url, {
+    method: 'delete',
+    body: JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+
+    throw new Error(text);
+  }
+
+  return response.json();
+}
+
 export async function post (url, body) {
   let response = await fetch(url, {
     method: 'post',

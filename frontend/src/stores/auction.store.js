@@ -210,6 +210,10 @@ class AuctionStore {
       totalReceived
     } = status;
 
+    if (block && block.number) {
+      block.number = new BigNumber(block.number);
+    }
+
     // Only update the chart when the price updates
     const nextTotalAccounted = new BigNumber(totalAccounted);
     const update = !nextTotalAccounted.eq(this.totalAccounted);
@@ -224,7 +228,7 @@ class AuctionStore {
     this.connected = connected;
     this.contractAddress = contractAddress;
 
-    if (update) {
+    if (update || !this.chart.data) {
       this.updateChartData();
     }
   }
@@ -299,7 +303,7 @@ class AuctionStore {
 
     data.push({
       time: new Date(now.getTime() + dateInterval),
-      raised: raisedData[0].value,
+      raised: this.totalAccounted,
       target: nowTarget
     });
 

@@ -1,15 +1,13 @@
 import Util from 'ethereumjs-util';
 import Wallet from 'ethereumjs-wallet';
-import { action, observable } from 'mobx';
+import { action, observe, observable } from 'mobx';
 import store from 'store';
 
 import appStore from './app.store';
+import auctionStore from './auction.store';
 import backend from '../backend';
 
 const WALLET_LS_KEY = '__crowdsale::wallet';
-const ACCOUNT_INFO_REFRESH_TIMER = 2500;
-
-let accountInfoTimeoutId = null;
 
 class AccountStore {
   @observable address = '';
@@ -23,6 +21,11 @@ class AccountStore {
 
   constructor () {
     this.loadWallet();
+
+    // Fetch the pending transaction on new block
+    observe(auctionStore, 'block', () => {
+      this.updateAccountInfo();
+    });
   }
 
   load (file) {
@@ -75,19 +78,6 @@ class AccountStore {
         return resolve(v3Wallet);
       }, 50);
     });
-  }
-
-  async pollAccountInfo () {
-    if (!this.address) {
-      return;
-    }
-
-    clearTimeout(accountInfoTimeoutId);
-    await this.updateAccountInfo();
-
-    accountInfoTimeoutId = setTimeout(() => {
-      this.pollAccountInfo();
-    }, ACCOUNT_INFO_REFRESH_TIMER);
   }
 
   read (file) {
@@ -145,7 +135,7 @@ class AccountStore {
     this.unlocked = unlocked;
 
     if (unlocked) {
-      this.pollAccountInfo();
+      this.updateAccountInfo();
     }
   }
 
@@ -156,6 +146,19 @@ class AccountStore {
     }
 
     this.wallet = wallet;
+  }
+
+  signMessage (message) {
+    const { privateKey, unlocked } = this;
+
+    if (!privateKey || !unlocked) {
+      throw new Error('no unlocked account');
+    }
+
+    const msgHash = Util.hashPersonalMessage(Buffer.from(message));
+    const { v, r, s } = Util.ecsign(msgHash, privateKey);
+
+    return Util.toRpcSig(v, r, s);
   }
 
   unlock (password, rememberWallet = false) {
@@ -194,6 +197,10 @@ class AccountStore {
   }
 
   async updateAccountInfo () {
+    if (!this.address || !this.unlocked) {
+      return;
+    }
+
     const { eth, accounted, certified } = await backend.getAddressInfo(this.address);
 
     this.setBalances({ eth, accounted });

@@ -7,20 +7,41 @@ const chunk = require('lodash.chunk');
 const redis = require('./redis');
 const { big2hex, hex2big } = require('./utils');
 
+const QUEUE_NAME = 'queue';
+
 /**
  * Add transaction to the queue
  *
  * @param  {String}    address     `0x` prefixed
+ * @param  {String}    hash        `0x` prefixed transaction hash
  * @param  {String}    tx          `0x` prefixed signed transaction
  * @param  {BigNumber} requiredEth Required ETH calculated from value + gas
  *
  * @return {Promise<String>} resolves to 'OK' on success
  */
-async function addToQueue (address, tx, requiredEth) {
-  return redis.hset('queue', address, JSON.stringify({
+async function addToQueue (address, tx, hash, requiredEth) {
+  return redis.hset(QUEUE_NAME, address, JSON.stringify({
     tx,
+    hash,
     required: big2hex(requiredEth)
   }));
+}
+
+/**
+ * Get a transaction from the queue
+ *
+ * @param  {String} address           `0x` prefixed
+ *
+ * @return {Promise<null|Object>}     `null` if no entry for this address,
+ *                                    or the transaction Object
+ */
+async function getFromQueue (address) {
+  return redis.hget(QUEUE_NAME, address)
+    .then((result) => {
+      return result
+        ? JSON.parse(result)
+        : null;
+    });
 }
 
 /**
@@ -41,7 +62,7 @@ async function withQueue (callback) {
 
   do {
     // Get a batch of responses
-    const [cursor, res] = await redis.hscan('queue', next);
+    const [cursor, res] = await redis.hscan(QUEUE_NAME, next);
 
     next = Number(cursor);
 
@@ -68,7 +89,7 @@ async function withQueue (callback) {
  * @return {Promise<String>} resolves to 'OK' on success
  */
 async function confirmTx (address, nonce, hash, value) {
-  await redis.hdel('queue', address);
+  await redis.hdel(QUEUE_NAME, address);
 
   return redis.set(`done:${address}:${nonce}`, JSON.stringify({
     hash,
@@ -86,7 +107,7 @@ async function confirmTx (address, nonce, hash, value) {
  * @return {Promise<String>} resolves to 'OK' on success
  */
 async function rejectTx (address, nonce, reason) {
-  await redis.hdel('queue', address);
+  await redis.hdel(QUEUE_NAME, address);
 
   return redis.set(`done:${address}:${nonce}`, JSON.stringify({
     error: reason
@@ -95,6 +116,7 @@ async function rejectTx (address, nonce, reason) {
 
 module.exports = {
   addToQueue,
+  getFromQueue,
   withQueue,
   confirmTx,
   rejectTx

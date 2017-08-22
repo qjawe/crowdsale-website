@@ -261,8 +261,8 @@ class CustomChart extends Component {
       return null;
     }
 
-    const { width } = this.containerRef.getBoundingClientRect();
-    const height = width * 0.75;
+    const width = this.containerRef.getBoundingClientRect().width - 100;
+    const height = width * 0.85;
 
     this.setState({ size: { width, height } }, () => {
       this.computeScales();
@@ -513,7 +513,7 @@ class CustomChart extends Component {
           left
         }}>
           <PointedLabel>
-            <Moment format='L LT'>{datum.time}</Moment>
+            <Moment format='MMM D LT'>{datum.time}</Moment>
           </PointedLabel>
         </PointedLabelContainer>
 

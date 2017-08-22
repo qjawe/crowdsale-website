@@ -19,7 +19,7 @@ class QueueConsumer {
   constructor (wsUrl, contractAddress) {
     this._updateLock = false;
     this._connector = new ParityConnector(wsUrl);
-    this._sale = new Sale(this._connector.transport, contractAddress);
+    this._sale = new Sale(this._connector, contractAddress);
 
     this._connector.on('block', () => this.update());
   }
@@ -62,6 +62,7 @@ class QueueConsumer {
 
         await store.confirmTx(address, nonce, hash, accepted);
       } catch (err) {
+        console.error(err);
         await store.rejectTx(address, nonce, err.message);
       }
 

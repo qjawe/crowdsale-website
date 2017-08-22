@@ -4,7 +4,8 @@ module.exports = {
     port: 4000
   },
   nodeWs: 'ws://127.0.0.1:8546/',
-  saleContract: '0x778E173cA5822777Aa7c37c83ee598ef38D774A3',
+  // saleContract: '0x778E173cA5822777Aa7c37c83ee598ef38D774A3',
+  saleContract: '0x1812C24112a96487435cb77e8fab92E2eAb212ea',
   onfido: {
     token: 'test_AQC7JrCe01PDsf6s8YGtg7aId5y2Mw0x'
   },

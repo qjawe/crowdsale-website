@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 
-import { get, post } from './utils';
+import { del, get, post } from './utils';
 
 class Backend {
   constructor (url) {
@@ -46,6 +46,10 @@ class Backend {
     });
   }
 
+  async deletePendingTx (address, sign) {
+    return await del(this.url(`/address/${address}/pending/${sign}`));
+  }
+
   async getAddressInfo (address) {
     const { eth, accounted, certified } = await get(this.url(`/address/${address}`));
 
@@ -54,6 +58,12 @@ class Backend {
       accounted: new BigNumber(accounted),
       certified
     };
+  }
+
+  async getPendingTx (address) {
+    const { pending } = await get(this.url(`/address/${address}/pending`));
+
+    return pending;
   }
 
   async getTx (txHash) {
