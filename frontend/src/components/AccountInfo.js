@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import PropTypes from 'proptypes';
+import PropTypes from 'prop-types';
 import { AccountIcon } from 'parity-reactive-ui';
 import { Button, Icon, Label, Popup } from 'semantic-ui-react';
 

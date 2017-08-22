@@ -1,6 +1,6 @@
 import FileSaver from 'file-saver';
 import { observer } from 'mobx-react';
-import PropTypes from 'proptypes';
+import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import { Button, Form, Grid, Header, Input, Segment, TextArea } from 'semantic-ui-react';
 import { phraseToWallet } from '@parity/ethkey.js';
