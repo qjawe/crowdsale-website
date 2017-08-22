@@ -4,6 +4,8 @@ const fetch = require('node-fetch');
 
 const { token } = config.get('onfido');
 
+const ONFIDO_URL_REGEX = /applicants\/([a-z0-9-]+)\/checks\/([a-z0-9-]+)$/i;
+
 async function _call (endpoint, method = 'GET', data = {}) {
   const body = method === 'POST'
     ? qs.stringify(data, { arrayFormat: 'brackets', encode: false })
@@ -88,9 +90,40 @@ async function createApplicant ({ country, firstName, lastName }) {
   return { applicantId: applicant.id, sdkToken: sdk.token };
 }
 
+/**
+ * Verify an URL onfido check and trigger the transaction to the
+ * Certifier contract if the check is successful
+ *
+ * @param {String} href in format: https://api.onfido.com/v2/applicants/<applicant-id>/checks/<check-id>
+ */
+async function verify (href) {
+  if (!ONFIDO_URL_REGEX.test(href)) {
+    throw new Error(`wrong onfido URL: ${href}`);
+  }
+
+  const [, applicantId, checkId] = ONFIDO_URL_REGEX.exec(href);
+  const status = checkStatus(applicantId, checkId);
+
+  if (status.pending) {
+    throw new Error(`onfido check is still pending (${href})`);
+  }
+
+  const { tags } = await getCheck(applicantId, checkId);
+  const addressTag = tags.find((tag) => /address/.test(tag));
+
+  if (!addressTag) {
+    throw new Error(`could not find an address for this applicant check (${applicantId}/${checkId})`);
+  }
+
+  const address = addressTag.replace(/^address:/, '');
+
+  return address;
+}
+
 module.exports = {
   checkStatus,
   createApplicant,
   createCheck,
-  getCheck
+  getCheck,
+  verify
 };

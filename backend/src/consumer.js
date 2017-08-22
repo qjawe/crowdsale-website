@@ -6,7 +6,9 @@
 const config = require('config');
 const EthereumTx = require('ethereumjs-tx');
 
+const Certifier = require('./contracts/certifier');
 const Sale = require('./contracts/sale');
+const onfido = require('./onfido');
 const store = require('./store');
 const ParityConnector = require('./parity');
 const { buf2hex } = require('./utils');
@@ -22,6 +24,28 @@ class QueueConsumer {
     this._sale = new Sale(this._connector, contractAddress);
 
     this._connector.on('block', () => this.update());
+    this._sale.update().then(() => this.init());
+  }
+
+  init () {
+    this._certifier = new Certifier(this._connector, this._sale.values.certifier);
+
+    store.subscribeOnfidoCheck((href) => this.verify(href));
+  }
+
+  async verify (href) {
+    try {
+      const address = await onfido.verify(href);
+
+      console.warn('certifying', address);
+      const tx = await this._certifier.certify(address);
+
+      await this._connector.transactionReceipt(tx);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      store.removeOnfidoCheck(href);
+    }
   }
 
   async update () {

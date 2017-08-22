@@ -69,6 +69,7 @@ async function main () {
     }
 
     if (action === 'check.completed') {
+      console.warn('check completed', object.href);
       await store.verifyOnfidoCheck(object.href);
     }
 
@@ -82,18 +83,6 @@ async function main () {
       const { pending, valid } = await Onfido.checkStatus(applicantId, checkId);
 
       ctx.body = { pending, valid };
-
-      // const { tags } = await Onfido.getCheck(applicantId, checkId);
-      // const addressTag = tags.find((tag) => /address/.test(tag));
-
-      // if (!addressTag) {
-      //   throw new Error(`Could not find an address for this applicant check (${applicantId}/${checkId})`);
-      // }
-
-      // const address = addressTag.replace(/^address:/, '');
-      // const tx = await certifier.certify(address);
-
-      // ctx.body = { valid, tx };
     } catch (error) {
       ctx.status = 400;
       ctx.body = error.message;
