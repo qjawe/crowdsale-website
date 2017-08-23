@@ -12,19 +12,19 @@ class Backend {
   }
 
   blockHash () {
-    return get(this.url('/block-hash'));
+    return get(this.url('/block/hash'));
   }
 
   sale () {
-    return get(this.url('/sale'));
+    return get(this.url('/auction/constants'));
   }
 
   status () {
-    return get(this.url('/'));
+    return get(this.url('/auction'));
   }
 
   async chartData () {
-    return await get(this.url('/chart-data'));
+    return await get(this.url('/auction/chart'));
   }
 
   async createCheck (applicantId, address) {
@@ -47,11 +47,11 @@ class Backend {
   }
 
   async deletePendingTx (address, sign) {
-    return await del(this.url(`/address/${address}/pending/${sign}`));
+    return await del(this.url(`/accounts/${address}/pending/${sign}`));
   }
 
   async getAddressInfo (address) {
-    const { eth, accounted, certified } = await get(this.url(`/address/${address}`));
+    const { eth, accounted, certified } = await get(this.url(`/accounts/${address}`));
 
     return {
       eth: new BigNumber(eth),
@@ -61,7 +61,7 @@ class Backend {
   }
 
   async getPendingTx (address) {
-    const { pending } = await get(this.url(`/address/${address}/pending`));
+    const { pending } = await get(this.url(`/accounts/${address}/pending`));
 
     return pending;
   }
@@ -73,7 +73,7 @@ class Backend {
   }
 
   async nonce (address) {
-    const { nonce } = await get(this.url(`/${address}/nonce`));
+    const { nonce } = await get(this.url(`/accounts/${address}/nonce`));
 
     return nonce;
   }
