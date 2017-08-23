@@ -10,6 +10,7 @@ import backend from '../backend';
 import { int2hex, hex2buf, buildABIData } from '../utils';
 
 const BUYIN_SIG = '0xd0280037';
+
 export const BLOCKS_CONFIRMATIONS = 12;
 
 class BuyStore {

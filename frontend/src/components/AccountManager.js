@@ -135,17 +135,17 @@ export default class AccountManager extends Component {
 
         {
           !wallet.fromLS
-          ? (
-            <div>
-              <Checkbox
-                checked={rememberWallet}
-                label='Remember my password-encrypted wallet'
-                onChange={this.handleRememberWalletChange}
-                style={{ marginBottom: '1em' }}
-              />
-            </div>
-          )
-          : null
+            ? (
+              <div>
+                <Checkbox
+                  checked={rememberWallet}
+                  label='Remember my password-encrypted wallet'
+                  onChange={this.handleRememberWalletChange}
+                  style={{ marginBottom: '1em' }}
+                />
+              </div>
+            )
+            : null
         }
 
         <Input

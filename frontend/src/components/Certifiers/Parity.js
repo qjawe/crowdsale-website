@@ -116,8 +116,8 @@ export default class ParityCertifier extends Component {
           >
             {
               loading
-              ? 'Loading...'
-              : 'Next'
+                ? 'Loading...'
+                : 'Next'
             }
           </Button>
         </Modal.Actions>

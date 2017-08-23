@@ -40,8 +40,8 @@ export default class Certifier extends Component {
         <Button
           content={
             pending
-            ? 'Verifying your identity...'
-            : 'Verify your identity'
+              ? 'Verifying your identity...'
+              : 'Verify your identity'
           }
           disabled={disabled || pending}
           onClick={this.handleCertify}

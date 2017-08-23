@@ -5,7 +5,6 @@ import store from 'store';
 import accountStore from './account.store';
 import backend from '../backend';
 
-const LS_KEY = '__crowdsale::certifier';
 const CHECK_STATUS_INTERVAL = 2000;
 
 class CertifierStore {

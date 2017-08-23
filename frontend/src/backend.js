@@ -15,39 +15,34 @@ class Backend {
     return get(this.url('/block/hash'));
   }
 
-  sale () {
-    return get(this.url('/auction/constants'));
-  }
-
   status () {
     return get(this.url('/auction'));
+  }
+
+  sale () {
+    return get(this.url('/auction/constants'));
   }
 
   async chartData () {
     return await get(this.url('/auction/chart'));
   }
 
-  async createCheck (applicantId, address) {
-    return await post(this.url(`/onfido/${applicantId}/check`), {
-      address
-    });
+  async checkStatus (address) {
+    return await get(this.url(`/onfido/${address}`));
   }
 
-  async checkStatus ({ applicantId, checkId }) {
-    return await get(this.url(`/onfido/${applicantId}/check/${checkId}`));
-  }
-
-  async createApplicant ({ country, firstName, lastName, stoken }) {
-    return await post(this.url('/onfido'), {
+  async createApplicant (address, { country, firstName, lastName, stoken }) {
+    return await post(this.url(`/onfido/${address}/applicant`), {
       country,
       firstName,
       lastName,
+      signature,
       stoken
     });
   }
 
-  async deletePendingTx (address, sign) {
-    return await del(this.url(`/accounts/${address}/pending/${sign}`));
+  async createCheck (address) {
+    return await post(this.url(`/onfido/${address}/check`));
   }
 
   async getAddressInfo (address) {
@@ -60,22 +55,26 @@ class Backend {
     };
   }
 
+  async nonce (address) {
+    const { nonce } = await get(this.url(`/accounts/${address}/nonce`));
+
+    return nonce;
+  }
+
   async getPendingTx (address) {
     const { pending } = await get(this.url(`/accounts/${address}/pending`));
 
     return pending;
   }
 
+  async deletePendingTx (address, sign) {
+    return await del(this.url(`/accounts/${address}/pending/${sign}`));
+  }
+
   async getTx (txHash) {
     const { transaction } = await get(this.url(`/tx/${txHash}`));
 
     return transaction;
-  }
-
-  async nonce (address) {
-    const { nonce } = await get(this.url(`/accounts/${address}/nonce`));
-
-    return nonce;
   }
 
   async sendTx (tx) {
