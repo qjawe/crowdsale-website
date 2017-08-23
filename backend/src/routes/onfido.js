@@ -30,25 +30,10 @@ function get () {
 
     if (action === 'check.completed') {
       console.warn('check completed', type, object);
-      await store.onfido.verify(object.href);
+      await store.Onfido.verify(object.href);
     }
 
     ctx.body = 'OK';
-  });
-
-  router.get('/:address', async (ctx, next) => {
-    const { address } = ctx.params;
-    const { pending, success } = await store.onfido.get(address);
-
-    ctx.body = { pending, success };
-  });
-
-  router.post('/:applicantId/check', async (ctx, next) => {
-    const { applicantId } = ctx.params;
-    const { address } = ctx.request.body;
-    const result = await Onfido.createCheck(applicantId, address);
-
-    ctx.body = result;
   });
 
   router.post('/', async (ctx, next) => {
@@ -59,6 +44,21 @@ function get () {
     const { applicantId, sdkToken } = await Onfido.createApplicant({ country, firstName, lastName });
 
     ctx.body = { applicantId, sdkToken };
+  });
+
+  router.get('/:address', async (ctx, next) => {
+    const { address } = ctx.params;
+    const { pending, success } = await store.Onfido.get(address);
+
+    ctx.body = { pending, success };
+  });
+
+  router.post('/:applicantId/check', async (ctx, next) => {
+    const { applicantId } = ctx.params;
+    const { address } = ctx.request.body;
+    const result = await Onfido.createCheck(applicantId, address);
+
+    ctx.body = result;
   });
 
   return router;

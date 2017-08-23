@@ -7,7 +7,7 @@ const BigNumber = require('bignumber.js');
 const { uniq } = require('lodash');
 
 const { SecondPriceAuction } = require('../abis');
-const Contract = require('../contract');
+const Contract = require('../api/contract');
 const { int2date } = require('../utils');
 
 const STATICS = [

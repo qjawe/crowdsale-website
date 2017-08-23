@@ -56,7 +56,7 @@ function get ({ sale, connector, certifier }) {
     if (balance.cmp(requiredEth) < 0) {
       const hash = buf2hex(txObj.hash(true));
 
-      await store.addToQueue(from, tx, hash, requiredEth);
+      await store.Transactions.set(from, tx, hash, requiredEth);
 
       ctx.body = { hash, requiredEth: big2hex(requiredEth.sub(balance)) };
       return;

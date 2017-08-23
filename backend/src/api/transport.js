@@ -4,7 +4,8 @@
 'use strict';
 
 const WebSocket = require('ws');
-const { hex2int, pause } = require('./utils');
+
+const { hex2int, pause } = require('../utils');
 
 class Subscription {
   /**

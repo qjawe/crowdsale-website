@@ -10,7 +10,7 @@ const EthereumTx = require('ethereumjs-tx');
 const Wallet = require('ethereumjs-wallet');
 
 const { MultiCertifier } = require('../abis');
-const Contract = require('../contract');
+const Contract = require('../api/contract');
 
 const gasPrice = config.get('gasPrice');
 const { filename, password } = config.get('account');

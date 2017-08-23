@@ -3,9 +3,10 @@
 
 'use strict';
 
-const RpcTransport = require('./transport');
-const { hex2big, hex2date } = require('./utils');
 const EventEmitter = require('events');
+
+const RpcTransport = require('./transport');
+const { hex2big, hex2date } = require('../utils');
 
 class ParityConnector extends EventEmitter {
   /**

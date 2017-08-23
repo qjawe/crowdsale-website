@@ -10,7 +10,7 @@ const Certifier = require('./contracts/certifier');
 const Sale = require('./contracts/sale');
 const onfido = require('./onfido');
 const store = require('./store');
-const ParityConnector = require('./parity');
+const ParityConnector = require('./api/parity');
 const { buf2hex } = require('./utils');
 
 class QueueConsumer {
@@ -30,7 +30,7 @@ class QueueConsumer {
   init () {
     this._certifier = new Certifier(this._connector, this._sale.values.certifier);
 
-    store.subscribeOnfidoCheck((href) => this.verify(href));
+    store.Onfido.subscribe((href) => this.verify(href));
     console.warn('Started consumer !');
   }
 
@@ -45,11 +45,11 @@ class QueueConsumer {
         await this._connector.transactionReceipt(tx);
       }
 
-      store.onfido.set(address, { pending: false, success: valid });
+      store.Onfido.set(address, { pending: false, success: valid });
     } catch (error) {
       console.error(error);
     } finally {
-      store.removeOnfidoCheck(href);
+      store.Onfido.remove(href);
     }
   }
 
@@ -64,7 +64,7 @@ class QueueConsumer {
 
     let sent = 0;
 
-    await store.withQueue(async (address, tx, required) => {
+    await store.Transactions.scan(async (address, tx, required) => {
       const balance = await connector.balance(address);
 
       if (balance.lt(required)) {
@@ -87,10 +87,10 @@ class QueueConsumer {
 
         const { accepted } = buyinLog.params;
 
-        await store.confirmTx(address, nonce, hash, accepted);
+        await store.Transactions.confirm(address, nonce, hash, accepted);
       } catch (err) {
         console.error(err);
-        await store.rejectTx(address, nonce, err.message);
+        await store.Transactions.reject(address, nonce, err.message);
       }
 
       sent += 1;

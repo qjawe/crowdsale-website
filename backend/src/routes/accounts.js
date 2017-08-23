@@ -40,7 +40,7 @@ function get ({ sale, connector, certifier }) {
 
   router.get('/:address/pending', async (ctx, next) => {
     const address = ctx.params.address.toLowerCase();
-    const pending = await store.getFromQueue(address);
+    const pending = await store.Transactions.get(address);
 
     ctx.body = { pending };
   });
@@ -50,7 +50,7 @@ function get ({ sale, connector, certifier }) {
   router.del('/:address/pending/:signature', async (ctx, next) => {
     const { v, r, s } = EthereumUtil.fromRpcSig(ctx.params.signature);
     const address = ctx.params.address.toLowerCase();
-    const pending = await store.getFromQueue(address);
+    const pending = await store.Transactions.get(address);
 
     if (!pending || !pending.hash) {
       return;
@@ -69,7 +69,7 @@ function get ({ sale, connector, certifier }) {
       return error(ctx, 400, 'Wrong message signature');
     }
 
-    await store.rejectTx(address, '-1', 'cancelled by user');
+    await store.Transactions.reject(address, '-1', 'cancelled by user');
 
     ctx.body = { result: 'ok' };
   });

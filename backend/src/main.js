@@ -10,7 +10,7 @@ const etag = require('koa-etag');
 const cors = require('kcors');
 
 const Certifier = require('./contracts/certifier');
-const ParityConnector = require('./parity');
+const ParityConnector = require('./api/parity');
 const Routes = require('./routes');
 const Sale = require('./contracts/sale');
 
