@@ -8,9 +8,11 @@ const Router = require('koa-router');
 const Onfido = require('../onfido');
 const Recaptcha = require('../recaptcha');
 const store = require('../store');
-const { error } = require('./utils');
+const { error, verifySignature } = require('./utils');
 
-function get () {
+const { ONFIDO_STATUS } = Onfido;
+
+function get ({ certifier }) {
   const router = new Router({
     prefix: '/onfido'
   });
@@ -29,36 +31,71 @@ function get () {
     }
 
     if (action === 'check.completed') {
-      console.warn('check completed', type, object);
-      await store.Onfido.verify(object.href);
+      console.warn('[WEBHOOK] Check completed', object.href);
+      await store.Onfido.push(object.href);
     }
 
     ctx.body = 'OK';
   });
 
-  router.post('/', async (ctx, next) => {
-    const { country, firstName, lastName, stoken } = ctx.request.body;
+  /**
+   * Get the current status of Onfido certification
+   * for the given address.
+   *
+   * The status can be unkown, created, pending or completed.
+   * The result is set if the status is completed, whether to
+   * success or fail.
+   */
+  router.get('/:address', async (ctx, next) => {
+    const { address } = ctx.params;
+    const stored = await store.Onfido.get(address) || {};
+
+    if (!stored.status) {
+      stored.status = ONFIDO_STATUS.UNKOWN;
+    }
+
+    const { status, result } = stored;
+
+    ctx.body = { status, result };
+  });
+
+  router.post('/:address/applicant', async (ctx, next) => {
+    const { address } = ctx.params;
+    const { country, firstName, lastName, signature, stoken } = ctx.request.body;
 
     await Recaptcha.validate(stoken);
 
+    try {
+      const message = `create_onfido_${firstName}.${lastName}@${country}`;
+
+      verifySignature(address, message, signature);
+    } catch (err) {
+      return error(ctx, 400, err.message);
+    }
+
     const { applicantId, sdkToken } = await Onfido.createApplicant({ country, firstName, lastName });
 
-    ctx.body = { applicantId, sdkToken };
+    // Store the applicant id in Redis
+    await store.Onfido.set(address, { status: ONFIDO_STATUS.CREATED, applicantId });
+
+    ctx.body = { sdkToken };
   });
 
-  router.get('/:address', async (ctx, next) => {
+  router.post('/:address/check', async (ctx, next) => {
     const { address } = ctx.params;
-    const { pending, success } = await store.Onfido.get(address);
+    const stored = await store.Onfido.get(address);
 
-    ctx.body = { pending, success };
-  });
+    if (!stored || stored.status !== ONFIDO_STATUS.CREATED || !stored.applicantId) {
+      return error(ctx, 400, 'No application has been created for this address');
+    }
 
-  router.post('/:applicantId/check', async (ctx, next) => {
-    const { applicantId } = ctx.params;
-    const { address } = ctx.request.body;
-    const result = await Onfido.createCheck(applicantId, address);
+    const { applicantId } = stored;
+    const { checkId } = await Onfido.createCheck(applicantId, address);
 
-    ctx.body = result;
+    // Store the applicant id in Redis
+    await store.Onfido.set(address, { status: ONFIDO_STATUS.PENDING, applicantId, checkId });
+
+    ctx.body = { result: 'ok' };
   });
 
   return router;

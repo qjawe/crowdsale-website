@@ -8,10 +8,12 @@ const EthereumTx = require('ethereumjs-tx');
 
 const Certifier = require('./contracts/certifier');
 const Sale = require('./contracts/sale');
-const onfido = require('./onfido');
+const Onfido = require('./onfido');
 const store = require('./store');
 const ParityConnector = require('./api/parity');
 const { buf2hex } = require('./utils');
+
+const { ONFIDO_STATUS } = Onfido;
 
 class QueueConsumer {
   static run (wsUrl, contractAddress) {
@@ -27,25 +29,33 @@ class QueueConsumer {
     this._sale.update().then(() => this.init());
   }
 
-  init () {
-    this._certifier = new Certifier(this._connector, this._sale.values.certifier);
+  async init () {
+    try {
+      this._certifier = new Certifier(this._connector, this._sale.values.certifier);
 
-    store.Onfido.subscribe((href) => this.verify(href));
-    console.warn('Started consumer !');
+      await store.Onfido.subscribe((href) => this.verify(href));
+      console.warn('Started consumer !');
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async verify (href) {
     try {
-      const { address, valid } = await onfido.verify(href);
+      console.warn('Verifying', href);
+      const { address, valid } = await Onfido.verify(href);
 
       if (valid) {
-        console.warn('certifying', address);
+        console.warn('Certifying', address);
         const tx = await this._certifier.certify(address);
 
         await this._connector.transactionReceipt(tx);
       }
 
-      store.Onfido.set(address, { pending: false, success: valid });
+      store.Onfido.set(address, {
+        status: ONFIDO_STATUS.COMPLETED,
+        result: valid ? 'success' : 'fail'
+      });
     } catch (error) {
       console.error(error);
     } finally {

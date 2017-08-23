@@ -7,9 +7,9 @@ const chunk = require('lodash.chunk');
 const redis = require('./redis');
 const { big2hex, hex2big } = require('./utils');
 
-const TXS_QUEUE = 'tx:queue';
-const ONFIDO_CHECKS = 'onfido:checks';
-const ONFIDO_CHECKS_CHANNEL = 'onfido-checks';
+const TXS_QUEUE = 'tx-queue';
+const ONFIDO_CHECKS = 'onfido-checks';
+const ONFIDO_CHECKS_CHANNEL = 'onfido-checks-channel';
 
 class Transactions {
   /**
@@ -127,7 +127,7 @@ class Onfido {
    * @return {Promise<Object|null>}
    */
   static async get (address) {
-    const data = redis.hget(ONFIDO_CHECKS, address);
+    const data = await redis.hget(ONFIDO_CHECKS, address.toLowerCase());
 
     if (!data) {
       return null;
@@ -150,7 +150,7 @@ class Onfido {
    * @return {Promise}
    */
   static async set (address, data) {
-    return redis.hset(ONFIDO_CHECKS, address, JSON.stringify(data));
+    return redis.hset(ONFIDO_CHECKS, address.toLowerCase(), JSON.stringify(data));
   }
 
   /**
@@ -183,7 +183,7 @@ class Onfido {
    *
    * @param {String} href in format: https://api.onfido.com/v2/applicants/<applicant-id>/checks/<check-id>
    */
-  static async verify (href) {
+  static async push (href) {
     await redis.sadd(ONFIDO_CHECKS_CHANNEL, href);
     await redis.publish(ONFIDO_CHECKS_CHANNEL, href);
   }

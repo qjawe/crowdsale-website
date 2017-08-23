@@ -3,12 +3,10 @@
 
 'use strict';
 
-const EthereumUtil = require('ethereumjs-util');
 const Router = require('koa-router');
 
 const store = require('../store');
-const { buf2add } = require('../utils');
-const { error } = require('./utils');
+const { error, verifySignature } = require('./utils');
 
 function get ({ sale, connector, certifier }) {
   const router = new Router({
@@ -48,29 +46,21 @@ function get ({ sale, connector, certifier }) {
   // Signature should be the signature of the hash of the following
   // message : `delete_tx_:txHash`, eg. `delete_tx_0x123...789`
   router.del('/:address/pending/:signature', async (ctx, next) => {
-    const { v, r, s } = EthereumUtil.fromRpcSig(ctx.params.signature);
-    const address = ctx.params.address.toLowerCase();
-    const pending = await store.Transactions.get(address);
+    const { address, signature } = ctx.params;
 
-    if (!pending || !pending.hash) {
-      return;
-    }
+    try {
+      const pending = await store.Transactions.get(address);
 
-    if (!EthereumUtil.isValidSignature(v, r, s)) {
-      return error(ctx, 400, 'Invalid signature');
-    }
+      if (!pending || !pending.hash) {
+        throw new Error('No pending transaction to delete');
+      }
 
-    const message = Buffer.from(`delete_tx_${pending.hash}`);
-    const msgHash = EthereumUtil.hashPersonalMessage(message);
-    const publicKey = EthereumUtil.ecrecover(msgHash, v, r, s);
-    const signAddress = buf2add(EthereumUtil.pubToAddress(publicKey)).toLowerCase();
-
-    if (signAddress !== address) {
-      return error(ctx, 400, 'Wrong message signature');
+      verifySignature(address, `delete_tx_${pending.hash}`, signature);
+    } catch (err) {
+      return error(ctx, 400, err.message);
     }
 
     await store.Transactions.reject(address, '-1', 'cancelled by user');
-
     ctx.body = { result: 'ok' };
   });
 

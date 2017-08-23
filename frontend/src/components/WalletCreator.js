@@ -14,10 +14,10 @@ import appStore from '../stores/app.store';
 const PHRASE_ACK_CONTENT = 'I confirm I have written down my recovery phrase';
 
 const STEPS = {
-  PASSWORD: Symbol(),
-  WRITE_RECOVERY: Symbol(),
-  REPEAT_RECOVERY: Symbol(),
-  DOWNLOAD: Symbol()
+  PASSWORD: Symbol('password'),
+  WRITE_RECOVERY: Symbol('write-recovery'),
+  REPEAT_RECOVERY: Symbol('repeat-recovery'),
+  DOWNLOAD: Symbol('download')
 };
 
 const stepStyle = {

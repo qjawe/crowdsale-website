@@ -4,6 +4,13 @@ const fetch = require('node-fetch');
 
 const { token } = config.get('onfido');
 
+const ONFIDO_STATUS = {
+  UNKOWN: 'unkown',
+  CREATED: 'created',
+  PENDING: 'pending',
+  COMPLETED: 'completed'
+};
+
 const ONFIDO_URL_REGEX = /applicants\/([a-z0-9-]+)\/checks\/([a-z0-9-]+)$/i;
 
 async function _call (endpoint, method = 'GET', data = {}) {
@@ -72,7 +79,7 @@ async function createCheck (applicantId, address) {
     tags: [ `address:${address}` ]
   });
 
-  return { id: check.id };
+  return { checkId: check.id };
 }
 
 async function createApplicant ({ country, firstName, lastName }) {
@@ -102,7 +109,7 @@ async function verify (href) {
   }
 
   const [, applicantId, checkId] = ONFIDO_URL_REGEX.exec(href);
-  const status = checkStatus(applicantId, checkId);
+  const status = await checkStatus(applicantId, checkId);
 
   if (status.pending) {
     throw new Error(`onfido check is still pending (${href})`);
@@ -125,5 +132,7 @@ module.exports = {
   createApplicant,
   createCheck,
   getCheck,
-  verify
+  verify,
+
+  ONFIDO_STATUS
 };

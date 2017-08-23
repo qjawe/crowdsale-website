@@ -9,9 +9,9 @@ import Certifiers from './Certifiers';
 import certifierStore from '../stores/certifier.store';
 
 const STEPS = {
-  HOME: Symbol(),
-  VERIFY_WITH_KRAKEN: Symbol(),
-  VERIFY_WITH_PARITY: Symbol()
+  HOME: Symbol('home'),
+  VERIFY_WITH_KRAKEN: Symbol('verify-kraken'),
+  VERIFY_WITH_PARITY: Symbol('verify-parity')
 };
 
 @observer

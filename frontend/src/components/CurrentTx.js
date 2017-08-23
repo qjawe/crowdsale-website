@@ -1,9 +1,7 @@
-import { range } from 'lodash';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import { Button, Container, Header, Progress, Segment } from 'semantic-ui-react';
 
-import auctionStore from '../stores/auction.store';
 import buyStore, { BLOCKS_CONFIRMATIONS } from '../stores/buy.store';
 
 @observer

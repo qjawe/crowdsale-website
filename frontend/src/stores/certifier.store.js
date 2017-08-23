@@ -7,16 +7,25 @@ import backend from '../backend';
 
 const CHECK_STATUS_INTERVAL = 2000;
 
+const ONFIDO_STATUS = {
+  UNKOWN: 'unkown',
+  CREATED: 'created',
+  PENDING: 'pending',
+  COMPLETED: 'completed'
+};
+
 class CertifierStore {
   @observable country = '';
   @observable error = null;
   @observable firstName = '';
   @observable lastName = '';
   @observable loading = false;
-  @observable onfido = null;
   @observable open = false;
+  @observable onfido = false;
   @observable pending = false;
   @observable stoken = null;
+
+  sdkToken = null;
 
   constructor () {
     if (accountStore.unlocked) {
@@ -33,8 +42,7 @@ class CertifierStore {
     });
   }
 
-  @action
-  load () {
+  async load () {
     const { address } = accountStore;
 
     // Don't load anything if no account unlocked
@@ -42,58 +50,35 @@ class CertifierStore {
       return;
     }
 
-    const data = (store.get(LS_KEY) || {})[address] || {};
+    const { status } = await backend.checkStatus(address);
 
-    Object.keys(data || {}).forEach((key) => {
-      this[key] = data[key];
-    });
-
-    if (this.onfido && this.onfido.checkId) {
+    if (status === ONFIDO_STATUS.PENDING) {
       this.pollCheckStatus();
     }
-  }
-
-  save (data = {}, clear = false) {
-    const { address } = accountStore;
-
-    // Don't save anything if no account unlocked
-    if (!address) {
-      return;
-    }
-
-    const prevData = store.get(LS_KEY) || {};
-    const nextData = { ...prevData };
-
-    if (clear) {
-      delete nextData[address];
-    } else {
-      const prevAddressData = prevData[address] || {};
-      const nextAddressData = {
-        ...prevAddressData,
-        ...data
-      };
-
-      nextData[address] = nextAddressData;
-    }
-
-    store.set(LS_KEY, nextData);
   }
 
   async createApplicant () {
     this.setLoading(true);
 
+    const { address } = accountStore;
     const { country, firstName, lastName, stoken } = this;
 
     try {
-      const { applicantId, sdkToken } = await backend.createApplicant({
+      const message = `create_onfido_${firstName}.${lastName}@${country}`;
+      const signature = accountStore.signMessage(message);
+
+      const { sdkToken } = await backend.createApplicant(address, {
         country,
         firstName,
         lastName,
-        stoken
+        stoken,
+        signature
       });
 
       this.shouldMountOnfido = true;
-      this.setOnfido({ applicantId, sdkToken });
+      this.sdkToken = sdkToken;
+
+      this.setOnfido(true);
     } catch (error) {
       this.setError(error);
     }
@@ -102,10 +87,10 @@ class CertifierStore {
   }
 
   async handleOnfidoComplete () {
-    try {
-      const check = await backend.createCheck(this.onfido.applicantId, accountStore.address);
+    const { address } = accountStore;
 
-      this.setOnfido({ checkId: check.id });
+    try {
+      await backend.createCheck(address);
       this.pollCheckStatus();
     } catch (error) {
       this.setError(error);
@@ -116,14 +101,14 @@ class CertifierStore {
   }
 
   mountOnfido () {
-    if (this.onfidoOut || !this.onfido || !this.shouldMountOnfido) {
+    if (this.onfidoObject || !this.shouldMountOnfido) {
       return;
     }
 
     this.shouldMountOnfido = false;
-    this.onfidoOut = Onfido.init({
+    this.onfidoObject = Onfido.init({
       useModal: false,
-      token: this.onfido.sdkToken,
+      token: this.sdkToken,
       containerId: 'onfido-mount',
       onComplete: () => this.handleOnfidoComplete(),
       steps: [
@@ -134,9 +119,9 @@ class CertifierStore {
   }
 
   unmountOnfido () {
-    if (this.onfidoOut) {
-      this.onfidoOut.tearDown();
-      delete this.onfidoOut;
+    if (this.onfidoObject) {
+      this.onfidoObject.tearDown();
+      delete this.onfidoObject;
     }
   }
 
@@ -145,10 +130,10 @@ class CertifierStore {
       this.setPending(true);
     }
 
-    const { applicantId, checkId } = this.onfido;
-    const result = await backend.checkStatus({ applicantId, checkId });
+    const { address } = accountStore;
+    const { status, result } = await backend.checkStatus(address);
 
-    if (result.pending) {
+    if (status === ONFIDO_STATUS.PENDING) {
       clearTimeout(this.checkStatusTimeoutId);
       this.checkStatusTimeoutId = setTimeout(() => {
         this.pollCheckStatus();
@@ -156,13 +141,15 @@ class CertifierStore {
       return;
     }
 
-    if (result.valid) {
-      await accountStore.updateAccountInfo();
-      this.reset(false);
-      return;
-    }
+    if (status === ONFIDO_STATUS.COMPLETED) {
+      if (result === 'success') {
+        await accountStore.updateAccountInfo();
+        this.reset(false);
+        return;
+      }
 
-    this.setError(new Error('Something went wrong with your verification. Please try again.'));
+      this.setError(new Error('Something went wrong with your verification. Please try again.'));
+    }
   }
 
   reset (soft = false) {
@@ -170,13 +157,11 @@ class CertifierStore {
     this.firstName = '';
     this.lastName = '';
     this.loading = false;
+    this.onfido = false;
     this.stoken = null;
 
     if (!soft) {
-      this.onfido = null;
       this.pending = false;
-
-      this.save(null, true);
     }
   }
 
@@ -210,14 +195,7 @@ class CertifierStore {
 
   @action
   setOnfido (onfido) {
-    this.onfido = {
-      ...(this.onfido || {}),
-      ...onfido
-    };
-
-    const { applicantId, checkId } = this.onfido;
-
-    this.save({ onfido: { applicantId, checkId } });
+    this.onfido = onfido;
   }
 
   @action

@@ -24,15 +24,15 @@ class Backend {
   }
 
   async chartData () {
-    return await get(this.url('/auction/chart'));
+    return get(this.url('/auction/chart'));
   }
 
   async checkStatus (address) {
-    return await get(this.url(`/onfido/${address}`));
+    return get(this.url(`/onfido/${address}`));
   }
 
-  async createApplicant (address, { country, firstName, lastName, stoken }) {
-    return await post(this.url(`/onfido/${address}/applicant`), {
+  async createApplicant (address, { country, firstName, lastName, signature, stoken }) {
+    return post(this.url(`/onfido/${address}/applicant`), {
       country,
       firstName,
       lastName,
@@ -42,7 +42,7 @@ class Backend {
   }
 
   async createCheck (address) {
-    return await post(this.url(`/onfido/${address}/check`));
+    return post(this.url(`/onfido/${address}/check`));
   }
 
   async getAddressInfo (address) {
@@ -68,7 +68,7 @@ class Backend {
   }
 
   async deletePendingTx (address, sign) {
-    return await del(this.url(`/accounts/${address}/pending/${sign}`));
+    return del(this.url(`/accounts/${address}/pending/${sign}`));
   }
 
   async getTx (txHash) {
