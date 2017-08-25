@@ -1,3 +1,8 @@
+// Copyright Parity Technologies (UK) Ltd., 2017.
+// Released under the Apache 2/MIT licenses.
+
+'use strict';
+
 const config = require('config');
 const qs = require('qs');
 const fetch = require('node-fetch');
