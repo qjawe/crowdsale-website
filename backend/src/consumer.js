@@ -11,7 +11,7 @@ const Sale = require('./contracts/sale');
 const Onfido = require('./onfido');
 const store = require('./store');
 const ParityConnector = require('./api/parity');
-const { buf2hex } = require('./utils');
+const { buf2hex, waitForConfirmations } = require('./utils');
 
 const { ONFIDO_STATUS } = Onfido;
 
@@ -22,6 +22,8 @@ class QueueConsumer {
 
   constructor (wsUrl, contractAddress) {
     this._updateLock = false;
+    this._verifyLock = false;
+
     this._connector = new ParityConnector(wsUrl);
     this._sale = new Sale(this._connector, contractAddress);
 
@@ -33,33 +35,45 @@ class QueueConsumer {
     try {
       this._certifier = new Certifier(this._connector, this._sale.values.certifier);
 
-      await store.Onfido.subscribe((href) => this.verify(href));
+      await store.Onfido.subscribe(async () => this.verifyOnfidos());
       console.warn('Started consumer !');
     } catch (error) {
       console.error(error);
     }
   }
 
-  async verify (href) {
+  async verifyOnfidos () {
+    if (this._verifyLock) {
+      return;
+    }
+
+    this._verifyLock = true;
+
+    await store.Onfido.scan(async (href) => this.verifyOnfido(href));
+
+    this._verifyLock = false;
+  }
+
+  async verifyOnfido (href) {
     try {
-      console.warn('Verifying', href);
+      console.warn('verifying', href);
       const { address, valid } = await Onfido.verify(href);
 
       if (valid) {
-        console.warn('Certifying', address);
+        console.warn('certifying', address);
         const tx = await this._certifier.certify(address);
 
-        await this._connector.transactionReceipt(tx);
+        await waitForConfirmations(this._connector, tx);
       }
 
-      store.Onfido.set(address, {
+      await store.Onfido.set(address, {
         status: ONFIDO_STATUS.COMPLETED,
         result: valid ? 'success' : 'fail'
       });
     } catch (error) {
       console.error(error);
     } finally {
-      store.Onfido.remove(href);
+      await store.Onfido.remove(href);
     }
   }
 

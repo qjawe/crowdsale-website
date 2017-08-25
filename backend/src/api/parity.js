@@ -125,7 +125,7 @@ class ParityConnector extends EventEmitter {
           });
       };
 
-      attempt();
+      this.once('block', attempt);
     });
   }
 

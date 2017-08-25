@@ -154,6 +154,34 @@ class Onfido {
   }
 
   /**
+   * Iterate over all the Onfido href in the check-queue.
+   *
+   * @param  {Function} callback takes 1 argument:
+   *                             - href (`String`)
+   *                             will `await` for any returned `Promise`.
+   *
+   * @return {Promise} resolves after all hrefs have been processed
+   */
+  static async scan (callback) {
+    let next = 0;
+
+    do {
+      // Get a batch of responses
+      const [cursor, hrefs] = await redis.sscan(ONFIDO_CHECKS_CHANNEL, next);
+
+      next = Number(cursor);
+
+      // `res` is an array of `[key, value, key, value, ...]`
+      for (const href of hrefs) {
+        await callback(href);
+      }
+
+    // `next` will be `0` at the end of iteration, explained here:
+    // https://redis.io/commands/scan
+    } while (next !== 0);
+  }
+
+  /**
    * Subscribe to the Onfido check completions
    *
    * @param  {Function} cb   Callback function called on new
@@ -161,16 +189,16 @@ class Onfido {
    */
   static async subscribe (cb) {
     const client = redis.client.duplicate();
-    const hrefs = await redis.smembers(ONFIDO_CHECKS_CHANNEL);
 
-    hrefs.forEach((href) => cb(href));
+    // Call the callback to check all set first
+    await cb();
 
     client.on('message', (channel, message) => {
       if (channel !== ONFIDO_CHECKS_CHANNEL) {
         return;
       }
 
-      cb(message);
+      cb();
     });
 
     client.subscribe(ONFIDO_CHECKS_CHANNEL);
@@ -185,7 +213,7 @@ class Onfido {
    */
   static async push (href) {
     await redis.sadd(ONFIDO_CHECKS_CHANNEL, href);
-    await redis.publish(ONFIDO_CHECKS_CHANNEL, href);
+    await redis.publish(ONFIDO_CHECKS_CHANNEL, 'new');
   }
 
   /**

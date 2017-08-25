@@ -68,7 +68,7 @@ class Certifier extends Contract {
 
     const txHash = await connector.sendTx(serializedTx);
 
-    console.log('sent certify tx for', { address, txHash });
+    console.log(`sent certify tx for ${address} : ${txHash} `);
 
     return txHash;
   }

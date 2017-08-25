@@ -94,12 +94,30 @@ async function createApplicant ({ country, firstName, lastName }) {
     last_name: lastName
   });
 
+  const sdkToken = await createToken(applicant.id);
+
+  return { applicantId: applicant.id, sdkToken };
+}
+
+async function updateApplicant (applicantId, { country, firstName, lastName }) {
+  await _call(`/applicants/${applicantId}`, 'PUT', {
+    country,
+    first_name: firstName,
+    last_name: lastName
+  });
+
+  const sdkToken = await createToken(applicantId);
+
+  return { sdkToken };
+}
+
+async function createToken (applicantId) {
   const sdk = await _call('/sdk_token', 'POST', {
-    applicant_id: applicant.id,
+    applicant_id: applicantId,
     referrer: '*://*/*'
   });
 
-  return { applicantId: applicant.id, sdkToken: sdk.token };
+  return sdk.token;
 }
 
 /**
@@ -136,7 +154,9 @@ module.exports = {
   checkStatus,
   createApplicant,
   createCheck,
+  createToken,
   getCheck,
+  updateApplicant,
   verify,
 
   ONFIDO_STATUS

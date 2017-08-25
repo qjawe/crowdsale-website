@@ -73,7 +73,25 @@ function get ({ certifier }) {
       return error(ctx, 400, err.message);
     }
 
-    const { applicantId, sdkToken } = await Onfido.createApplicant({ country, firstName, lastName });
+    const stored = await store.Onfido.get(address);
+    let sdkToken = null;
+    let applicantId = null;
+
+    // Create a new applicant if none stored
+    if (!stored || !stored.applicantId) {
+      const result = await Onfido.createApplicant({ country, firstName, lastName });
+
+      sdkToken = result.sdkToken;
+      applicantId = result.applicantId;
+
+    // Otherwise, update the existing applicant
+    } else {
+      applicantId = stored.applicantId;
+
+      const result = await Onfido.updateApplicant(applicantId, { country, firstName, lastName });
+
+      sdkToken = result.sdkToken;
+    }
 
     // Store the applicant id in Redis
     await store.Onfido.set(address, { status: ONFIDO_STATUS.CREATED, applicantId });
