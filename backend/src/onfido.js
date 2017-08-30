@@ -17,6 +17,7 @@ const ONFIDO_STATUS = {
 };
 
 const ONFIDO_URL_REGEX = /applicants\/([a-z0-9-]+)\/checks\/([a-z0-9-]+)$/i;
+const ONFIDO_TAG_REGEX = /^address:(0x[0-9abcdef]+)$/i;
 
 async function _call (endpoint, method = 'GET', data = {}) {
   const body = method === 'POST'
@@ -139,13 +140,13 @@ async function verify (href) {
   }
 
   const { tags } = await getCheck(applicantId, checkId);
-  const addressTag = tags.find((tag) => /address/.test(tag));
+  const addressTag = tags.find((tag) => ONFIDO_TAG_REGEX.test(tag));
 
   if (!addressTag) {
     throw new Error(`could not find an address for this applicant check (${applicantId}/${checkId})`);
   }
 
-  const address = addressTag.replace(/^address:/, '');
+  const [, address] = ONFIDO_TAG_REGEX.exec(addressTag);
 
   return { address, valid: status.valid };
 }

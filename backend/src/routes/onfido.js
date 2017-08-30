@@ -26,7 +26,7 @@ function get ({ certifier }) {
 
     const { resource_type: type, action, object } = payload;
 
-    if (!type || !action || !object) {
+    if (!type || !action || !object || !object.href) {
       return error(ctx);
     }
 
