@@ -7,7 +7,8 @@ const BigNumber = require('bignumber.js');
 const { uniq } = require('lodash');
 
 const { SecondPriceAuction } = require('../abis');
-const Contract = require('../contract');
+const Contract = require('../api/contract');
+const log = require('../logger');
 const { int2date } = require('../utils');
 
 const STATICS = [
@@ -43,7 +44,7 @@ class Sale extends Contract {
   async update () {
     return super.update()
       .then(() => {
-        console.log(`Price is ${this.values.currentPrice.toFormat()} wei`);
+        log.trace(`Price is ${this.values.currentPrice.toFormat()} wei`);
       })
       .catch((error) => {
         console.error(error);

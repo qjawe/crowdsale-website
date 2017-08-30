@@ -15,8 +15,8 @@ export default class Bonus extends Component {
         <Statistic.Value>
           {
             inBonus
-            ? `${BONUS_SIZE.toNumber()}%`
-            : '0%'
+              ? `${BONUS_SIZE.toNumber()}%`
+              : '0%'
           }
         </Statistic.Value>
       </Statistic>

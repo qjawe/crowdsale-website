@@ -1,9 +1,7 @@
-import { range } from 'lodash';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import { Button, Container, Header, Progress, Segment } from 'semantic-ui-react';
 
-import auctionStore from '../stores/auction.store';
 import buyStore, { BLOCKS_CONFIRMATIONS } from '../stores/buy.store';
 
 @observer
@@ -23,15 +21,15 @@ export default class CurrentTx extends Component {
 
         {
           currentTx.completed
-          ? (
-            <Button
-              onClick={this.handleClose}
-              primary
-            >
+            ? (
+              <Button
+                onClick={this.handleClose}
+                primary
+              >
               Close
-            </Button>
-          )
-          : null
+              </Button>
+            )
+            : null
         }
         <Button
           as='a'

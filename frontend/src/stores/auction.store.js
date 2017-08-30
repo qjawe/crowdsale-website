@@ -4,7 +4,7 @@ import { action, computed, observable } from 'mobx';
 import backend from '../backend';
 import { fromWei } from '../utils';
 
-const REFRESH_DELAY = 2000;
+const REFRESH_DELAY = 4000;
 
 class AuctionStore {
   @observable beginTime = new Date();

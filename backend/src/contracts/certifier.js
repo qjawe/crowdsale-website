@@ -10,7 +10,7 @@ const EthereumTx = require('ethereumjs-tx');
 const Wallet = require('ethereumjs-wallet');
 
 const { MultiCertifier } = require('../abis');
-const Contract = require('../contract');
+const Contract = require('../api/contract');
 
 const gasPrice = config.get('gasPrice');
 const { filename, password } = config.get('account');
@@ -36,6 +36,13 @@ class Certifier extends Contract {
     super(connector, address, MultiCertifier);
   }
 
+  /**
+   * Certify an address using a trusted account
+   *
+   * @param {String} address to certify, `0x` prefixed
+   *
+   * @return {Promise<String>} promise of a TX hash
+   */
   async certify (address) {
     const { connector } = this;
     const data = this.methods.certify(address).data;
@@ -61,7 +68,7 @@ class Certifier extends Contract {
 
     const txHash = await connector.sendTx(serializedTx);
 
-    console.log('sent certify tx for', { address, txHash });
+    console.log(`sent certify tx for ${address} : ${txHash} `);
 
     return txHash;
   }

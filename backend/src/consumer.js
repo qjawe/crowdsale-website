@@ -6,10 +6,14 @@
 const config = require('config');
 const EthereumTx = require('ethereumjs-tx');
 
+const Certifier = require('./contracts/certifier');
 const Sale = require('./contracts/sale');
+const Onfido = require('./onfido');
 const store = require('./store');
-const ParityConnector = require('./parity');
-const { buf2hex } = require('./utils');
+const ParityConnector = require('./api/parity');
+const { buf2hex, waitForConfirmations } = require('./utils');
+
+const { ONFIDO_STATUS } = Onfido;
 
 class QueueConsumer {
   static run (wsUrl, contractAddress) {
@@ -18,10 +22,59 @@ class QueueConsumer {
 
   constructor (wsUrl, contractAddress) {
     this._updateLock = false;
+    this._verifyLock = false;
+
     this._connector = new ParityConnector(wsUrl);
     this._sale = new Sale(this._connector, contractAddress);
 
     this._connector.on('block', () => this.update());
+    this._sale.update().then(() => this.init());
+  }
+
+  async init () {
+    try {
+      this._certifier = new Certifier(this._connector, this._sale.values.certifier);
+
+      await store.Onfido.subscribe(async () => this.verifyOnfidos());
+      console.warn('Started consumer !');
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async verifyOnfidos () {
+    if (this._verifyLock) {
+      return;
+    }
+
+    this._verifyLock = true;
+
+    await store.Onfido.scan(async (href) => this.verifyOnfido(href));
+
+    this._verifyLock = false;
+  }
+
+  async verifyOnfido (href) {
+    try {
+      console.warn('verifying', href);
+      const { address, valid } = await Onfido.verify(href);
+
+      if (valid) {
+        console.warn('certifying', address);
+        const tx = await this._certifier.certify(address);
+
+        await waitForConfirmations(this._connector, tx);
+      }
+
+      await store.Onfido.set(address, {
+        status: ONFIDO_STATUS.COMPLETED,
+        result: valid ? 'success' : 'fail'
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      await store.Onfido.remove(href);
+    }
   }
 
   async update () {
@@ -31,13 +84,11 @@ class QueueConsumer {
 
     this._updateLock = true;
 
-    console.log('New block, checking queue...');
-
     const connector = this._connector;
 
     let sent = 0;
 
-    await store.withQueue(async (address, tx, required) => {
+    await store.Transactions.scan(async (address, tx, required) => {
       const balance = await connector.balance(address);
 
       if (balance.lt(required)) {
@@ -60,10 +111,10 @@ class QueueConsumer {
 
         const { accepted } = buyinLog.params;
 
-        await store.confirmTx(address, nonce, hash, accepted);
+        await store.Transactions.confirm(address, nonce, hash, accepted);
       } catch (err) {
         console.error(err);
-        await store.rejectTx(address, nonce, err.message);
+        await store.Transactions.reject(address, nonce, err.message);
       }
 
       sent += 1;
@@ -71,7 +122,9 @@ class QueueConsumer {
 
     this._updateLock = false;
 
-    console.log(`Sent ${sent} transactions from the queue`);
+    if (sent > 0) {
+      console.log(`Sent ${sent} transactions from the queue`);
+    }
   }
 }
 

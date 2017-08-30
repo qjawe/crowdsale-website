@@ -116,6 +116,56 @@ function toChecksumAddress (_address) {
   return result;
 }
 
+async function waitForConfirmations (connector, tx) {
+  let attempts = 0;
+
+  // Wait for the transaction to be mined
+  await connector.transactionReceipt(tx);
+
+  console.warn('waiting for 12 confirmations for ' + tx);
+
+  return new Promise((resolve, reject) => {
+    // Clean-up and reject after 10 minutes
+    const timeoutId = setTimeout(() => {
+      clean();
+      reject(new Error('transaction took too long to be confirmed'));
+    }, 10 * 60 * 1000);
+
+    const clean = () => {
+      clearTimeout(timeoutId);
+      connector.removeListener('block', check);
+    };
+
+    const check = (block) => {
+      connector.transport
+        .request('eth_getTransactionReceipt', tx)
+        .then((receipt) => {
+          if (!receipt || !receipt.blockNumber) {
+            return;
+          }
+
+          const height = hex2big(block.number).minus(hex2big(receipt.blockNumber));
+
+          // Resolve after 12 confirmations
+          if (height.gte(12)) {
+            clean();
+            resolve();
+          }
+        })
+        .catch((error) => {
+          if (attempts >= 10) {
+            clean();
+            reject(error);
+          } else {
+            console.error(error);
+          }
+        });
+    };
+
+    connector.on('block', check);
+  });
+}
+
 module.exports = {
   buf2add,
   big2hex,
@@ -130,5 +180,6 @@ module.exports = {
   int2date,
   int2hex,
   pause,
-  toChecksumAddress
+  toChecksumAddress,
+  waitForConfirmations
 };

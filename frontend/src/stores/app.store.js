@@ -1,9 +1,9 @@
 import { action, observable } from 'mobx';
 
 export const STEPS = {
-  'home': Symbol(),
-  'load-wallet': Symbol(),
-  'create-wallet': Symbol()
+  'home': Symbol('home'),
+  'load-wallet': Symbol('load-wallet'),
+  'create-wallet': Symbol('create-wallet')
 };
 
 class AppStore {

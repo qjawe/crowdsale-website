@@ -9,6 +9,8 @@ client.on('error', function (err) {
 });
 
 // Promisfy & export required Redis commands
-for (const func of ['get', 'set', 'hget', 'hset', 'hdel', 'hscan']) {
+for (const func of ['get', 'set', 'hget', 'sadd', 'spop', 'smembers', 'sscan', 'srem', 'hset', 'hdel', 'hscan', 'publish', 'subscribe']) {
   exports[func] = promisify(client[func].bind(client));
 }
+
+exports.client = client;

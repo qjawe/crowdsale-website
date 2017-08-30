@@ -91,20 +91,20 @@ export default class Sale extends Component {
 
           {
             onfido
-            ? (
-              <div>
-                <Header as='h4'>
+              ? (
+                <div>
+                  <Header as='h4'>
                   If this issue remains, please contact us with this
                   information:
-                </Header>
-                <div>
-                  <pre style={{ color: 'black', fontSize: '0.85rem', overflow: 'visible' }}>
-                    {onfido.checkId}@{onfido.applicantId}
-                  </pre>
+                  </Header>
+                  <div>
+                    <pre style={{ color: 'black', fontSize: '0.85rem', overflow: 'visible' }}>
+                      {onfido.checkId}@{onfido.applicantId}
+                    </pre>
+                  </div>
                 </div>
-              </div>
-            )
-            : null
+              )
+              : null
           }
 
           <br />

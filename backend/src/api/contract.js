@@ -5,7 +5,7 @@
 
 const EthereumAbi = require('ethereumjs-abi');
 
-const { buf2hex, ejs2val, hex2buf } = require('./utils');
+const { buf2hex, ejs2val, hex2buf } = require('../utils');
 
 class Event {
   /**
