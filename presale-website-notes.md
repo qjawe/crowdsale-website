@@ -1,10 +1,7 @@
 Parity Certifier requests:
 
 GET /accounts/:address/fee
-  - Returns:
-    - incoming transactions
-    - balance
-    - is market as paid on fee contract
+  - Returns: `{"incomingTxAddr": ["0x...", ...], "balance": "0x...", "paid": bool}`
 
 POST /fee-tx
   - Same as POST /fee, but without constraints or queue (rejects if funds are lacking)
