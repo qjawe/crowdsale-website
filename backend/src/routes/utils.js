@@ -21,7 +21,7 @@ function error (ctx, code = 400, body = 'Invalid request') {
 
 async function rateLimiter (_address, ip) {
   const address = _address.toLowerCase();
-  const hkey = `picops::rate-limiter::${ip}`;
+  const hkey = `rate-limiter::${ip}`;
   const now = Date.now();
   let count;
 
