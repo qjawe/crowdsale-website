@@ -5,7 +5,7 @@
 
 const EventEmitter = require('events');
 
-const RpcTransport = require('./transport');
+const { CachingTransport } = require('./transport');
 const { hex2big, hex2date } = require('../utils');
 
 class ParityConnector extends EventEmitter {
@@ -17,13 +17,15 @@ class ParityConnector extends EventEmitter {
   constructor (url) {
     super();
 
-    this._transport = new RpcTransport(url);
+    this._transport = new CachingTransport(url);
 
     this
       .transport
       .subscribe('eth_getBlockByNumber', 'latest', false)
       .forEach((block) => {
         block.timestamp = hex2date(block.timestamp);
+
+        this._transport.invalidateCache();
 
         this.block = block;
         this.emit('block', block);
@@ -147,6 +149,12 @@ class ParityConnector extends EventEmitter {
     return this
       ._transport
       .request('eth_getLogs', options);
+  }
+
+  trace (options) {
+    return this
+      ._transport
+      .request('trace_filter', options);
   }
 
   /**

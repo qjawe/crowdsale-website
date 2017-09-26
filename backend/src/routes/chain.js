@@ -11,7 +11,9 @@ const { buf2hex, buf2big, big2hex } = require('../utils');
 const { error } = require('./utils');
 
 function get ({ sale, connector, certifier }) {
-  const router = new Router();
+  const router = new Router({
+    prefix: '/api'
+  });
 
   router.get('/block/hash', (ctx) => {
     if (!connector.block) {
@@ -65,6 +67,12 @@ function get ({ sale, connector, certifier }) {
     const hash = await connector.sendTx(tx);
 
     ctx.body = { hash };
+  });
+
+  router.get('/certifier', async (ctx, next) => {
+    const { address } = certifier;
+
+    ctx.body = { certifier: address };
   });
 
   return router;

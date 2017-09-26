@@ -5,7 +5,7 @@
 
 const WebSocket = require('ws');
 
-const { hex2int, pause } = require('../utils');
+const { hex2int, pause, keccak256 } = require('../utils');
 
 class Subscription {
   /**
@@ -71,17 +71,19 @@ class Request {
    * @param {Function} resolve wrapping Promise callback
    * @param {Function} reject  wrapping Promise callback
    * @param {Function} cleanUp closure to call once the request is done
+   * @param {Error}     error   an empty error (useful for the stack)
    */
-  constructor (message, resolve, reject, cleanUp) {
+  constructor (message, resolve, reject, cleanUp, error) {
     this._message = message;
     this._cleanUp = cleanUp;
     this._resolve = resolve;
     this._reject = reject;
+    this._error = error;
     this._timeout = setTimeout(() => {
       cleanUp();
 
       reject(new Error(`request timed out: ${message.method}`));
-    }, 10000);
+    }, 25000);
   }
 
   /**
@@ -107,7 +109,8 @@ class Request {
     this._cleanUp();
 
     if (!(error instanceof Error) && error && error.message) {
-      this._reject(new Error(error.message));
+      this._error.message = error.message;
+      this._reject(this._error);
     } else {
       this._reject(error);
     }
@@ -250,6 +253,7 @@ class RpcTransport {
    * @return {Any}           result from the API
    */
   async request (method, ...params) {
+    const error = new Error();
     const ws = await this._ws;
     const id = this.nextId();
     const requests = this._requests;
@@ -263,7 +267,7 @@ class RpcTransport {
     ws.send(JSON.stringify(message));
 
     return new Promise((resolve, reject) => {
-      const request = new Request(message, resolve, reject, () => requests.delete(id));
+      const request = new Request(message, resolve, reject, () => requests.delete(id), error);
 
       requests.set(id, request);
     });
@@ -316,4 +320,56 @@ class RpcTransport {
   }
 }
 
-module.exports = RpcTransport;
+class CachingTransport extends RpcTransport {
+  /**
+   * Variant of `RpcTransport` that will cache request results
+   *
+   * @param {String} url WebSocket to connect to
+   */
+  constructor (url) {
+    super(url);
+
+    this._requestCache = new Map();
+  }
+
+  /**
+   * Clear the internal requests cache.
+   */
+  invalidateCache () {
+    this._requestCache.clear();
+  }
+
+  /**
+   * Perform a single request to JSON-RPC API.
+   *
+   * @param  {String} method RPC method name
+   * @param  {...Any} params RPC parameters
+   *
+   * @return {Any}           result from the API
+   */
+  async request (method, ...params) {
+    const requestCache = this._requestCache;
+    const hash = keccak256(JSON.stringify({ method, params })).slice(-20);
+    const cached = requestCache.get(hash);
+
+    if (cached) {
+      return cached;
+    }
+
+    const promise = super.request(method, ...params);
+
+    requestCache.set(hash, promise);
+
+    if (requestCache.size > 10000) {
+      // Start dropping keys in FIFO fashion
+      requestCache.delete(requestCache.keys().next().value);
+    }
+
+    return promise;
+  }
+}
+
+module.exports = {
+  RpcTransport,
+  CachingTransport
+};

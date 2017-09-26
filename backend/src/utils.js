@@ -71,6 +71,10 @@ function pause (time) {
   });
 }
 
+function isValidAddress (value) {
+  return value && value.length === 42 && /^0x[0-9a-f]{40}$/i.test(value);
+}
+
 function ejs2val (value, type) {
   if (Array.isArray(value)) {
     const subtype = /^(.+)\[.*\]$/.exec(type)[1];
@@ -93,6 +97,20 @@ function ejs2val (value, type) {
   return value;
 }
 
+function keccak256 (data) {
+  return keccak('keccak256')
+    .update(Buffer.from(data))
+    .digest('hex');
+}
+
+async function sleep (duration) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, duration);
+  });
+}
+
 function toChecksumAddress (_address) {
   const address = (_address || '').toLowerCase();
 
@@ -100,11 +118,7 @@ function toChecksumAddress (_address) {
     throw new Error('address must be 20 bytes long');
   }
 
-  const hashBuffer = keccak('keccak256')
-              .update(Buffer.from(address.slice(-40)))
-              .digest();
-
-  const hash = buf2hex(hashBuffer);
+  const hash = '0x' + keccak256(address.slice(-40));
   let result = '0x';
 
   for (let n = 0; n < 40; n++) {
@@ -179,7 +193,10 @@ module.exports = {
   hex2buf,
   int2date,
   int2hex,
+  isValidAddress,
   pause,
+  keccak256,
+  sleep,
   toChecksumAddress,
   waitForConfirmations
 };

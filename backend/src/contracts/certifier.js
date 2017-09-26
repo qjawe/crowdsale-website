@@ -72,6 +72,19 @@ class Certifier extends Contract {
 
     return txHash;
   }
+
+  /**
+   * Check if account is certified
+   *
+   * @param {String}  address `0x` prefixed
+   *
+   * @return {Promise<Boolean>}
+   */
+  async isCertified (address) {
+    const [ certified ] = await this.methods.certified(address).get();
+
+    return certified;
+  }
 }
 
 module.exports = Certifier;

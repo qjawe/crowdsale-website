@@ -4,7 +4,8 @@ module.exports = {
     port: 4000
   },
   nodeWs: 'ws://127.0.0.1:8546/',
-  // saleContract: '0x778E173cA5822777Aa7c37c83ee598ef38D774A3',
+  certifierContract: '0x06C4AF12D9E3501C173b5D1B9dd9cF6DCC095b98',
+  feeContract: '0xD5d12e7c067Aecb420C94b47d9CaA27912613378',
   saleContract: '0x1812C24112a96487435cb77e8fab92E2eAb212ea',
   redis: {
     host: '127.0.0.1',

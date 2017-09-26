@@ -6,11 +6,10 @@
 const Router = require('koa-router');
 
 const store = require('../store');
-const { error, verifySignature } = require('./utils');
 
 function get ({ sale, connector, certifier }) {
   const router = new Router({
-    prefix: '/accounts'
+    prefix: '/api/accounts'
   });
 
   router.get('/:address', async (ctx, next) => {
@@ -41,27 +40,6 @@ function get ({ sale, connector, certifier }) {
     const pending = await store.Transactions.get(address);
 
     ctx.body = { pending };
-  });
-
-  // Signature should be the signature of the hash of the following
-  // message : `delete_tx_:txHash`, eg. `delete_tx_0x123...789`
-  router.del('/:address/pending/:signature', async (ctx, next) => {
-    const { address, signature } = ctx.params;
-
-    try {
-      const pending = await store.Transactions.get(address);
-
-      if (!pending || !pending.hash) {
-        throw new Error('No pending transaction to delete');
-      }
-
-      verifySignature(address, `delete_tx_${pending.hash}`, signature);
-    } catch (err) {
-      return error(ctx, 400, err.message);
-    }
-
-    await store.Transactions.reject(address, '-1', 'cancelled by user');
-    ctx.body = { result: 'ok' };
   });
 
   return router;
