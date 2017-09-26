@@ -6,14 +6,12 @@
 const Accounts = require('./accounts');
 const Auction = require('./auction');
 const Chain = require('./chain');
-const Onfido = require('./onfido');
 
 module.exports = function set (app, { sale, connector, certifier }) {
   [
     Accounts,
     Auction,
-    Chain,
-    Onfido
+    Chain
   ].forEach((Route) => {
     const instance = Route({ sale, connector, certifier });
 
