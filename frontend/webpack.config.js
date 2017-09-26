@@ -84,7 +84,7 @@ const config = {
     }),
 
     new HtmlWebpackPlugin({
-      title: 'PICOPS - Parity ICO Passport Service',
+      title: 'Parity Crowdsale Module',
       template: path.resolve(__dirname, './src/index.ejs')
     })
   ]

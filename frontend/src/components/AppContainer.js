@@ -13,9 +13,7 @@ const baseContentStyle = {
 };
 
 const STEPS = [
-  'Terms & Conditions',
-  'Fee payment',
-  'Identity certification'
+  'Terms & Conditions'
 ];
 
 @observer

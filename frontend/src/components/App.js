@@ -28,7 +28,7 @@ class MainApp extends Component {
     return (
       <AppContainer
         footer={this.renderFooter()}
-        title='PARITY ICO PASSPORT SERVICE'
+        title='PARITY CROWDSALE MODULE'
       >
         {this.renderContent()}
       </AppContainer>
@@ -80,7 +80,7 @@ class MainApp extends Component {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Header as='h2'>
-          CERTIFICATION PROCESS
+          HEADER
         </Header>
 
         <div style={{
@@ -89,21 +89,12 @@ class MainApp extends Component {
           maxWidth: '600px'
         }}>
           <p style={{ lineHeight: '1.5em' }}>
-            Welcome to the <b>P</b>arity <b>ICO</b> <b>P</b>assport <b>S</b>ervice (PICOPS). PICOPS is a two sided service to Ethereum end users that want to support projects that offer what has come to be known by the name initial coin offerings (ICOs).
-          </p>
-          <p style={{ lineHeight: '1.5em' }}>
-            PICOPS offers a means to validate that the owner of an Ethereum wallet has passed an ID background check stating that they are not part of a restricted set of users (e.g. US citizen or individuals on official watchlists). The background check is run via a third party, namely Onfido. Parity has set up a smart contract system to record the outcome of the background check on the public Ethereum blockchain, i.e. whitelist a Ethereum addresses that are owned by non-restricted users.
-          </p>
-          <p style={{ lineHeight: '1.5em' }}>
-            To use PICOPS as an end user, you will have to make a small upfront payment of Ether. If you do not currently own an Ethereum wallet to be certified and instead store Ether on an exchange, you will have the opportunity  to create a wallet file during the certification  process. Once the fee is paid, you will be asked to provide a scan of a <a href='https://onfido.com/an-applicant-guide.pdf'>document</a> to Onfido, an ID verification service, to verify your identity.
-          </p>
-          <p style={{ lineHeight: '1.5em' }}>
-            Processing the payment and verifying your identity document will take a few minutes. Please make sure to not close this window open during the verification process.
+            Welcome to the...
           </p>
         </div>
 
         <Button primary size='big' onClick={this.handleStart}>
-          Start Certification
+          Start
         </Button>
       </div>
     );
