@@ -68,6 +68,6 @@ export default class ImportantNotice extends Component {
   }
 
   handleStart = () => {
-    appStore.goto('start');
+    appStore.goto('terms');
   };
 }

@@ -4,8 +4,10 @@ import { HashRouter as Router, Route } from 'react-router-dom';
 import { Header, Loader } from 'semantic-ui-react';
 
 import AppContainer from './AppContainer';
+import CountrySelection from './steps/CountrySelection';
 import ImportantNotice from './steps/ImportantNotice';
 import Start from './steps/Start';
+import Terms from './steps/Terms';
 import Messages from './Messages';
 
 import appStore, { STEPS } from '../stores/app.store';
@@ -60,6 +62,18 @@ class MainApp extends Component {
     if (step === STEPS['start']) {
       return (
         <Start />
+      );
+    }
+
+    if (step === STEPS['terms']) {
+      return (
+        <Terms />
+      );
+    }
+
+    if (step === STEPS['country-selection']) {
+      return (
+        <CountrySelection />
       );
     }
 
