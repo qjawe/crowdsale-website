@@ -14,10 +14,10 @@ function get ({ sale, connector, certifier }) {
 
   router.get('/:address', async (ctx, next) => {
     const { address } = ctx.params;
-    const [ eth, [ value ], [ certified ] ] = await Promise.all([
+    const [ eth, [ value ], certified ] = await Promise.all([
       connector.balance(address),
       sale.methods.participants(address).get(),
-      certifier.methods.certified(address).get()
+      certifier.isCertified(address)
     ]);
 
     ctx.body = {
