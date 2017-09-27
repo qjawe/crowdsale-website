@@ -22,7 +22,7 @@ const panelStyle = {
   margin: '0 2em'
 };
 
-export default class CountrySelector extends Component {
+export default class CountrySelection extends Component {
   state = {
     showInvalidModal: false
   };
@@ -53,6 +53,11 @@ export default class CountrySelector extends Component {
 
         {this.renderModal()}
 
+        <p style={{ textAlign: 'center', margin: '2em 0 0' }}>
+          Are you a citizen of or otherwise resident or established in
+          one of those countries: {this.renderCountryList()}?
+        </p>
+
         <div style={{ display: 'flex', width: '100%', marginTop: '4em' }}>
           <div style={panelStyle}>
             <Card fluid link style={mapStyle} onClick={this.handleInvalid}>
@@ -60,13 +65,7 @@ export default class CountrySelector extends Component {
             </Card>
 
             <div style={{ textAlign: 'center' }}>
-              {this.renderCountryList()}
-              <p style={{
-                color: 'red',
-                fontWeight: 'bold'
-              }}>
-                ( US Citizen )
-              </p>
+              <b>YES</b>
             </div>
           </div>
 
@@ -76,7 +75,7 @@ export default class CountrySelector extends Component {
             </Card>
 
             <div style={{ textAlign: 'center' }}>
-              <p>Non-US citizen – Rest of the world</p>
+              <b>NO</b>
             </div>
           </div>
         </div>
@@ -88,17 +87,10 @@ export default class CountrySelector extends Component {
     const list = this.blacklistedCountriesNames;
 
     if (list.length <= 2) {
-      return (
-        <p><span>{list.join(' and ')}.</span></p>
-      );
+      return list.join(' and ');
     }
 
-    return (
-      <p>
-        <span>{list.slice(0, -1).join(', ')} </span>
-        <span>and {list.slice(-1)[0]}.</span>
-      </p>
-    );
+    return `${list.slice(0, -1).join(', ')} and ${list.slice(-1)[0]}`;
   }
 
   renderModal () {
@@ -162,7 +154,7 @@ export default class CountrySelector extends Component {
 
   handleValid = () => {
     appStore.storeValidCitizenship();
-    appStore.goto('fee');
+    appStore.goto('account-selection');
   };
 
   setInvalidRef = (element) => {

@@ -29,7 +29,9 @@ export default class AlreadyPaid extends Component {
           </Segment>
         </Grid.Column>
         <Grid.Column tablet={16} computer={10}>
-          { children }
+          <Segment basic>
+            { children }
+          </Segment>
         </Grid.Column>
       </Grid>
     );

@@ -3,7 +3,7 @@ import { Button, Header } from 'semantic-ui-react';
 
 import appStore from '../../stores/app.store';
 
-export default class ImportantNotice extends Component {
+export default class Start extends Component {
   render () {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

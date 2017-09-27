@@ -41,13 +41,13 @@ export default class AccountInfo extends Component {
     const nextState = {};
 
     if (showBalance) {
-      const { balance } = await backend.getAccountFeeInfo(address);
+      const { eth } = await backend.getAddressInfo(address);
 
-      nextState.balance = balance;
+      nextState.balance = eth;
     }
 
     if (showCertified) {
-      const { certified } = await backend.checkStatus(address);
+      const { certified } = await backend.getAddressInfo(address);
 
       nextState.certified = certified;
     }

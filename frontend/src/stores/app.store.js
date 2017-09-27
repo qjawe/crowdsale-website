@@ -9,11 +9,16 @@ import backend from '../backend';
 export const CITIZENSHIP_LS_KEY = '_parity-crowdsale::citizenship';
 export const TERMS_LS_KEY = '_parity-crowdsale::agreed-terms::v1';
 
+// Messages displays for 15s
+const MESSAGE_TIMELIFE = 1000 * 15;
+
 export const STEPS = {
   'important-notice': Symbol('important notice'),
   'start': Symbol('start'),
   'terms': Symbol('terms'),
-  'country-selection': Symbol('country selection')
+  'country-selection': Symbol('country selection'),
+  'account-selection': Symbol('account selection'),
+  'contribute': Symbol('contribute')
 };
 
 const padding = window.location.search !== '?no-padding';
@@ -102,7 +107,7 @@ class AppStore extends EventEmitter {
   }
 
   async fetchBlacklistedCountries () {
-    return Promise.resolve(['USA']);
+    return Promise.resolve(['USA', 'CHN']);
   }
 
   async loadCountries () {
@@ -163,6 +168,8 @@ class AppStore extends EventEmitter {
     const id = nextErrorId++;
 
     this.messages = Object.assign({}, this.messages, { [id]: { title, content, type, id } });
+
+    setTimeout(() => this.removeMessage(id), MESSAGE_TIMELIFE);
   }
 
   @action removeMessage (id) {
