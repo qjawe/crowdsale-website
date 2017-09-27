@@ -39,19 +39,28 @@ class Sale extends Contract {
    */
   constructor (connector, address) {
     super(connector, address, SecondPriceAuction, STATICS);
+
+    this._chartData = Promise.resolve(null);
   }
 
   async update () {
-    return super.update()
-      .then(() => {
-        log.trace(`Price is ${this.values.currentPrice.toFormat()} wei`);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    try {
+      await super.update();
+    } catch (err) {
+      console.error(err);
+      return;
+    }
+
+    this._chartData = this._getChartData();
+
+    log.trace(`Price is ${this.values.currentPrice.toFormat()} wei`);
   }
 
-  async getChartData () {
+  get chartData () {
+    return this._chartData;
+  }
+
+  async _getChartData () {
     const logs = await this.logs([
       'Buyin',
       'PrepayBuyin',

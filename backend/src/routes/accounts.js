@@ -5,6 +5,7 @@
 
 const Router = require('koa-router');
 
+const { rateLimiter } = require('./utils');
 const store = require('../store');
 
 function get ({ sale, connector, certifier }) {
@@ -14,6 +15,9 @@ function get ({ sale, connector, certifier }) {
 
   router.get('/:address', async (ctx, next) => {
     const { address } = ctx.params;
+
+    await rateLimiter(address, ctx.remoteAddress);
+
     const [ eth, [ value ], certified ] = await Promise.all([
       connector.balance(address),
       sale.methods.participants(address).get(),
@@ -30,6 +34,8 @@ function get ({ sale, connector, certifier }) {
   router.get('/:address/nonce', async (ctx, next) => {
     const { address } = ctx.params;
 
+    await rateLimiter(address, ctx.remoteAddress);
+
     const nonce = await connector.nextNonce(address);
 
     ctx.body = { nonce };
@@ -37,6 +43,9 @@ function get ({ sale, connector, certifier }) {
 
   router.get('/:address/pending', async (ctx, next) => {
     const address = ctx.params.address.toLowerCase();
+
+    await rateLimiter(address, ctx.remoteAddress);
+
     const pending = await store.Transactions.get(address);
 
     ctx.body = { pending };

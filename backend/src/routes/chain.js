@@ -8,7 +8,7 @@ const Router = require('koa-router');
 
 const store = require('../store');
 const { buf2hex, buf2big, big2hex } = require('../utils');
-const { error } = require('./utils');
+const { rateLimiter, error } = require('./utils');
 
 function get ({ sale, connector, certifier }) {
   const router = new Router({
@@ -42,7 +42,10 @@ function get ({ sale, connector, certifier }) {
     }
 
     const from = buf2hex(txObj.from);
-    const [ certified ] = await certifier.methods.certified(from).get();
+
+    await rateLimiter(from, ctx.remoteAddress);
+
+    const certified = await certifier.isCertified(from);
 
     if (!certified) {
       return error(ctx, 400, `${from} is not certified`);
