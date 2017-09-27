@@ -3,7 +3,7 @@ import Datamap from 'datamaps';
 import React, { Component } from 'react';
 import { Button, Card, Header, Icon, Modal } from 'semantic-ui-react';
 
-import appStore from '../stores/app.store';
+import appStore from '../../stores/app.store';
 
 const VALID_COLOR = '#4a90e2';
 const INVALID_COLOR = '#4d4d4d';
@@ -111,10 +111,10 @@ export default class CountrySelector extends Component {
         onClose={this.handleCloseInvalid}
         size='small'
       >
-        <Header icon='world' content='Unfortunately, you cannot continue...' />
+        <Header icon='world' content='EXCLUDED COUNTRIES' />
         <Modal.Content>
-          <p>
-            Token sale is not offered to US citizens at this stage.
+          <p style={{ fontSize: '1.15em' }}>
+            We apologize that you are unable to participate in the sale.
           </p>
         </Modal.Content>
         <Modal.Actions>
