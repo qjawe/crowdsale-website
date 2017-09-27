@@ -4,6 +4,7 @@ import { HashRouter as Router, Link, Route } from 'react-router-dom';
 import { Button, Header, Loader } from 'semantic-ui-react';
 
 import AppContainer from './AppContainer';
+import ImportantNotice from './ImportantNotice';
 import Messages from './Messages';
 
 import appStore, { STEPS } from '../stores/app.store';
@@ -47,6 +48,12 @@ class MainApp extends Component {
             Loading data...
           </Header>
         </div>
+      );
+    }
+
+    if (step === STEPS['important-notice']) {
+      return (
+        <ImportantNotice />
       );
     }
 

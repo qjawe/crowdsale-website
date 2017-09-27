@@ -10,6 +10,7 @@ export const CITIZENSHIP_LS_KEY = '_parity-crowdsale::citizenship';
 export const TERMS_LS_KEY = '_parity-crowdsale::agreed-terms::v1';
 
 export const STEPS = {
+  'important-notice': Symbol('important notice'),
   'start': Symbol('start'),
   'terms': Symbol('terms'),
   'country-selection': Symbol('country selection')
@@ -62,7 +63,7 @@ class AppStore extends EventEmitter {
       this.skipStart = true;
     }
 
-    this.goto('start');
+    this.goto('important-notice');
   };
 
   async goto (name) {
