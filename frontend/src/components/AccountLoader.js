@@ -5,7 +5,6 @@ import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
 import { Button, Header, Icon, Input } from 'semantic-ui-react';
 
-import accountStore from '../stores/account.store';
 import appStore from '../stores/app.store';
 import AccountInfo from './AccountInfo';
 import Step from './Step';
@@ -29,11 +28,8 @@ const dropzoneStyle = {
 
 export default class AccountLoader extends Component {
   static propTypes = {
-    onBack: PropTypes.func
-  };
-
-  static defaultProps = {
-    onBack: () => {}
+    onCancel: PropTypes.func.isRequired,
+    onDone: PropTypes.func.isRequired
   };
 
   state = {
@@ -104,7 +100,7 @@ export default class AccountLoader extends Component {
   }
 
   renderDropzone () {
-    const { onBack } = this.props;
+    const { onCancel } = this.props;
 
     return (
       <div>
@@ -128,7 +124,7 @@ export default class AccountLoader extends Component {
         <br />
 
         <div style={{ textAlign: 'center' }}>
-          <Button onClick={onBack} size='big' secondary>
+          <Button onClick={onCancel} size='big' secondary>
             Back
           </Button>
         </div>
@@ -204,11 +200,10 @@ export default class AccountLoader extends Component {
         const wallet = EthereumWallet.fromV3(jsonWallet, password);
         const privateKey = '0x' + wallet.getPrivateKey().toString('hex');
 
-        accountStore.setAccount({
+        this.props.onDone({
           address: wallet.getChecksumAddressString(),
           privateKey
         });
-        appStore.goto('contribute');
       } catch (error) {
         appStore.addError(error);
         this.setState({ unlocking: false });
