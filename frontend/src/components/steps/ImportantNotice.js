@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Button, Header } from 'semantic-ui-react';
 
-import appStore from '../stores/app.store';
+import appStore from '../../stores/app.store';
 
 export default class ImportantNotice extends Component {
   render () {
@@ -17,12 +17,12 @@ export default class ImportantNotice extends Component {
           maxWidth: '600px'
         }}>
           <p style={{ lineHeight: '1.5em' }}>
-            The Polkadot token sale requires experience and knowledge of sending and receiving
-            Ether, and the safe storage of .Json wallet files.
+            The Polkadot token sale requires experience and knowledge of <b>sending and receiving
+            Ether</b>, and the <b>safe storage of JSON wallet files</b>.
           </p>
 
           <p style={{ lineHeight: '1.5em' }}>
-            Polkadot will not provide any customer support for the registration process.
+            Polkadot will <b>not</b> provide any customer support for the registration process.
             By participating in the sale, you assume full responsibility for your funds.
           </p>
         </div>
