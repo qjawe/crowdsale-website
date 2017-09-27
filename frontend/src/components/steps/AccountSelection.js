@@ -22,7 +22,7 @@ export default class AccountSelection extends Component {
 
     if (action === 'load') {
       return (
-        <AccountLoader />
+        <AccountLoader onBack={this.handleReset} />
       );
     }
 
@@ -44,7 +44,7 @@ export default class AccountSelection extends Component {
           <Card fluid link style={cardStyle} onClick={this.handleLoad}>
             <Image src={EthereumImg} />
             <Card.Content>
-              <Card.Header textAlign='center'>
+              <Card.Header textAlign='center' style={{ padding: '1em 0' }}>
                 Load an Ethereum JSON file
               </Card.Header>
             </Card.Content>
@@ -53,7 +53,7 @@ export default class AccountSelection extends Component {
           <Card fluid link style={cardStyle} onClick={this.handleCreate}>
             <Image src={EthereumImg} />
             <Card.Content>
-              <Card.Header textAlign='center'>
+              <Card.Header textAlign='center' style={{ padding: '1em 0' }}>
                 I don't have an Ethereum Wallet
               </Card.Header>
             </Card.Content>
@@ -66,6 +66,10 @@ export default class AccountSelection extends Component {
   renderCreate () {
 
   }
+
+  handleReset = () => {
+    this.setState({ action: null });
+  };
 
   handleLoad = () => {
     this.setState({ action: 'load' });

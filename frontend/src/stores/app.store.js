@@ -188,11 +188,11 @@ class AppStore extends EventEmitter {
   }
 
   @action setStep (step) {
-    if (step === STEPS['terms'] || step === STEPS['country-selection']) {
-      this.stepper = 0;
-    } else {
-      this.stepper = -1;
-    }
+    // if (step === STEPS['terms'] || step === STEPS['country-selection']) {
+    //   this.stepper = 0;
+    // } else {
+    //   this.stepper = -1;
+    // }
 
     this.step = step;
   }

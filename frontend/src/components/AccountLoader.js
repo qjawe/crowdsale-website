@@ -1,5 +1,6 @@
 import EthereumWallet from 'ethereumjs-wallet';
 import keycode from 'keycode';
+import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
 import { Button, Header, Icon, Input } from 'semantic-ui-react';
@@ -27,6 +28,14 @@ const dropzoneStyle = {
 };
 
 export default class AccountLoader extends Component {
+  static propTypes = {
+    onBack: PropTypes.func
+  };
+
+  static defaultProps = {
+    onBack: () => {}
+  };
+
   state = {
     jsonWallet: null,
     password: '',
@@ -95,6 +104,8 @@ export default class AccountLoader extends Component {
   }
 
   renderDropzone () {
+    const { onBack } = this.props;
+
     return (
       <div>
         <Header as='h2' textAlign='center'>
@@ -112,6 +123,15 @@ export default class AccountLoader extends Component {
             </p>
           </div>
         </Dropzone>
+
+        <br />
+        <br />
+
+        <div style={{ textAlign: 'center' }}>
+          <Button onClick={onBack} size='big' secondary>
+            Back
+          </Button>
+        </div>
       </div>
     );
   }
