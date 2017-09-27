@@ -1,5 +1,6 @@
 import { phraseToWallet } from '@parity/ethkey.js';
 import { randomPhrase } from '@parity/wordlist';
+import keycode from 'keycode';
 import FileSaver from 'file-saver';
 import { observer } from 'mobx-react';
 import PropTypes from 'prop-types';
@@ -14,7 +15,6 @@ import AccountInfo from './AccountInfo';
 const RECOVERY_VERIFICATION = 'I have written down my recovery phrase';
 
 const STEPS = [
-  'start',
   'password',
   'recovery-write',
   'recovery-repeat',
@@ -56,10 +56,6 @@ export default class AccountCreator extends Component {
   valid () {
     const { step } = this.state;
 
-    if (STEPS[step] === 'start') {
-      return true;
-    }
-
     if (STEPS[step] === 'password') {
       const { password, passwordRepeat } = this.state;
 
@@ -89,10 +85,6 @@ export default class AccountCreator extends Component {
 
   render () {
     const { step } = this.state;
-
-    if (STEPS[step] === 'start') {
-      return this.renderStart();
-    }
 
     if (STEPS[step] === 'password') {
       return this.renderPassword();
@@ -124,21 +116,27 @@ export default class AccountCreator extends Component {
           </Header>
           <div style={{ lineHeight: '2em' }}>
             <p>
-              As you sent the fee for certification from an Exchange,
-              we will help you create a new Ethereum Wallet.
+              You have now created a new Ethereum wallet - it will
+              download automatically. This wallet will be used to identify
+              you in the auction. Once verified, this will be the address
+              with which you can contribute funds to the token sale.
+              Store it somewhere safe, and <b>DO NOT LOSE IT</b>.
             </p>
           </div>
         </Grid.Column>
         <Grid.Column width={10}>
-          <Header as='h4'>
+          <span style={{ fontSize: '1.15em' }}><b>
             Your ethereum address
-          </Header>
+          </b></span>
 
           <AccountInfo
             address={wallet.address}
-            showCertified={false}
             showBalance={false}
+            showCertified={false}
           />
+
+          <br />
+          <br />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button onClick={this.handleDownload}>
@@ -149,7 +147,7 @@ export default class AccountCreator extends Component {
               color='green'
               onClick={this.handleDone}
             >
-              Process the order
+              Continue
             </Button>
           </div>
         </Grid.Column>
@@ -169,31 +167,33 @@ export default class AccountCreator extends Component {
           </Header>
           <div style={{ lineHeight: '2em' }}>
             <p>
-              As you sent the fee for certification from an Exchange,
-              we will help you create a new Ethereum Wallet.
+              Choose a unique and secure password. Write it down and
+              keep it safe. You will need it to unlock access your wallet.
             </p>
           </div>
         </Grid.Column>
         <Grid.Column width={10}>
           <Form onSubmit={this.handleNext}>
-            <Form.Input
-              label='Choose your password'
-              id='account-password'
-              onChange={this.handlePasswordChange}
-              type='password'
-              value={password}
-            />
+            <div ref={this.setFocus}>
+              <Form.Input
+                label='Choose your password'
+                id='account-password'
+                onChange={this.handlePasswordChange}
+                type='password'
+                value={password}
+              />
 
-            <Form.Input
-              label='Repeat your password'
-              id='account-repeat-password'
-              onChange={this.handlePasswordRepeatChange}
-              type='password'
-              value={passwordRepeat}
-            />
+              <Form.Input
+                label='Repeat your password'
+                id='account-repeat-password'
+                onChange={this.handlePasswordRepeatChange}
+                type='password'
+                value={passwordRepeat}
+              />
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Form.Button type='button' onClick={this.handleBack}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1em' }}>
+              <Form.Button type='button' onClick={this.handleBack} secondary>
                 Back
               </Form.Button>
 
@@ -224,8 +224,12 @@ export default class AccountCreator extends Component {
           </Header>
           <div style={{ lineHeight: '2em' }}>
             <p>
-              As you sent the fee for certification from an Exchange,
-              we will help you create a new Ethereum Wallet.
+              You will need this for the next step.
+            </p>
+            <p>
+              <b>WRITE IT DOWN</b>. Should you lose your password and/or
+              JSON wallet file, your recovery phrase will restore access to
+              your wallet.
             </p>
           </div>
         </Grid.Column>
@@ -243,13 +247,15 @@ export default class AccountCreator extends Component {
           </p>
 
           <Form onSubmit={this.handleNext}>
-            <Form.Input
-              onChange={this.handleRecoveryVerificationChange}
-              value={recoveryVerification}
-            />
+            <div ref={this.setFocus}>
+              <Form.Input
+                onChange={this.handleRecoveryVerificationChange}
+                value={recoveryVerification}
+              />
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Form.Button type='button' onClick={this.handleBack}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1em' }}>
+              <Form.Button type='button' onClick={this.handleBack} secondary>
                 Back
               </Form.Button>
 
@@ -279,8 +285,9 @@ export default class AccountCreator extends Component {
           </Header>
           <div style={{ lineHeight: '2em' }}>
             <p>
-              As you sent the fee for certification from an Exchange,
-              we will help you create a new Ethereum Wallet.
+              We were serious when we reminded you: write your
+              recovery phrase down. Please repeat your recovery phrase
+              in the box to the right.
             </p>
           </div>
         </Grid.Column>
@@ -290,13 +297,17 @@ export default class AccountCreator extends Component {
           </Header>
 
           <Form onSubmit={this.handleNext}>
-            <Form.TextArea
-              onChange={this.handleRecoveryRepeatChange}
-              value={recoveryRepeat}
-            />
+            <div ref={this.setFocus}>
+              <Form.TextArea
+                onChange={this.handleRecoveryRepeatChange}
+                onKeyUp={this.handleKeyUp}
+                value={recoveryRepeat}
+                ref={this.setFocus}
+              />
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Form.Button type='button' onClick={this.handleBack}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1em' }}>
+              <Form.Button type='button' onClick={this.handleBack} secondary>
                 Back
               </Form.Button>
 
@@ -314,43 +325,6 @@ export default class AccountCreator extends Component {
     );
   }
 
-  renderStart () {
-    return (
-      <Grid>
-        <Grid.Column width={8}>
-          <Header as='h3'>
-            YOU SENT ETHER FROM AN EXCHANGE
-          </Header>
-          <div style={{ lineHeight: '2em' }}>
-            <p>
-              As you sent the fee for certification from an Exchange,
-              we will help you create a new Ethereum Wallet.
-            </p>
-            <p>
-              At the end of the process, the downloaded file must
-              be saved and kept in a safe place, etc.
-            </p>
-          </div>
-        </Grid.Column>
-        <Grid.Column width={8}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-            <Button.Group size='huge'>
-              <Button onClick={this.handleBack}>Back</Button>
-              <Button.Or />
-              <Button
-                color='green'
-                onClick={this.handleNext}
-                // style={{ padding: '0.75em 4em' }}
-              >
-                Continue
-              </Button>
-            </Button.Group>
-          </div>
-        </Grid.Column>
-      </Grid>
-    );
-  }
-
   handleBack = (event) => {
     event.preventDefault();
 
@@ -362,7 +336,11 @@ export default class AccountCreator extends Component {
   };
 
   handleDone = () => {
-    this.props.onDone(this.state.wallet.address);
+    const { address, secret } = this.state.wallet;
+
+    console.warn(secret);
+
+    this.props.onDone({ address, privateKey: secret });
   };
 
   handleDownload = () => {
@@ -372,8 +350,18 @@ export default class AccountCreator extends Component {
     FileSaver.saveAs(blob, `${jsonWallet.id}.json`);
   };
 
+  handleKeyUp = (event) => {
+    const key = keycode(event);
+
+    if (event.ctrlKey && key === 'enter') {
+      this.handleNext();
+    }
+  };
+
   handleNext = async (event) => {
-    event.preventDefault();
+    if (event) {
+      event.preventDefault();
+    }
 
     if (this.state.step === STEPS.length - 1) {
       return;
@@ -413,5 +401,23 @@ export default class AccountCreator extends Component {
 
   handleRecoveryVerificationChange = (_, { value }) => {
     this.setState({ recoveryVerification: value });
+  };
+
+  setFocus = (element) => {
+    if (!element) {
+      return;
+    }
+
+    const input = element.querySelector('input');
+
+    if (input) {
+      return input.focus();
+    }
+
+    const textarea = element.querySelector('textarea');
+
+    if (textarea) {
+      return textarea.focus();
+    }
   };
 }

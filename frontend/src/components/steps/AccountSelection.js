@@ -3,6 +3,9 @@ import { Card, Header, Image } from 'semantic-ui-react';
 
 import EthereumImg from '../../images/ethereum.png';
 
+import appStore from '../../stores/app.store';
+import accountStore from '../../stores/account.store';
+import AccountCreator from '../AccountCreator';
 import AccountLoader from '../AccountLoader';
 
 const cardStyle = {
@@ -22,12 +25,20 @@ export default class AccountSelection extends Component {
 
     if (action === 'load') {
       return (
-        <AccountLoader onBack={this.handleReset} />
+        <AccountLoader
+          onCancel={this.handleReset}
+          onDone={this.handleDone}
+        />
       );
     }
 
     if (action === 'create') {
-      return this.renderCreate();
+      return (
+        <AccountCreator
+          onCancel={this.handleReset}
+          onDone={this.handleDone}
+        />
+      );
     }
 
     return this.renderChoose();
@@ -66,6 +77,11 @@ export default class AccountSelection extends Component {
   renderCreate () {
 
   }
+
+  handleDone = ({ address, privateKey }) => {
+    accountStore.setAccount({ address, privateKey });
+    appStore.goto('contribute');
+  };
 
   handleReset = () => {
     this.setState({ action: null });
