@@ -2,32 +2,30 @@ import BigNumber from 'bignumber.js';
 import { action, computed, observable } from 'mobx';
 
 import backend from '../backend';
-import { fromWei } from '../utils';
-
-const REFRESH_DELAY = 4000;
+import blockStore from './block.store';
 
 class AuctionStore {
-  @observable beginTime = new Date();
+  BONUS_DURATION = new BigNumber(0);
+  BONUS_SIZE = new BigNumber(0);
+  DIVISOR = new BigNumber(1);
+  STATEMENT_HASH = '0x';
+  USDWEI = new BigNumber(10).pow(18).div(200);
+
+  beginTime = new Date();
+  contractAddress = '0x';
+  tokenCap = new BigNumber(0);
+
   @observable block = {};
-  @observable BONUS_DURATION = new BigNumber(0);
-  @observable BONUS_SIZE = new BigNumber(0);
-  @observable chart = {};
   @observable connected = 'disconnected'
-  @observable contractAddress = '0x';
   @observable currentPrice = new BigNumber(0);
-  @observable DIVISOR = new BigNumber(1);
   @observable endTime = new Date();
-  @observable STATEMENT_HASH = '0x';
   @observable tokensAvailable = new BigNumber(0);
-  @observable tokenCap = new BigNumber(0);
   @observable totalAccounted = new BigNumber(0);
   @observable totalReceived = new BigNumber(0);
 
-  USDWEI = new BigNumber(10).pow(18).div(200);
-
   constructor () {
-    this.init()
-      .then(() => this.refresh());
+    this.init();
+    blockStore.on('block', this.refresh, this);
   }
 
   async init () {
@@ -47,6 +45,8 @@ class AuctionStore {
 
     this.beginTime = new Date(beginTime);
     this.tokenCap = new BigNumber(tokenCap);
+
+    return this.refresh();
   }
 
   bonus (value) {
@@ -104,6 +104,18 @@ class AuctionStore {
 
   isActive () {
     return this.now >= this.beginTime && this.now < this.endTime;
+  }
+
+  weiToDot (weiValue) {
+    const deal = this.theDeal(weiValue);
+
+    if (deal.price.eq(0)) {
+      return new BigNumber(0);
+    }
+
+    const dots = deal.accepted.div(deal.price).floor();
+
+    return dots.div(this.DIVISOR);
   }
 
   theDeal (value) {
@@ -174,26 +186,12 @@ class AuctionStore {
 
   async refresh () {
     try {
-      const { hash } = await backend.blockHash();
+      const status = await backend.status();
 
-      // Same block, no updates
-      if (this.block.hash !== hash) {
-        const status = await backend.status();
-
-        this.update(status);
-      }
+      this.update(status);
     } catch (error) {
       console.error(error);
     }
-
-    setTimeout(() => {
-      this.refresh();
-    }, REFRESH_DELAY);
-  }
-
-  @action
-  setChart (chart) {
-    this.chart = chart;
   }
 
   @action
@@ -214,10 +212,6 @@ class AuctionStore {
       block.number = new BigNumber(block.number);
     }
 
-    // Only update the chart when the price updates
-    const nextTotalAccounted = new BigNumber(totalAccounted);
-    const update = !nextTotalAccounted.eq(this.totalAccounted);
-
     this.currentPrice = new BigNumber(currentPrice);
     this.endTime = new Date(endTime);
     this.tokensAvailable = new BigNumber(tokensAvailable);
@@ -227,93 +221,6 @@ class AuctionStore {
     this.block = block;
     this.connected = connected;
     this.contractAddress = contractAddress;
-
-    if (update || !this.chart.data) {
-      this.updateChartData();
-    }
-  }
-
-  formatChartPrice (price) {
-    if (price === undefined) {
-      return undefined;
-    }
-
-    return this.formatPrice(price).toNumber();
-  }
-
-  formatPrice (price) {
-    return fromWei(price.mul(this.DIVISOR));
-  }
-
-  formatChartData (data) {
-    const { target, raised, time } = data;
-
-    return {
-      target: fromWei(target).round().toNumber(),
-      raised: fromWei(raised).toNumber(),
-      time: time.getTime()
-    };
-  }
-
-  async updateChartData () {
-    const { beginTime, now } = this;
-    const raisedRawData = await backend.chartData();
-
-    const raisedData = raisedRawData
-      .map((datum) => {
-        const { time, totalAccounted } = datum;
-        const value = new BigNumber(totalAccounted);
-
-        return { value, time: new Date(time) };
-      })
-      .sort((rA, rB) => rB.time - rA.time);
-
-    const NUM_TICKS = 200;
-    const data = [];
-
-    const beginTarget = this.getTarget(beginTime);
-    const nowTarget = this.getTarget(now);
-
-    const targetInteval = beginTarget.sub(nowTarget).div(NUM_TICKS);
-
-    for (let i = 0; i <= NUM_TICKS; i++) {
-      // The target decreases with time
-      const target = beginTarget.sub(targetInteval.mul(i));
-      const time = this.getTimeFromTarget(target);
-      const raisedIndex = raisedData.findIndex((d) => d.time <= time);
-      const raised = raisedIndex === -1
-        ? new BigNumber(0)
-        : raisedData[raisedIndex].value;
-
-      data.push({ target, time, raised });
-    }
-
-    const dateInterval = (now - beginTime) / NUM_TICKS;
-
-    for (let i = 0; i <= NUM_TICKS; i++) {
-      const time = new Date(beginTime.getTime() + dateInterval * i);
-      const target = this.getTarget(time);
-      const raisedIndex = raisedData.findIndex((d) => d.time <= time);
-      const raised = raisedIndex === -1
-        ? new BigNumber(0)
-        : raisedData[raisedIndex].value;
-
-      data.push({ target, time, raised });
-    }
-
-    data.push({
-      time: new Date(now.getTime() + dateInterval),
-      raised: this.totalAccounted,
-      target: nowTarget
-    });
-
-    const formattedData = data
-      .sort((ptA, ptB) => ptA.time - ptB.time)
-      .map((datum) => this.formatChartData(datum));
-
-    this.setChart({
-      data: formattedData
-    });
   }
 }
 

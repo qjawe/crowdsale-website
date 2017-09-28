@@ -1,14 +1,19 @@
 import BigNumber from 'bignumber.js';
 
-import { del, get, post } from './utils';
+import { get, post } from './utils';
 
 class Backend {
-  constructor (url) {
+  constructor (url, picopsUrl) {
     this._url = url;
+    this._picopsUrl = picopsUrl;
   }
 
   url (path) {
-    return `${this._url}${path}`;
+    return `${this._url}/api${path}`;
+  }
+
+  picopsUrl (path) {
+    return `${this._picopsUrl}/api${path}`;
   }
 
   blockHash () {
@@ -23,26 +28,25 @@ class Backend {
     return get(this.url('/auction/constants'));
   }
 
-  async chartData () {
-    return get(this.url('/auction/chart'));
+  async getAccountFeeInfo (address) {
+    const { balance, paid } = await get(this.picopsUrl(`/accounts/${address}/fee`));
+
+    return {
+      balance: new BigNumber(balance),
+      paid
+    };
   }
 
-  async checkStatus (address) {
-    return get(this.url(`/onfido/${address}`));
+  async certifierAddress () {
+    const { certifier } = await get(this.url(`/certifier`));
+
+    return certifier;
   }
 
-  async createApplicant (address, { country, firstName, lastName, signature, stoken }) {
-    return post(this.url(`/onfido/${address}/applicant`), {
-      country,
-      firstName,
-      lastName,
-      signature,
-      stoken
-    });
-  }
+  async fee () {
+    const { fee, feeRegistrar } = await get(this.picopsUrl(`/fee`));
 
-  async createCheck (address) {
-    return post(this.url(`/onfido/${address}/check`));
+    return { fee: new BigNumber(fee), feeRegistrar };
   }
 
   async getAddressInfo (address) {
@@ -61,20 +65,10 @@ class Backend {
     return nonce;
   }
 
-  async getPendingTx (address) {
-    const { pending } = await get(this.url(`/accounts/${address}/pending`));
+  async sendFeeTx (tx) {
+    const { hash } = await post(this.picopsUrl('/fee-tx'), { tx });
 
-    return pending;
-  }
-
-  async deletePendingTx (address, sign) {
-    return del(this.url(`/accounts/${address}/pending/${sign}`));
-  }
-
-  async getTx (txHash) {
-    const { transaction } = await get(this.url(`/tx/${txHash}`));
-
-    return transaction;
+    return { hash };
   }
 
   async sendTx (tx) {
@@ -84,4 +78,9 @@ class Backend {
   }
 }
 
-export default new Backend(`http://${window.location.hostname}:4000`);
+const { protocol, hostname, port } = window.location;
+const frontendPort = port ? ':4000' : '';
+
+const picopsUrl = 'https://staging-picops.parity.io';
+
+export default new Backend(`${protocol}//${hostname}${frontendPort}`, picopsUrl);

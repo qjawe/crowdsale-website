@@ -6,12 +6,13 @@
 const EthereumTx = require('ethereumjs-tx');
 const Router = require('koa-router');
 
-const store = require('../store');
-const { buf2hex, buf2big, big2hex } = require('../utils');
-const { error } = require('./utils');
+const { buf2hex, buf2big } = require('../utils');
+const { rateLimiter, error } = require('./utils');
 
 function get ({ sale, connector, certifier }) {
-  const router = new Router();
+  const router = new Router({
+    prefix: '/api'
+  });
 
   router.get('/block/hash', (ctx) => {
     if (!connector.block) {
@@ -40,7 +41,10 @@ function get ({ sale, connector, certifier }) {
     }
 
     const from = buf2hex(txObj.from);
-    const [ certified ] = await certifier.methods.certified(from).get();
+
+    await rateLimiter(from, ctx.remoteAddress);
+
+    const certified = await certifier.isCertified(from);
 
     if (!certified) {
       return error(ctx, 400, `${from} is not certified`);
@@ -53,18 +57,23 @@ function get ({ sale, connector, certifier }) {
     const requiredEth = value.add(gasPrice.mul(gasLimit));
     const balance = await connector.balance(from);
 
-    if (balance.cmp(requiredEth) < 0) {
-      const hash = buf2hex(txObj.hash(true));
-
-      await store.Transactions.set(from, tx, hash, requiredEth);
-
-      ctx.body = { hash, requiredEth: big2hex(requiredEth.sub(balance)) };
-      return;
+    if (balance.lt(requiredEth)) {
+      return error(
+        ctx,
+        400,
+        `Balance is too low for this transaction. Missing ${(requiredEth.div(Math.pow(10, 18))).toFormat()} ETH`
+      );
     }
 
     const hash = await connector.sendTx(tx);
 
     ctx.body = { hash };
+  });
+
+  router.get('/certifier', async (ctx, next) => {
+    const { address } = certifier;
+
+    ctx.body = { certifier: address };
   });
 
   return router;

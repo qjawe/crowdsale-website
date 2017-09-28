@@ -156,7 +156,7 @@ class Contract {
    */
   constructor (connector, address, abi, statics = []) {
     this._abi = abi;
-    this._address = address;
+    this._address = address.toLowerCase();
     this._connector = connector;
     this._transport = connector.transport;
     this._statics = statics;
@@ -257,7 +257,7 @@ class Contract {
   async logs (eventNames, options) {
     const events = eventNames.map((eventName) => {
       if (!this._events.has(eventName)) {
-        throw new Error(`Unkown event ${eventName}`);
+        throw new Error(`Unknown event ${eventName}`);
       }
 
       return this._events.get(eventName);
@@ -319,7 +319,8 @@ class Contract {
       ._transport
       .request('eth_call', {
         to: this._address,
-        data
+        data,
+        gasPrice: '0x0'
       })
       .then((data) => {
         return method.decode(data);

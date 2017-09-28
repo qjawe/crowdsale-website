@@ -32,11 +32,18 @@ async function main () {
   const certifier = new Certifier(connector, sale.values.certifier);
 
   app.use(async (ctx, next) => {
+    ctx.remoteAddress = ctx.req.headers['x-forwarded-for'] || ctx.req.connection.remoteAddress;
+
     try {
       await next();
     } catch (err) {
-      ctx.status = err.status || 500;
-      ctx.body = err.message;
+      if (err.status) {
+        ctx.status = err.status;
+        ctx.body = err.message;
+      } else {
+        ctx.status = 500;
+        ctx.body = 'Internal server error';
+      }
       ctx.app.emit('error', err, ctx);
     }
   });

@@ -39,22 +39,29 @@ class Sale extends Contract {
    */
   constructor (connector, address) {
     super(connector, address, SecondPriceAuction, STATICS);
+
+    this._chartData = Promise.resolve(null);
   }
 
   async update () {
-    return super.update()
-      .then(() => {
-        log.trace(`Price is ${this.values.currentPrice.toFormat()} wei`);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    try {
+      await super.update();
+
+      this._chartData = await this._getChartData();
+
+      log.trace(`Price is ${this.values.currentPrice.toFormat()} wei`);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  async getChartData () {
+  get chartData () {
+    return this._chartData;
+  }
+
+  async _getChartData () {
     const logs = await this.logs([
       'Buyin',
-      'PrepayBuyin',
       'Injected'
     ]);
 
@@ -73,9 +80,9 @@ class Sale extends Contract {
     return logs
       .sort((logA, logB) => logA.timestamp - logB.timestamp)
       .map((log) => {
-        const { accepted } = log.params;
+        const { accounted } = log.params;
 
-        totalAccounted = totalAccounted.add(accepted);
+        totalAccounted = totalAccounted.add(accounted);
 
         return {
           totalAccounted: '0x' + totalAccounted.toString(16),

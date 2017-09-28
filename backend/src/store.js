@@ -67,12 +67,14 @@ class Transactions {
 
       next = Number(cursor);
 
-      // `res` is an array of `[key, value, key, value, ...]`
-      for (const [address, json] of chunk(res, 2)) {
-        const { tx, required } = JSON.parse(json);
+      await Promise.all(
+        // `res` is an array of `[key, value, key, value, ...]`
+        chunk(res, 2).map(async ([address, json]) => {
+          const { tx, required } = JSON.parse(json);
 
-        await callback(address, tx, hex2big(required));
-      }
+          await callback(address, tx, hex2big(required));
+        })
+      );
 
     // `next` will be `0` at the end of iteration, explained here:
     // https://redis.io/commands/scan

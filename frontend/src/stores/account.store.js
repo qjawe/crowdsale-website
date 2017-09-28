@@ -1,210 +1,201 @@
-import Util from 'ethereumjs-util';
-import Wallet from 'ethereumjs-wallet';
-import { action, observe, observable } from 'mobx';
-import store from 'store';
+import BigNumber from 'bignumber.js';
+import EthJS from 'ethereumjs-util';
+import { action, computed, observable } from 'mobx';
 
-import appStore from './app.store';
-import auctionStore from './auction.store';
 import backend from '../backend';
-
-const WALLET_LS_KEY = '__crowdsale::wallet';
+import appStore, { STEPS as APP_STEPS } from './app.store';
+import auctionStore from './auction.store';
+import blockStore from './block.store';
+import buyStore, { GAS_VALUE as auctionGasValue } from './buy.store';
+import feeStore from './fee.store';
 
 class AccountStore {
+  @observable accounted = new BigNumber(0);
   @observable address = '';
-  @observable balances = {};
+  @observable balance = new BigNumber(0);
   @observable certified = null;
-  @observable error = null;
-  @observable unlocked = false;
-  @observable publicKey = null;
-  @observable privateKey = null;
-  @observable wallet = null;
+  @observable paid = null;
+  @observable privateKey = '';
+  @observable spending = new BigNumber(0);
 
-  constructor () {
-    this.loadWallet();
+  @computed get missingWei () {
+    const { balance, paid, spending } = this;
+    const { totalFee } = feeStore;
 
-    // Fetch the pending transaction on new block
-    observe(auctionStore, 'block', () => {
-      this.updateAccountInfo();
-    });
+    let missingWei = spending.add(auctionGasValue).sub(balance);
+
+    if (!paid) {
+      missingWei = missingWei.add(totalFee);
+    }
+
+    if (missingWei.lt(0)) {
+      missingWei = new BigNumber(0);
+    }
+
+    // console.warn(JSON.stringify({ balance, missingWei, paid, spending, totalFee, auctionGasValue }, null, 2));
+    return missingWei;
   }
 
-  load (file) {
-    this.setError(null);
+  async checkCertification () {
+    const { certified } = await backend.getAddressInfo(this.address);
 
-    return this.read(file)
-      .then((wallet) => {
-        this.setWallet(wallet);
-      })
-      .catch((error) => {
-        this.setError(error.message);
-      });
-  }
+    if (certified) {
+      this.setInfo({ certified });
+      this.unwatchCertification();
 
-  loadWallet () {
-    const wallet = store.get(WALLET_LS_KEY);
-
-    if (wallet && wallet.crypto) {
-      wallet.fromLS = true;
-
-      this.setWallet(wallet);
+      // ensure we have enough funds for purchase
+      this.checkPayment();
     }
   }
 
-  @action
-  logout () {
-    appStore.goto('home');
+  async checkFeePayment () {
+    const { paid } = await backend.getAccountFeeInfo(this.address);
 
-    this.address = '';
-    this.balances = {};
-    this.certified = null;
-    this.error = null;
-    this.unlocked = false;
-    this.publicKey = null;
-    this.privateKey = null;
-    this.wallet = null;
-
-    this.saveWallet();
+    if (paid) {
+      this.setInfo({ paid });
+      this.unwatchFeePayment();
+      appStore.goto('picops');
+    }
   }
 
-  async create (secret, password) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const wallet = Wallet.fromPrivateKey(Buffer.from(secret.slice(2), 'hex'));
-        const v3Wallet = wallet.toV3(password, {
-          c: 65536,
-          kdf: 'pbkdf2'
-        });
+  async checkPayment () {
+    const { eth: balance } = await backend.getAddressInfo(this.address);
 
-        return resolve(v3Wallet);
-      }, 50);
-    });
+    this.setInfo({ balance });
+
+    if (this.missingWei.eq(0)) {
+      this.unwatchPayment();
+
+      if (this.certified) {
+        appStore.goto('purchase');
+        buyStore.purchase(this.address, this.spending, this.privateKey);
+      } else {
+        appStore.goto('fee-payment');
+        feeStore.sendPayment(this.address, this.privateKey);
+      }
+    } else if (appStore.step !== APP_STEPS['payment']) {
+      // Go to payment page if not there already
+      appStore.goto('payment');
+    }
   }
 
-  read (file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+  async checkPurchase () {
+    const { accounted } = await backend.getAddressInfo(this.address);
 
-      reader.readAsText(file);
-
-      reader.addEventListener('error', () => {
-        return reject(new Error('Unable to read the file.'));
-      });
-
-      reader.addEventListener('load', (event) => {
-        try {
-          const keyObject = JSON.parse(event.target.result);
-
-          return resolve(keyObject);
-        } catch (error) {
-          return reject(new Error('Invalid JSON file.'));
-        }
-      });
-    });
+    if (!accounted.eq(this.accounted)) {
+      this.setInfo({ accounted });
+      appStore.goto('summary');
+    }
   }
 
-  saveWallet () {
-    store.set(WALLET_LS_KEY, this.wallet || {});
+  async fetchInfo () {
+    if (!this.address) {
+      throw new Error('no address set in the account store');
+    }
+
+    const { accounted, eth: balance, certified } = await backend.getAddressInfo(this.address);
+    const { paid } = await backend.getAccountFeeInfo(this.address);
+
+    this.setInfo({ accounted, balance, certified, paid });
   }
 
-  @action
-  setAccountInfo ({ address, publicKey, privateKey }) {
-    const cleanAddress = Util.toChecksumAddress('0x' + address.replace(/^0x/, ''));
-
-    this.address = cleanAddress;
-    this.publicKey = publicKey;
+  @action setAccount ({ address, privateKey }) {
+    this.address = address;
     this.privateKey = privateKey;
+
+    this.fetchInfo();
   }
 
-  @action
-  setBalances (balances) {
-    this.balances = balances;
-  }
+  @action setInfo ({ accounted, balance, certified, paid }) {
+    if (accounted !== undefined) {
+      this.accounted = accounted;
+    }
 
-  @action
-  setCertified (certified) {
-    this.certified = certified;
-  }
+    if (balance !== undefined) {
+      this.balance = balance;
+    }
 
-  @action
-  setError (error) {
-    this.error = error;
-  }
+    if (certified !== undefined) {
+      this.certified = certified;
+    }
 
-  @action
-  setUnlocked (unlocked) {
-    this.unlocked = unlocked;
-
-    if (unlocked) {
-      this.updateAccountInfo();
+    if (paid !== undefined) {
+      this.paid = paid;
     }
   }
 
-  @action
-  setWallet (wallet) {
-    if (wallet) {
-      this.setAccountInfo({ address: wallet.address });
-    }
+  /**
+   * Sets how much the user would like to spend,
+   * in WEI.
+   *
+   * @param {BigNumber} spending The value the user wants to send, in WEI
+   */
+  @action setSpending (spending) {
+    // No refunds allowed in the contract,
+    // so need to modify the actual spending
+    const { accepted } = auctionStore.theDeal(spending);
 
-    this.wallet = wallet;
+    console.warn('wants to send', spending.toFormat(), 'accepted', accepted.toString());
+    this.spending = accepted;
   }
 
+  /**
+   * Sign the given message
+   *
+   * @param  {String} message
+   * @return {String}
+   */
   signMessage (message) {
-    const { privateKey, unlocked } = this;
-
-    if (!privateKey || !unlocked) {
-      throw new Error('no unlocked account');
+    if (!this.privateKey) {
+      throw new Error('no private key found');
     }
 
-    const msgHash = Util.hashPersonalMessage(Buffer.from(message));
-    const { v, r, s } = Util.ecsign(msgHash, privateKey);
+    const privateKey = Buffer.from(this.privateKey.slice(2), 'hex');
 
-    return Util.toRpcSig(v, r, s);
+    const msgHash = EthJS.hashPersonalMessage(EthJS.toBuffer(message));
+    const { v, r, s } = EthJS.ecsign(msgHash, privateKey);
+
+    return EthJS.toRpcSig(v, r, s);
   }
 
-  unlock (password, rememberWallet = false) {
-    this.setError(null);
-
-    return new Promise((resolve) => {
-      // Defer to allow the UI to render before blocking
-      setTimeout(() => {
-        let wallet;
-
-        try {
-          wallet = Wallet.fromV3(this.wallet, password);
-        } catch (_) {
-          this.setError('Invalid password');
-          return resolve();
-        }
-
-        if (rememberWallet) {
-          this.saveWallet();
-        }
-
-        const address = '0x' + wallet.getAddress().toString('hex');
-        const publicKey = wallet.getPublicKey();
-        const privateKey = wallet.getPrivateKey();
-
-        this.setAccountInfo({
-          address,
-          publicKey,
-          privateKey
-        });
-
-        this.setUnlocked(true);
-        return resolve();
-      }, 50);
-    });
+  /** Poll on new block if `this.address` is certified */
+  watchCertification () {
+    blockStore.on('block', this.checkCertification, this);
   }
 
-  async updateAccountInfo () {
-    if (!this.address || !this.unlocked) {
-      return;
-    }
+  /** Poll on new block if `this.address` paid the fee */
+  watchFeePayment () {
+    blockStore.on('block', this.checkFeePayment, this);
+  }
 
-    const { eth, accounted, certified } = await backend.getAddressInfo(this.address);
+  /** Poll on new block `this.address` balance, until >= missing ETH */
+  watchPayment () {
+    blockStore.on('block', this.checkPayment, this);
+  }
 
-    this.setBalances({ eth, accounted });
-    this.setCertified(certified);
+  /** Poll on new block `this.address` dot balance, until it changes */
+  watchPurchase () {
+    blockStore.on('block', this.checkPurchase, this);
+  }
+
+  /** Stop polling */
+  unwatchCertification () {
+    blockStore.removeListener('block', this.checkCertification, this);
+  }
+
+  /** Stop polling */
+  unwatchFeePayment () {
+    blockStore.removeListener('block', this.checkFeePayment, this);
+  }
+
+  /** Stop polling */
+  unwatchPayment () {
+    blockStore.removeListener('block', this.checkPayment, this);
+  }
+
+  /** Stop polling */
+  unwatchPurchase () {
+    blockStore.removeListener('block', this.checkPurchase, this);
   }
 }
 

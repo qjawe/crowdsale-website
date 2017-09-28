@@ -9,11 +9,11 @@ const { int2date } = require('../utils');
 
 function get ({ sale, connector }) {
   const router = new Router({
-    prefix: '/auction'
+    prefix: '/api/auction'
   });
 
   router.get('/chart', async (ctx, next) => {
-    const data = await sale.getChartData();
+    const data = await sale.chartData;
 
     ctx.body = data;
   });

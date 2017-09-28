@@ -7,6 +7,7 @@ const config = require('config');
 const EthereumTx = require('ethereumjs-tx');
 
 const Sale = require('./contracts/sale');
+const Certifier = require('./contracts/certifier');
 const store = require('./store');
 const ParityConnector = require('./api/parity');
 const { buf2hex } = require('./utils');
@@ -22,6 +23,7 @@ class QueueConsumer {
 
     this._connector = new ParityConnector(wsUrl);
     this._sale = new Sale(this._connector, contractAddress);
+    this._certifier = new Certifier(this._connector, this._sale.values.certifier);
 
     this._connector.on('block', () => this.update());
     this._sale.update().then(() => {
@@ -43,7 +45,7 @@ class QueueConsumer {
     await store.Transactions.scan(async (address, tx, required) => {
       const balance = await connector.balance(address);
 
-      if (balance.lt(required)) {
+      if (balance.lt(required) || !await this._certifier.isCertified(address)) {
         return;
       }
 

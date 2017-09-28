@@ -17,8 +17,15 @@ const config = {
       path.resolve(__dirname, 'src/main.js')
     ],
     vendor: [
+      '@parity/ethkey.js',
+      '@parity/wordlist',
+      'bignumber.js',
+      'country-data',
+      'datamaps',
+      'mobx',
       'onfido-sdk-ui',
-      'semantic-ui-react'
+      'react',
+      'react-dom'
     ]
   },
 
@@ -61,12 +68,7 @@ const config = {
       'node_modules'
     ],
     extensions: ['.js', '.json', '.jsx'],
-    mainFields: ['jsnext:main', 'browser', 'module', 'main'],
-    alias: {
-      'node-fetch': path.join(__dirname, './src/node-fetch.js'),
-      'fs': path.join(__dirname, './src/empty.js')
-      // 'parity-reactive-ui': path.join(__dirname, 'empty')
-    }
+    mainFields: ['jsnext:main', 'browser', 'module', 'main']
   },
 
   plugins: [
@@ -82,7 +84,7 @@ const config = {
     }),
 
     new HtmlWebpackPlugin({
-      title: 'Auction Sale',
+      title: 'Parity Crowdsale Module',
       template: path.resolve(__dirname, './src/index.ejs')
     })
   ]
