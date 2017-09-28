@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import EthJS from 'ethereumjs-util';
 import { action, computed, observable } from 'mobx';
 
 import backend from '../backend';
@@ -136,6 +137,25 @@ class AccountStore {
 
     console.warn('wants to send', spending.toFormat(), 'accepted', accepted.toString());
     this.spending = accepted;
+  }
+
+  /**
+   * Sign the given message
+   *
+   * @param  {String} message
+   * @return {String}
+   */
+  signMessage (message) {
+    if (!this.privateKey) {
+      throw new Error('no private key found');
+    }
+
+    const privateKey = Buffer.from(this.privateKey.slice(2), 'hex');
+
+    const msgHash = EthJS.hashPersonalMessage(EthJS.toBuffer(message));
+    const { v, r, s } = EthJS.ecsign(msgHash, privateKey);
+
+    return EthJS.toRpcSig(v, r, s);
   }
 
   /** Poll on new block if `this.address` is certified */

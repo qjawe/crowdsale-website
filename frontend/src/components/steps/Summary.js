@@ -31,17 +31,17 @@ export default class Summary extends Component {
             address={address}
           />
 
-          <div style={{ margin: '1.5em 0', fontSize: '1.25em' }}>
+          <div style={{ marginTop: '1.5em', fontSize: '1.25em' }}>
             You have successfully contributed {fromWei(spending).toFormat()} ETH and will
             receive at least {dots.toFormat()} DOTs
           </div>
 
-          <div style={{ margin: '1.5em 0', fontSize: '1.25em' }}>
+          <div style={{ marginTop: '1em', fontSize: '1.25em' }}>
             You will receive your DOTs once the sale has ended to the address above
           </div>
 
-          <div style={{ margin: '1.5em 0' }}>
-            <Button primary>
+          <div style={{ marginTop: '2.5em' }}>
+            <Button primary size='big'>
               Return to the main website
             </Button>
           </div>
