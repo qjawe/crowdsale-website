@@ -5,22 +5,23 @@ import backend from '../backend';
 import blockStore from './block.store';
 
 class AuctionStore {
-  @observable beginTime = new Date();
+  BONUS_DURATION = new BigNumber(0);
+  BONUS_SIZE = new BigNumber(0);
+  DIVISOR = new BigNumber(1);
+  STATEMENT_HASH = '0x';
+  USDWEI = new BigNumber(10).pow(18).div(200);
+
+  beginTime = new Date();
+  contractAddress = '0x';
+  tokenCap = new BigNumber(0);
+
   @observable block = {};
-  @observable BONUS_DURATION = new BigNumber(0);
-  @observable BONUS_SIZE = new BigNumber(0);
   @observable connected = 'disconnected'
-  @observable contractAddress = '0x';
   @observable currentPrice = new BigNumber(0);
-  @observable DIVISOR = new BigNumber(1);
   @observable endTime = new Date();
-  @observable STATEMENT_HASH = '0x';
   @observable tokensAvailable = new BigNumber(0);
-  @observable tokenCap = new BigNumber(0);
   @observable totalAccounted = new BigNumber(0);
   @observable totalReceived = new BigNumber(0);
-
-  USDWEI = new BigNumber(10).pow(18).div(200);
 
   constructor () {
     this.init();

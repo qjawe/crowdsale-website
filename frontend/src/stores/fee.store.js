@@ -34,29 +34,16 @@ class FeeStore {
     }
   };
 
-  async checkPayer () {
+  async sendPayment (who, privateKey) {
     try {
-      // const { paid } = await backend.getAccountFeeInfo(payer);
-    } catch (error) {
-      appStore.addError(error);
-    }
-  }
-
-  async sendPayment () {
-    const { payer } = this;
-
-    try {
-      if (!isValidAddress(payer)) {
-        throw new Error('invalid payer address: ' + payer);
+      if (!isValidAddress(who)) {
+        throw new Error('invalid payer address: ' + who);
       }
 
-      this.goto('sending-payment');
+      const privateKeyBuf = Buffer.from(privateKey.slice(2), 'hex');
 
-      const { address, secret } = this.wallet;
-      const privateKey = Buffer.from(secret.slice(2), 'hex');
-
-      const nonce = await backend.nonce(address);
-      const calldata = FEE_REGISTRAR_PAY_SIGNATURE + payer.slice(-40).padStart(64, 0);
+      const nonce = await backend.nonce(who);
+      const calldata = FEE_REGISTRAR_PAY_SIGNATURE + who.slice(-40).padStart(64, 0);
 
       const tx = new EthereumTx({
         to: this.feeRegistrar,
@@ -67,13 +54,12 @@ class FeeStore {
         nonce
       });
 
-      tx.sign(privateKey);
+      tx.sign(privateKeyBuf);
 
       const serializedTx = `0x${tx.serialize().toString('hex')}`;
       const { hash } = await backend.sendFeeTx(serializedTx);
 
-      console.warn('sent FeeRegistrar tx', { transaction: hash, payer });
-      this.setTransaction(hash);
+      console.warn('sent FeeRegistrar tx', { transaction: hash, who });
     } catch (error) {
       appStore.addError(error);
     }

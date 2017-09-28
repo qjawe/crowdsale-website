@@ -7,7 +7,7 @@ import { fromWei, toWei } from '../../utils';
 import accountStore from '../../stores/account.store';
 import auctionStore from '../../stores/auction.store';
 import feeStore from '../../stores/fee.store';
-// import appStore from '../../stores/app.store';
+import appStore from '../../stores/app.store';
 import AccountInfo from '../AccountInfo';
 import Step from '../Step';
 
@@ -75,21 +75,28 @@ export default class AccountLoader extends Component {
                 <div>
                   {this.renderSending()}
                   {this.renderFee()}
-                  {this.renderAction()}
                 </div>
               )
               : null
           }
+          {this.renderAction()}
         </div>
       </Step>
     );
   }
 
   renderAction () {
+    const { certified } = accountStore;
+    const { spending } = this.state;
+
     return (
       <div style={{ textAlign: 'right', marginTop: '1.5em' }}>
-        <Button primary>
-          Certify your identity
+        <Button primary onClick={this.handleContinue} disabled={!spending || spending.eq(0)}>
+          {
+            certified
+              ? 'Contribute'
+              : 'Certify your identity'
+          }
         </Button>
       </div>
     );
@@ -123,6 +130,17 @@ export default class AccountLoader extends Component {
       </div>
     );
   }
+
+  handleContinue = () => {
+    const { spending } = this.state;
+
+    if (!spending || spending.eq(0)) {
+      return;
+    }
+
+    accountStore.setSpending(toWei(spending));
+    appStore.goto('payment');
+  };
 
   handleSpendChange = async (_, { value }) => {
     let spending = null;

@@ -62,6 +62,7 @@ export default class AccountLoader extends Component {
         <div>
           <AccountInfo
             address={`0x${jsonWallet.address}`}
+            showCertified={false}
           />
           <br />
           <br />
@@ -191,6 +192,10 @@ export default class AccountLoader extends Component {
   };
 
   handleUnlock = async () => {
+    if (this.errorId) {
+      appStore.removeMessage(this.errorId);
+    }
+
     this.setState({ unlocking: true });
 
     const { jsonWallet, password } = this.state;
@@ -205,7 +210,7 @@ export default class AccountLoader extends Component {
           privateKey
         });
       } catch (error) {
-        appStore.addError(error);
+        this.errorId = appStore.addError(error);
         this.setState({ unlocking: false });
       }
     });

@@ -46,14 +46,13 @@ class Sale extends Contract {
   async update () {
     try {
       await super.update();
+
+      this._chartData = await this._getChartData();
+
+      log.trace(`Price is ${this.values.currentPrice.toFormat()} wei`);
     } catch (err) {
       console.error(err);
-      return;
     }
-
-    this._chartData = this._getChartData();
-
-    log.trace(`Price is ${this.values.currentPrice.toFormat()} wei`);
   }
 
   get chartData () {
@@ -63,7 +62,6 @@ class Sale extends Contract {
   async _getChartData () {
     const logs = await this.logs([
       'Buyin',
-      'PrepayBuyin',
       'Injected'
     ]);
 
@@ -82,9 +80,9 @@ class Sale extends Contract {
     return logs
       .sort((logA, logB) => logA.timestamp - logB.timestamp)
       .map((log) => {
-        const { accepted } = log.params;
+        const { accounted } = log.params;
 
-        totalAccounted = totalAccounted.add(accepted);
+        totalAccounted = totalAccounted.add(accounted);
 
         return {
           totalAccounted: '0x' + totalAccounted.toString(16),

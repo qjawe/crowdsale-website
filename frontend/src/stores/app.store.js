@@ -18,7 +18,12 @@ export const STEPS = {
   'terms': Symbol('terms'),
   'country-selection': Symbol('country selection'),
   'account-selection': Symbol('account selection'),
-  'contribute': Symbol('contribute')
+  'contribute': Symbol('contribute'),
+  'payment': Symbol('payment'),
+  'fee-payment': Symbol('fee payment'),
+  'picops': Symbol('picops'),
+  'purchase': Symbol('purchase'),
+  'summary': Symbol('summary')
 };
 
 const padding = window.location.search !== '?no-padding';
@@ -161,7 +166,7 @@ class AppStore extends EventEmitter {
     }
 
     console.error(error);
-    this.addMessage({ content: error.message, type: 'error', title: 'An error occured' });
+    return this.addMessage({ content: error.message, type: 'error', title: 'An error occured' });
   }
 
   @action addMessage ({ title, content, type }) {
@@ -170,13 +175,17 @@ class AppStore extends EventEmitter {
     this.messages = Object.assign({}, this.messages, { [id]: { title, content, type, id } });
 
     setTimeout(() => this.removeMessage(id), MESSAGE_TIMELIFE);
+
+    return id;
   }
 
   @action removeMessage (id) {
     const messages = Object.assign({}, this.messages);
 
-    delete messages[id];
-    this.messages = messages;
+    if (messages[id]) {
+      delete messages[id];
+      this.messages = messages;
+    }
   }
 
   @action setLoading (loading) {

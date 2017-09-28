@@ -7,8 +7,13 @@ import AppContainer from './AppContainer';
 import AccountSelection from './steps/AccountSelection';
 import Contribute from './steps/Contribute';
 import CountrySelection from './steps/CountrySelection';
+import FeePayment from './steps/FeePayment';
 import ImportantNotice from './steps/ImportantNotice';
+import Payment from './steps/Payment';
+import Picops from './steps/Picops';
+import Purchase from './steps/Purchase';
 import Start from './steps/Start';
+import Summary from './steps/Summary';
 import Terms from './steps/Terms';
 import Messages from './Messages';
 
@@ -88,6 +93,36 @@ class MainApp extends Component {
     if (step === STEPS['contribute']) {
       return (
         <Contribute />
+      );
+    }
+
+    if (step === STEPS['payment']) {
+      return (
+        <Payment />
+      );
+    }
+
+    if (step === STEPS['fee-payment']) {
+      return (
+        <FeePayment />
+      );
+    }
+
+    if (step === STEPS['picops']) {
+      return (
+        <Picops />
+      );
+    }
+
+    if (step === STEPS['purchase']) {
+      return (
+        <Purchase />
+      );
+    }
+
+    if (step === STEPS['summary']) {
+      return (
+        <Summary />
       );
     }
 

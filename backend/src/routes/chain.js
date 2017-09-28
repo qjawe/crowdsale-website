@@ -6,8 +6,7 @@
 const EthereumTx = require('ethereumjs-tx');
 const Router = require('koa-router');
 
-const store = require('../store');
-const { buf2hex, buf2big, big2hex } = require('../utils');
+const { buf2hex, buf2big } = require('../utils');
 const { rateLimiter, error } = require('./utils');
 
 function get ({ sale, connector, certifier }) {
@@ -58,13 +57,12 @@ function get ({ sale, connector, certifier }) {
     const requiredEth = value.add(gasPrice.mul(gasLimit));
     const balance = await connector.balance(from);
 
-    if (balance.cmp(requiredEth) < 0) {
-      const hash = buf2hex(txObj.hash(true));
-
-      await store.Transactions.set(from, tx, hash, requiredEth);
-
-      ctx.body = { hash, requiredEth: big2hex(requiredEth.sub(balance)) };
-      return;
+    if (balance.lt(requiredEth)) {
+      return error(
+        ctx,
+        400,
+        `Balance is too low for this transaction. Missing ${(requiredEth.div(Math.pow(10, 18))).toFormat()} ETH`
+      );
     }
 
     const hash = await connector.sendTx(tx);

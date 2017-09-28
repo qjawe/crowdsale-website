@@ -1,28 +1,6 @@
 [
   {
     "constant": true,
-    "inputs": [
-      {
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "participants",
-    "outputs": [
-      {
-        "name": "value",
-        "type": "uint128"
-      },
-      {
-        "name": "bonus",
-        "type": "uint128"
-      }
-    ],
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "constant": true,
     "inputs": [],
     "name": "ERA_PERIOD",
     "outputs": [
@@ -32,6 +10,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -45,6 +24,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -58,6 +38,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -76,6 +57,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -89,6 +71,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -102,6 +85,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -115,6 +99,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -128,6 +113,7 @@
     "name": "finalise",
     "outputs": [],
     "payable": false,
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -141,14 +127,30 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
-    "inputs": [],
-    "name": "kill",
-    "outputs": [],
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "buyins",
+    "outputs": [
+      {
+        "name": "accounted",
+        "type": "uint128"
+      },
+      {
+        "name": "received",
+        "type": "uint128"
+      }
+    ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -162,6 +164,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -175,6 +178,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -188,6 +192,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -201,6 +206,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -214,6 +220,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -227,6 +234,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -240,6 +248,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -253,6 +262,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -266,6 +276,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -279,6 +290,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -292,6 +304,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -300,6 +313,7 @@
     "name": "drain",
     "outputs": [],
     "payable": false,
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -313,6 +327,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -326,6 +341,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -339,6 +355,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -352,52 +369,20 @@
     "name": "theDeal",
     "outputs": [
       {
-        "name": "accepted",
+        "name": "accounted",
         "type": "uint256"
       },
       {
         "name": "refund",
-        "type": "uint256"
+        "type": "bool"
       },
       {
         "name": "price",
         "type": "uint256"
-      },
-      {
-        "name": "bonus",
-        "type": "uint256"
       }
     ],
     "payable": false,
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "v",
-        "type": "uint8"
-      },
-      {
-        "name": "r",
-        "type": "bytes32"
-      },
-      {
-        "name": "s",
-        "type": "bytes32"
-      },
-      {
-        "name": "_who",
-        "type": "address"
-      },
-      {
-        "name": "_value",
-        "type": "uint128"
-      }
-    ],
-    "name": "prepayBuyin",
-    "outputs": [],
-    "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -411,6 +396,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -424,6 +410,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -434,13 +421,14 @@
         "type": "address"
       },
       {
-        "name": "_spent",
+        "name": "_received",
         "type": "uint128"
       }
     ],
     "name": "inject",
     "outputs": [],
     "payable": false,
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -454,6 +442,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -475,6 +464,7 @@
     "name": "buyin",
     "outputs": [],
     "payable": true,
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -488,6 +478,7 @@
     "name": "setHalted",
     "outputs": [],
     "payable": false,
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -501,6 +492,21 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "MAX_GAS_PRICE",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -514,6 +520,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -527,6 +534,7 @@
       }
     ],
     "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -553,7 +561,13 @@
       }
     ],
     "payable": false,
+    "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "fallback"
   },
   {
     "anonymous": false,
@@ -565,22 +579,17 @@
       },
       {
         "indexed": false,
-        "name": "accepted",
+        "name": "accounted",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "name": "refund",
+        "name": "received",
         "type": "uint256"
       },
       {
         "indexed": false,
         "name": "price",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "name": "bonus",
         "type": "uint256"
       }
     ],
@@ -597,43 +606,16 @@
       },
       {
         "indexed": false,
-        "name": "accepted",
+        "name": "accounted",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "name": "bonus",
+        "name": "received",
         "type": "uint256"
       }
     ],
     "name": "Injected",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "name": "who",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "name": "accepted",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "name": "price",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "name": "bonus",
-        "type": "uint256"
-      }
-    ],
-    "name": "PrepayBuyin",
     "type": "event"
   },
   {

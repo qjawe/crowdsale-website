@@ -66,7 +66,7 @@ class Backend {
   }
 
   async sendFeeTx (tx) {
-    const { hash } = await post(this.url('/fee-tx'), { tx });
+    const { hash } = await post(this.picopsUrl('/fee-tx'), { tx });
 
     return { hash };
   }
