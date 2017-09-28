@@ -11,7 +11,11 @@ import AccountLoader from '../AccountLoader';
 const cardStyle = {
   margin: '0 2em 1em',
   borderRadius: '1em',
-  flex: '1'
+  flex: '1',
+  maxWidth: '350px'
+};
+
+const imageStyle = {
 };
 
 export default class AccountSelection extends Component {
@@ -51,9 +55,9 @@ export default class AccountSelection extends Component {
           LOAD / GENERATE YOUR WALLET
         </Header>
 
-        <div style={{ display: 'flex', width: '100%', marginTop: '4em' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%', marginTop: '4em' }}>
           <Card fluid link style={cardStyle} onClick={this.handleLoad}>
-            <Image src={EthereumImg} />
+            <Image src={EthereumImg} style={imageStyle} />
             <Card.Content>
               <Card.Header textAlign='center' style={{ padding: '1em 0' }}>
                 Load an Ethereum JSON file
@@ -62,7 +66,7 @@ export default class AccountSelection extends Component {
           </Card>
 
           <Card fluid link style={cardStyle} onClick={this.handleCreate}>
-            <Image src={EthereumImg} />
+            <Image src={EthereumImg} style={imageStyle} />
             <Card.Content>
               <Card.Header textAlign='center' style={{ padding: '1em 0' }}>
                 I don't have an Ethereum Wallet

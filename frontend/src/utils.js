@@ -26,6 +26,10 @@ export function fromWei (value) {
   return new BigNumber(value).div(WEI);
 }
 
+export function toWei (value) {
+  return new BigNumber(value).mul(WEI);
+}
+
 function checkStatus (response) {
   // To many Requests
   if (response.status === 429) {

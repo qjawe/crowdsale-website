@@ -3,20 +3,33 @@ import BigNumber from 'bignumber.js';
 import { get, post } from './utils';
 
 class Backend {
-  constructor (url) {
+  constructor (url, picopsUrl) {
     this._url = url;
+    this._picopsUrl = picopsUrl;
   }
 
   url (path) {
     return `${this._url}/api${path}`;
   }
 
+  picopsUrl (path) {
+    return `${this._picopsUrl}/api${path}`;
+  }
+
   blockHash () {
     return get(this.url('/block/hash'));
   }
 
+  status () {
+    return get(this.url('/auction'));
+  }
+
+  sale () {
+    return get(this.url('/auction/constants'));
+  }
+
   async getAccountFeeInfo (address) {
-    const { balance, paid } = await get(this.url(`/accounts/${address}/fee`));
+    const { balance, paid } = await get(this.picopsUrl(`/accounts/${address}/fee`));
 
     return {
       balance: new BigNumber(balance),
@@ -31,7 +44,7 @@ class Backend {
   }
 
   async fee () {
-    const { fee, feeRegistrar } = await get(this.url(`/fee`));
+    const { fee, feeRegistrar } = await get(this.picopsUrl(`/fee`));
 
     return { fee: new BigNumber(fee), feeRegistrar };
   }
@@ -68,4 +81,6 @@ class Backend {
 const { protocol, hostname, port } = window.location;
 const frontendPort = port ? ':4000' : '';
 
-export default new Backend(`${protocol}//${hostname}${frontendPort}`);
+const picopsUrl = 'https://staging-picops.parity.io';
+
+export default new Backend(`${protocol}//${hostname}${frontendPort}`, picopsUrl);
