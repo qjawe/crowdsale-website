@@ -60,6 +60,7 @@ export default class AccountLoader extends Component {
               label='ETH'
               labelPosition='right'
               onChange={this.handleSpendChange}
+              ref={this.setInputRef}
               style={{
                 marginLeft: '1.5em',
                 width: '6.5em'
@@ -153,5 +154,11 @@ export default class AccountLoader extends Component {
     }
 
     this.setState({ dots, spending });
+  };
+
+  setInputRef = (inputElement) => {
+    if (inputElement) {
+      inputElement.focus();
+    }
   };
 }
