@@ -68,11 +68,16 @@ class AccountStore {
 
       if (this.certified) {
         appStore.goto('purchase');
-        buyStore.purchase(this.address, this.spending, this.privateKey);
-      } else {
-        appStore.goto('fee-payment');
-        feeStore.sendPayment(this.address, this.privateKey);
+        return buyStore.purchase(this.address, this.spending, this.privateKey);
       }
+
+      if (!this.paid) {
+        appStore.goto('fee-payment');
+        return feeStore.sendPayment(this.address, this.privateKey);
+      }
+
+      // If not certified but already paid
+      appStore.goto('picops');
     } else if (appStore.step !== APP_STEPS['payment']) {
       // Go to payment page if not there already
       appStore.goto('payment');
@@ -159,23 +164,27 @@ class AccountStore {
   }
 
   /** Poll on new block if `this.address` is certified */
-  watchCertification () {
+  async watchCertification () {
     blockStore.on('block', this.checkCertification, this);
+    return this.checkCertification();
   }
 
   /** Poll on new block if `this.address` paid the fee */
-  watchFeePayment () {
+  async watchFeePayment () {
     blockStore.on('block', this.checkFeePayment, this);
+    return this.checkFeePayment();
   }
 
   /** Poll on new block `this.address` balance, until >= missing ETH */
-  watchPayment () {
+  async watchPayment () {
     blockStore.on('block', this.checkPayment, this);
+    return this.checkPayment();
   }
 
   /** Poll on new block `this.address` dot balance, until it changes */
-  watchPurchase () {
+  async watchPurchase () {
     blockStore.on('block', this.checkPurchase, this);
+    return this.checkPurchase();
   }
 
   /** Stop polling */

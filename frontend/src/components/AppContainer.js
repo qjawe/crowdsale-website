@@ -24,10 +24,12 @@ export default class AppContainer extends Component {
 
     footer: PropTypes.node,
     header: PropTypes.node,
+    padded: PropTypes.bool,
     style: PropTypes.object
   };
 
   static defaultProps = {
+    padded: true,
     style: {}
   };
 
@@ -45,6 +47,10 @@ export default class AppContainer extends Component {
     }
 
     const contentStyle = Object.assign({}, baseContentStyle, this.props.style);
+
+    if (!this.props.padded) {
+      contentStyle.padding = 0;
+    }
 
     const titleNode = padding
       ? <Header as='h4'>{title}</Header>

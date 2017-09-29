@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import { Portal } from 'semantic-ui-react';
+import { iframeResizer } from 'iframe-resizer';
+// import { Portal } from 'semantic-ui-react';
 
 import accountStore from '../../stores/account.store';
 import { PICOPS_BASE_URL } from '../../backend';
@@ -19,21 +20,22 @@ export default class Picops extends Component {
     const { address } = accountStore;
 
     return (
-      <Portal open>
-        <iframe
-          frameBorder={0}
-          src={`${PICOPS_BASE_URL}/?no-padding&no-stepper&terms-accepted&paid-for=${address}`}
-          style={{
-            height: '100%',
-            width: '100%',
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            top: 0
-          }}
-        />
-      </Portal>
+      <iframe
+        frameBorder={0}
+        src={`${PICOPS_BASE_URL}/?no-padding&no-stepper&terms-accepted&paid-for=${address}`}
+        style={{
+          height: '500px',
+          width: '100%',
+          position: 'relative',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          top: 0
+        }}
+        onLoad={this.iFrameResize}
+        ref={this.setIframeRef}
+        scrolling='no'
+      />
     );
   }
 
@@ -49,6 +51,7 @@ export default class Picops extends Component {
     }
 
     if (message.action === 'request-signature') {
+      console.warn('requesting to sign', message.message);
       this.handleSignMessage(message.message, event.source, event.origin);
     }
   };
@@ -56,9 +59,25 @@ export default class Picops extends Component {
   handleSignMessage = (message, source, origin) => {
     const signature = accountStore.signMessage(message);
 
-    source.postMessage({
+    console.warn('sending signature', message, signature);
+    source.postMessage(JSON.stringify({
       action: 'signature',
       signature
-    }, origin);
+    }), origin);
+  };
+
+  iFrameResize = () => {
+    if (!this.iframe) {
+      return;
+    }
+
+    iframeResizer({
+      log: false,
+      heightCalculationMethod: 'taggedElement'
+    }, this.iframe);
+  };
+
+  setIframeRef = (iframe) => {
+    this.iframe = iframe;
   };
 }

@@ -36,8 +36,12 @@ export default class App extends Component {
 @observer
 class MainApp extends Component {
   render () {
+    const { loading, step } = appStore;
+    const padded = loading || step !== STEPS['picops'];
+
     return (
       <AppContainer
+        padded={padded}
         title='PARITY CROWDSALE MODULE'
       >
         {this.renderContent()}
