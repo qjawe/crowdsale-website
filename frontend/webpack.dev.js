@@ -1,6 +1,7 @@
 // Copyright 2017 Parity Technologies (UK) Ltd.
 
 const config = require('config');
+const proxy = require('http-proxy-middleware');
 const express = require('express');
 const path = require('path');
 const ProgressBar = require('progress');
@@ -76,9 +77,10 @@ app.use(webpackDevMiddleware(compiler, {
 
 app.use(express.static(path.resolve(__dirname, 'dist')));
 
-app.all('*', (req, res) => {
-  res.redirect(`http://${config.get('http.hostname')}:${config.get('http.port')}${req.originalUrl}`);
-});
+app.use('/api', proxy({
+  target: `http://${config.get('http.hostname')}:${config.get('http.port')}`,
+  changeOrigin: true
+}));
 
 app.listen(8080, () => {
   console.log('server started');
