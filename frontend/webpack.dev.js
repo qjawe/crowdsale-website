@@ -1,5 +1,6 @@
 // Copyright 2017 Parity Technologies (UK) Ltd.
 
+const config = require('config');
 const express = require('express');
 const path = require('path');
 const ProgressBar = require('progress');
@@ -9,8 +10,6 @@ const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackHotMiddleware = require('webpack-hot-middleware');
 
 const webpackConfig = require('./webpack.config');
-
-const PORT = 8080;
 
 /**
  * Add webpack hot middleware to each entry in the config
@@ -77,6 +76,10 @@ app.use(webpackDevMiddleware(compiler, {
 
 app.use(express.static(path.resolve(__dirname, 'dist')));
 
-app.listen(PORT, () => {
-  console.log(`server started on port ${PORT}`);
+app.all('*', (req, res) => {
+  res.redirect(`http://${config.get('http.hostname')}:${config.get('http.port')}${req.originalUrl}`);
+});
+
+app.listen(8080, () => {
+  console.log('server started');
 });

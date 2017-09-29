@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Portal } from 'semantic-ui-react';
 
 import accountStore from '../../stores/account.store';
+import { PICOPS_BASE_URL } from '../../backend';
 
 export default class Picops extends Component {
   componentWillMount () {
@@ -21,7 +22,7 @@ export default class Picops extends Component {
       <Portal open>
         <iframe
           frameBorder={0}
-          src={`https://staging-picops.parity.io/?no-padding&no-stepper&terms-accepted&paid-for=${address}`}
+          src={`${PICOPS_BASE_URL}/?no-padding&no-stepper&terms-accepted&paid-for=${address}`}
           style={{
             height: '100%',
             width: '100%',
