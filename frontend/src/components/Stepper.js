@@ -13,18 +13,19 @@ const stepNameStyle = {
   position: 'absolute',
   marginLeft: '-75px',
   left: '0.75em',
-  top: '-4.5em',
+  top: '-5.5em',
   width: '150px',
   textAlign: 'center',
   height: '4.5em',
   display: 'flex',
   flexDirection: 'column',
-  justifyContent: 'center'
+  justifyContent: 'flex-end',
+  fontSize: '1.1em'
 };
 
 export default class Stepper extends Component {
   static propTypes = {
-    steps: PropTypes.array.isRequired,
+    steps: PropTypes.object.isRequired,
     step: PropTypes.number.isRequired
   };
 
@@ -46,12 +47,13 @@ export default class Stepper extends Component {
         justifyContent: 'flex-end'
       }}>
         <div style={{
-          width: '100%',
+          width: '92%',
           height: '1px',
           position: 'relative',
           backgroundColor: 'lightgray',
           fontSize: '0.9em',
-          top: '-1em'
+          top: '-1em',
+          margin: '0 auto'
         }}>
           <div style={containerStyle}>
             {steps.map((title, index) => this.renderStep(title, index, count))}

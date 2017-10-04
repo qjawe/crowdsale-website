@@ -1,7 +1,7 @@
 import { countries } from 'country-data';
 import EventEmitter from 'eventemitter3';
 import { difference, uniq } from 'lodash';
-import { action, observable } from 'mobx';
+import { action, computed, observable } from 'mobx';
 import store from 'store';
 
 import backend from '../backend';
@@ -26,19 +26,12 @@ export const STEPS = {
   'summary': Symbol('summary')
 };
 
-const padding = window.location.search !== '?no-padding';
 let nextErrorId = 1;
-
-if (padding) {
-  document.querySelector('body').style.backgroundColor = '#f1f1f1';
-  document.querySelector('html').style.backgroundColor = '#f1f1f1';
-}
 
 class AppStore extends EventEmitter {
   blacklistedCountries = [];
   certifierAddress = null;
   loaders = {};
-  padding = padding;
 
   skipCountrySelection = false;
   skipStart = false;
@@ -47,8 +40,31 @@ class AppStore extends EventEmitter {
   @observable loading = true;
   @observable messages = {};
   @observable termsAccepted = false;
-  @observable step;
-  @observable stepper = -1;
+  @observable view = null;
+
+  @computed get stepper () {
+    switch (this.step) {
+      case STEPS['important-notice']:
+      case STEPS['start']:
+      case STEPS['terms']:
+      case STEPS['country-selection']:
+        return 0;
+
+      case STEPS['account-selection']:
+        return 1;
+
+      case STEPS['contribute']:
+      case STEPS['payment']:
+      case STEPS['fee-payment']:
+      case STEPS['picops']:
+      case STEPS['purchase']:
+      case STEPS['summary']:
+        return 2;
+
+      default:
+        return 0;
+    }
+  }
 
   constructor () {
     super();
@@ -204,6 +220,14 @@ class AppStore extends EventEmitter {
     // }
 
     this.step = step;
+  }
+
+  @action setViewInfo (view) {
+    this.view = view;
+  }
+
+  @action setViewStep (step) {
+    this.view = Object.assign({}, this.view, { step });
   }
 
   storeValidCitizenship () {

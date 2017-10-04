@@ -6,7 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npm run clean && NODE_ENV=production webpack --progress",
     "clean": "rm -f dist/*",
-    "lint": "eslint .",
+    "lint": "eslint src",
     "start": "NODE_CONFIG_DIR=../backend/config node webpack.dev.js"
   },
   "dependencies": {

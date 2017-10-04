@@ -39,10 +39,24 @@ export default class AccountCreator extends Component {
   };
 
   componentWillMount () {
+    appStore.setViewInfo({
+      title: 'GENERATE A WALLET',
+      step: 0,
+      steps: [
+        'Choose Password',
+        'Recovery Phrase',
+        'Generate Wallet'
+      ]
+    });
+
     this.generateWallet()
       .catch((error) => {
         appStore.addError(error);
       });
+  }
+
+  componentWillUnmount () {
+    appStore.setViewInfo(null);
   }
 
   async generateWallet () {
@@ -125,9 +139,9 @@ export default class AccountCreator extends Component {
           </div>
         </Grid.Column>
         <Grid.Column width={10}>
-          <span style={{ fontSize: '1.15em' }}><b>
+          <div style={{ fontSize: '1.15em' }}><b>
             Your ethereum address
-          </b></span>
+          </b></div>
 
           <AccountInfo
             address={wallet.address}
@@ -332,7 +346,7 @@ export default class AccountCreator extends Component {
       return this.props.onCancel();
     }
 
-    this.setState({ step: this.state.step - 1 });
+    this.setStep(this.state.step - 1);
   };
 
   handleDone = () => {
@@ -384,8 +398,18 @@ export default class AccountCreator extends Component {
       });
     }
 
-    this.setState({ step: nextStep });
+    this.setStep(nextStep);
   };
+
+  setStep (step) {
+    // The stepper has 3 steps, the component has 4
+    const viewStep = step <= 1
+      ? step
+      : step - 1;
+
+    this.setState({ step });
+    appStore.setViewStep(viewStep);
+  }
 
   handlePasswordChange = (_, { value }) => {
     this.setState({ password: value });

@@ -43,7 +43,7 @@ export default class Payment extends Component {
             <QRCode
               level='M'
               size={192}
-              value={link}
+              value={address}
             />
           </a>
 

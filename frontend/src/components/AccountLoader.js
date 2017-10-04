@@ -72,6 +72,8 @@ export default class AccountLoader extends Component {
           <Input
             action={{
               icon: 'eye',
+              onKeyDown: this.handleShowPassword,
+              onKeyUp: this.handleHidePassword,
               onMouseDown: this.handleShowPassword,
               onMouseLeave: this.handleHidePassword,
               onBlur: this.handleHidePassword,

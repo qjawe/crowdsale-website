@@ -12,6 +12,10 @@ export default class Picops extends Component {
   }
 
   componentWillUnmount () {
+    if (this.iframe) {
+      this.iframe.iFrameResizer.close();
+    }
+
     accountStore.unwatchCertification();
     window.removeEventListener('message', this.listener, false);
   }
