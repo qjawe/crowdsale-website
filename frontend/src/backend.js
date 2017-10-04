@@ -11,16 +11,20 @@ class Backend {
     this._picopsUrl = picopsUrl;
   }
 
-  url (path) {
-    return `${this._url}/api${path}`;
+  blockHash () {
+    return get(this.url('/block/hash'));
+  }
+
+  async config () {
+    const { gasPrice } = await get(this.url('/config'));
+
+    return {
+      gasPrice: new BigNumber(gasPrice)
+    };
   }
 
   picopsUrl (path) {
     return `${this._picopsUrl}/api${path}`;
-  }
-
-  blockHash () {
-    return get(this.url('/block/hash'));
   }
 
   status () {
@@ -29,6 +33,10 @@ class Backend {
 
   sale () {
     return get(this.url('/auction/constants'));
+  }
+
+  url (path) {
+    return `${this._url}/api${path}`;
   }
 
   async getAccountFeeInfo (address) {

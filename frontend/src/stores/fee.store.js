@@ -2,13 +2,12 @@ import BigNumber from 'bignumber.js';
 import EthereumTx from 'ethereumjs-tx';
 
 import backend from '../backend';
+import config from './config.store';
 import appStore from './app.store';
 import { isValidAddress } from '../utils';
 
 // Gas Limit of 200k gas
 const FEE_REGISTRAR_GAS_LIMIT = new BigNumber('0x30d40');
-// Gas Price of 5Gwei
-const FEE_REGISTRAR_GAS_PRICE = new BigNumber('0x12a05f200');
 // Signature of `pay(address)`
 const FEE_REGISTRAR_PAY_SIGNATURE = '0x0c11dedd';
 
@@ -28,7 +27,7 @@ class FeeStore {
 
       this.fee = fee;
       this.feeRegistrar = feeRegistrar;
-      this.totalFee = fee.plus(FEE_REGISTRAR_GAS_PRICE.mul(FEE_REGISTRAR_GAS_LIMIT));
+      this.totalFee = fee.plus(config.get('gasPrice').mul(FEE_REGISTRAR_GAS_LIMIT));
     } catch (error) {
       appStore.addError(error);
     }
@@ -48,7 +47,7 @@ class FeeStore {
       const tx = new EthereumTx({
         to: this.feeRegistrar,
         gasLimit: '0x' + FEE_REGISTRAR_GAS_LIMIT.toString(16),
-        gasPrice: '0x' + FEE_REGISTRAR_GAS_PRICE.toString(16),
+        gasPrice: '0x' + config.get('gasPrice').toString(16),
         data: calldata,
         value: '0x' + this.fee.toString(16),
         nonce

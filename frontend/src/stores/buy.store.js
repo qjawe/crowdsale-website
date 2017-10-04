@@ -5,17 +5,18 @@ import { ecsign } from 'ethereumjs-util';
 import appStore from './app.store';
 import auctionStore from './auction.store';
 import backend from '../backend';
+import config from './config.store';
 import { int2hex, hex2buf, buildABIData } from '../utils';
 
 const BUYIN_SIG = '0xd0280037';
 
 const GAS_LIMIT = new BigNumber(200000);
-// 5 Gwei
-const GAS_PRICE = new BigNumber(5000000000);
-
-export const GAS_VALUE = GAS_LIMIT.mul(GAS_PRICE);
 
 class BuyStore {
+  get totalGas () {
+    return GAS_LIMIT.mul(config.get('gasPrice') || 0);
+  }
+
   async purchase (address, spending, privateKey) {
     console.warn('buying tokens for', spending.toFormat());
 
@@ -36,7 +37,7 @@ class BuyStore {
         nonce,
         data,
         gasLimit: int2hex(GAS_LIMIT),
-        gasPrice: int2hex(GAS_PRICE),
+        gasPrice: int2hex(config.get('gasPrice')),
         value: int2hex(spending)
       });
 

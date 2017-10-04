@@ -6,7 +6,7 @@ import backend from '../backend';
 import appStore, { STEPS as APP_STEPS } from './app.store';
 import auctionStore from './auction.store';
 import blockStore from './block.store';
-import buyStore, { GAS_VALUE as auctionGasValue } from './buy.store';
+import buyStore from './buy.store';
 import feeStore from './fee.store';
 
 class AccountStore {
@@ -22,7 +22,7 @@ class AccountStore {
     const { balance, paid, spending } = this;
     const { totalFee } = feeStore;
 
-    let missingWei = spending.add(auctionGasValue).sub(balance);
+    let missingWei = spending.add(buyStore.totalGas).sub(balance);
 
     if (!paid) {
       missingWei = missingWei.add(totalFee);

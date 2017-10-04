@@ -5,6 +5,7 @@ import { action, computed, observable } from 'mobx';
 import store from 'store';
 
 import backend from '../backend';
+import config from './config.store';
 
 export const CITIZENSHIP_LS_KEY = '_parity-crowdsale::citizenship';
 export const TERMS_LS_KEY = '_parity-crowdsale::agreed-terms::v1';
@@ -78,6 +79,8 @@ class AppStore extends EventEmitter {
   }
 
   _load = async () => {
+    await config.load();
+
     this.certifierAddress = await backend.certifierAddress();
 
     if (store.get(TERMS_LS_KEY) === true) {
