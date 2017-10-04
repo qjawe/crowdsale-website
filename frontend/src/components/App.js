@@ -11,6 +11,7 @@ import FeePayment from './steps/FeePayment';
 import ImportantNotice from './steps/ImportantNotice';
 import Payment from './steps/Payment';
 import Picops from './steps/Picops';
+import PicopsTerms from './steps/PicopsTerms';
 import Purchase from './steps/Purchase';
 import Start from './steps/Start';
 import Summary from './steps/Summary';
@@ -103,6 +104,12 @@ class MainApp extends Component {
     if (step === STEPS['fee-payment']) {
       return (
         <FeePayment />
+      );
+    }
+
+    if (step === STEPS['picops-terms']) {
+      return (
+        <PicopsTerms />
       );
     }
 

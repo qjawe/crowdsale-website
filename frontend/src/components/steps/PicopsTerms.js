@@ -1,12 +1,11 @@
 import React, { Component } from 'react';
 import { iframeResizer } from 'iframe-resizer';
 
-import accountStore from '../../stores/account.store';
 import { PICOPS_BASE_URL } from '../../backend';
+import appStore from '../../stores/app.store';
 
-export default class Picops extends Component {
+export default class PicopsTerms extends Component {
   componentWillMount () {
-    accountStore.watchCertification();
     window.addEventListener('message', this.listener, false);
   }
 
@@ -15,17 +14,14 @@ export default class Picops extends Component {
       // this.iframe.iFrameResizer.close();
     }
 
-    accountStore.unwatchCertification();
     window.removeEventListener('message', this.listener, false);
   }
 
   render () {
-    const { address } = accountStore;
-
     return (
       <iframe
         frameBorder={0}
-        src={`${PICOPS_BASE_URL}/?no-padding&no-stepper&terms-accepted&paid-for=${address}`}
+        src={`${PICOPS_BASE_URL}/#/tc`}
         style={{
           height: '500px',
           width: '100%',
@@ -51,20 +47,15 @@ export default class Picops extends Component {
       return console.warn('could not parse JSON', event.data);
     }
 
-    if (message.action === 'request-signature') {
-      console.warn('requesting to sign', message.data);
-      this.handleSignMessage(message.data, event.source, event.origin);
+    if (message.action !== 'terms-accepted') {
+      return;
     }
-  };
 
-  handleSignMessage = (message, source, origin) => {
-    const signature = accountStore.signMessage(message);
+    if (!message.termsAccepted) {
+      return;
+    }
 
-    console.warn('sending signature', message, signature);
-    source.postMessage(JSON.stringify({
-      action: 'signature',
-      signature
-    }), origin);
+    appStore.goto('contribute');
   };
 
   iFrameResize = () => {

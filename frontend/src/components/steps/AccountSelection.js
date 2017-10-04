@@ -84,7 +84,7 @@ export default class AccountSelection extends Component {
 
   handleDone = ({ address, privateKey }) => {
     accountStore.setAccount({ address, privateKey });
-    appStore.goto('contribute');
+    appStore.gotoContribute(address);
   };
 
   handleReset = () => {

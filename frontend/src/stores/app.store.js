@@ -21,6 +21,7 @@ export const STEPS = {
   'contribute': Symbol('contribute'),
   'payment': Symbol('payment'),
   'fee-payment': Symbol('fee payment'),
+  'picops-terms': Symbol('picops terms and conditions'),
   'picops': Symbol('picops'),
   'purchase': Symbol('purchase'),
   'summary': Symbol('summary')
@@ -125,6 +126,22 @@ class AppStore extends EventEmitter {
     }
 
     this.setLoading(false);
+  }
+
+  /**
+   * Check that the given address is certified,
+   * if not go to the PICOPS T&Cs
+   */
+  async gotoContribute (address) {
+    this.setLoading(true);
+
+    const { certified } = await backend.getAddressInfo(address);
+
+    if (!certified) {
+      return this.goto('picops-terms');
+    }
+
+    return this.goto('contribute');
   }
 
   async fetchBlacklistedCountries () {
